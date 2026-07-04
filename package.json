@@ -1,0 +1,12 @@
+{
+  "name": "plano-obra-3d",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plano 3D interactivo de obra — Mirador de la Dalia · Etapa I (Three.js, sitio estático)",
+  "scripts": {
+    "dev": "npx --yes serve .",
+    "start": "npx --yes serve ."
+  },
+  "keywords": ["three.js", "3d", "obra", "construccion", "vercel", "static-site"],
+  "license": "UNLICENSED"
+}

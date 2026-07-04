@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/Plano_Obra_3D.html" }
+  ],
+  "cleanUrls": true,
+  "trailingSlash": false
+}
