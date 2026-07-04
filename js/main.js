@@ -1,0 +1,152 @@
+/* Arranque: botones de la UI, vista Piso 4, menu movil y bucle de animacion */
+
+aplicarIconos();
+
+/* ---- Menú móvil y panel plegable (solo visible en pantallas pequeñas) ---- */
+document.getElementById('btnMenu').onclick = () => {
+  document.getElementById('ui').classList.toggle('abierto');
+};
+document.getElementById('pTitulo').onclick = () => {
+  document.getElementById('panel').classList.toggle('abierto');
+};
+
+/* ============ 13. UI + LOOP ============ */
+let vistaPiso4 = false;
+function setFantasma(grupo, on){
+  grupo.traverse(n => {
+    if (n.isMesh){
+      const mats = Array.isArray(n.material) ? n.material : [n.material];
+      mats.forEach(m => {
+        const op0 = (m.userData && m.userData.op0 !== undefined) ? m.userData.op0 : 1;
+        m.transparent = on || op0 < 1;
+        m.opacity = on ? 0.07 : op0;
+        m.depthWrite = !on;
+      });
+    }
+  });
+}
+function togglePiso4(){
+  vistaPiso4 = !vistaPiso4;
+  for (let i=4; i<CFG.pisos; i++) setFantasma(pisosMesh[i], vistaPiso4); // piso 5
+  setFantasma(techoG, vistaPiso4);
+  piso4.visible = vistaPiso4;
+  document.getElementById('btnPiso4').innerHTML = icono('edificio') + (vistaPiso4 ? 'Ver torre completa' : 'Ver Piso 4');
+  document.getElementById('btnPiso4').classList.toggle('activo', vistaPiso4);
+  etiquetasTodas.forEach(s => { s.visible = vistaPiso4 ? false : etiquetasOn; });
+  if (vistaPiso4){
+    irA(4, y4 + 1, -4, 48, 0.35, 1.25);
+    rangoMalacate.value = 3;
+  } else {
+    irA(0, 6, -8, 170, 0.5, 1.22);
+  }
+}
+document.getElementById('btnPiso4').onclick = togglePiso4;
+
+const btnFlujo = document.getElementById('btnFlujo');
+const btnFin   = document.getElementById('btnFin');
+btnFlujo.onclick = () => {
+  modoFlujo = !modoFlujo;
+  btnFlujo.classList.toggle('activo', modoFlujo);
+  btnFin.style.display = modoFlujo ? '' : 'none';
+  document.getElementById('modoAviso').style.display = modoFlujo ? 'block' : 'none';
+  if (!modoFlujo) finalizarRuta();
+};
+btnFin.onclick = () => { finalizarRuta(); };
+document.getElementById('btnBorrar').onclick = borrarRutas;
+
+let etiquetasOn = true;
+document.getElementById('btnEtiquetas').onclick = () => {
+  etiquetasOn = !etiquetasOn;
+  etiquetasTodas.forEach(s => { s.visible = etiquetasOn && !vistaPiso4; });
+  document.getElementById('btnEtiquetas').classList.toggle('activo', !etiquetasOn);
+};
+
+const nivelTxt = document.getElementById('nivelTxt');
+const chkAuto = document.getElementById('chkAuto');
+let nivelMalacate = 0;
+rangoMalacate.addEventListener('change', guardarCompartido);
+
+selectorUI.onchange = () => {
+  const i = selectorUI.value;
+  if (i === '') return;
+  const o = draggables[i];
+  seleccionar(o);
+  irA(o.position.x, 2, o.position.z, 55, camCtrl.theta, 1.1);
+  selectorUI.value = '';
+};
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// restaurar la distribución compartida del equipo (Supabase); si no hay
+// conexión, usa la copia local o dibuja la ruta de ejemplo del informe
+cargarCompartido();
+
+const reloj = new THREE.Clock();
+let tiempo = 0;
+const dirTmp = new THREE.Vector3();
+const puntoTmp = new THREE.Vector3();
+const tangenteTmp = new THREE.Vector3();
+const ejeYTmp = new THREE.Vector3(0, 1, 0);
+function animar(){
+  requestAnimationFrame(animar);
+  const dt = Math.min(reloj.getDelta(), 0.05);
+  tiempo += dt;
+
+  if (animCam){
+    let k = (performance.now() - animCam.t0) / animCam.dur;
+    if (k >= 1) k = 1;
+    const e = k < 0.5 ? 2*k*k : 1 - Math.pow(-2*k + 2, 2)/2;
+    camCtrl.target.set(
+      animCam.de.x + (animCam.a.x - animCam.de.x)*e,
+      animCam.de.y + (animCam.a.y - animCam.de.y)*e,
+      animCam.de.z + (animCam.a.z - animCam.de.z)*e
+    );
+    camCtrl.radius = animCam.de.r + (animCam.a.r - animCam.de.r)*e;
+    camCtrl.theta  = animCam.de.th + (animCam.a.th - animCam.de.th)*e;
+    camCtrl.phi    = animCam.de.ph + (animCam.a.ph - animCam.de.ph)*e;
+    if (k === 1) animCam = null;
+  }
+
+  // montacargas (30-40 m/min a escala visual)
+  let objetivo = parseFloat(rangoMalacate.value);
+  if (chkAuto.checked){
+    objetivo = (Math.sin(tiempo*0.35)*0.5 + 0.5) * 9;
+    rangoMalacate.value = objetivo;
+  }
+  nivelMalacate += (objetivo - nivelMalacate) * 0.06;
+  cabina.position.y = 0.2 + nivelMalacate * CFG.hPiso;
+  nivelTxt.textContent = 'P' + (Math.round(nivelMalacate) + 1);
+
+  // personas
+  personas.forEach(p => {
+    dirTmp.subVectors(p.obj, p.g.position);
+    dirTmp.y = 0;
+    if (dirTmp.length() < 1.2){ p.obj = nuevoObjetivo(); return; }
+    dirTmp.normalize();
+    p.g.position.addScaledVector(dirTmp, p.vel * dt);
+    p.g.rotation.y = Math.atan2(dirTmp.x, dirTmp.z);
+    p.g.position.y = alturaTerreno(p.g.position.x, p.g.position.z)
+      + 0.1 + Math.abs(Math.sin(tiempo*8 + p.vel*10)) * 0.04;
+  });
+
+  // flechas de flujo
+  rutas.forEach(r => {
+    if (!r.curva || !r.flechas) return;
+    r.flechas.forEach((f, i) => {
+      const u = (tiempo*0.08 + r.offset + i/r.flechas.length) % 1;
+      r.curva.getPointAt(u, puntoTmp);
+      r.curva.getTangentAt(u, tangenteTmp);
+      f.position.copy(puntoTmp);
+      f.quaternion.setFromUnitVectors(ejeYTmp, tangenteTmp.normalize());
+    });
+  });
+
+  actualizarCamara();
+  renderer.render(scene, camera);
+}
+actualizarCamara();
+animar();

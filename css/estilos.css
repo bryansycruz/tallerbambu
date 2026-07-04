@@ -1,0 +1,202 @@
+  /* ============ ESTILOS DE INTERFAZ ============ */
+  html, body { margin:0; padding:0; overflow:hidden; height:100%; background:#1a1e26; font-family:'Segoe UI', Arial, sans-serif; }
+  canvas { display:block; }
+
+  #ui {
+    position:absolute; top:12px; left:12px; z-index:10;
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+    background:rgba(20,24,32,.85); padding:10px 14px; border-radius:10px;
+    border:1px solid #3a4150; max-width:calc(100vw - 360px);
+  }
+  #ui button, #ui select {
+    background:#2e3646; color:#e8ecf2; border:1px solid #4a5468;
+    padding:7px 12px; border-radius:6px; cursor:pointer; font-size:13px;
+  }
+  #ui button:hover { background:#3d4a62; }
+  #ui button.activo { background:#c97b1e; border-color:#f0a340; }
+  #ui label { color:#cfd6e0; font-size:13px; display:flex; align-items:center; gap:6px; }
+  #ui input[type=range] { width:110px; }
+
+  #panel {
+    position:absolute; top:12px; right:12px; z-index:10; width:300px;
+    background:rgba(20,24,32,.92); border:1px solid #3a4150; border-radius:10px;
+    padding:14px 16px; color:#e8ecf2; max-height:calc(100vh - 40px); overflow-y:auto;
+  }
+  #panel h2 { margin:0 0 8px; font-size:16px; color:#f0a340; }
+  #panel table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  #panel td { padding:4px 2px; border-bottom:1px solid #2c3342; vertical-align:top; }
+  #panel td:first-child { color:#9aa5b5; width:38%; }
+  #panel .desc { font-size:12.5px; color:#c4ccd8; margin-top:8px; line-height:1.45; }
+  #panel button { margin-top:10px; width:100%; background:#c97b1e; color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer; font-size:13px; }
+
+  #ayuda {
+    position:absolute; bottom:12px; left:12px; z-index:10;
+    background:rgba(20,24,32,.8); border:1px solid #3a4150; border-radius:8px;
+    padding:8px 12px; color:#9aa5b5; font-size:11.5px; line-height:1.6; max-width:360px;
+  }
+  #ayuda b { color:#cfd6e0; }
+  #modoAviso {
+    position:absolute; top:70px; left:50%; transform:translateX(-50%); z-index:10;
+    background:#c97b1e; color:#fff; padding:6px 16px; border-radius:20px; font-size:13px; display:none;
+  }
+  #avisoGuardado {
+    position:absolute; bottom:12px; right:12px; z-index:10;
+    background:#2c7a3f; color:#fff; padding:6px 14px; border-radius:20px; font-size:12px; display:none;
+  }
+
+  /* ---- Pestaña de detalle (sectores del Piso 4) ---- */
+  #aptoOverlay {
+    position:fixed; inset:0; z-index:30; display:none;
+    align-items:center; justify-content:center; background:rgba(5,8,14,.6);
+  }
+  #aptoVentana {
+    width:min(560px, 92vw); max-height:86vh; overflow-y:auto;
+    background:#1c212b; border:1px solid #4a5468; border-radius:12px;
+    color:#e8ecf2; box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  #aptoCabecera {
+    display:flex; justify-content:space-between; align-items:center;
+    background:#242b38; padding:12px 18px; border-radius:12px 12px 0 0;
+    border-bottom:2px solid #c97b1e;
+  }
+  #aptoCabecera h3 { margin:0; font-size:17px; color:#f0a340; }
+  #aptoCerrar { background:none; border:none; color:#9aa5b5; font-size:22px; cursor:pointer; line-height:1; }
+  #aptoCerrar:hover { color:#fff; }
+  #aptoBody { padding:16px 18px; font-size:13px; line-height:1.5; }
+  #aptoBody table { width:100%; border-collapse:collapse; margin-bottom:12px; }
+  #aptoBody td { padding:5px 2px; border-bottom:1px solid #2c3342; }
+  #aptoBody td:first-child { color:#9aa5b5; width:40%; }
+  .chipEspacio {
+    display:inline-block; background:#2e3646; border:1px solid #4a5468;
+    border-radius:14px; padding:4px 11px; margin:3px 4px 3px 0; font-size:12px;
+  }
+  .zonaImg {
+    border:2px dashed #4a5468; border-radius:10px; padding:22px 12px;
+    text-align:center; color:#9aa5b5; font-size:12.5px; margin-top:10px;
+  }
+
+  /* ---- Organigrama de la obra ---- */
+  #orgOverlay {
+    position:fixed; inset:0; z-index:31; display:none;
+    align-items:center; justify-content:center; background:rgba(5,8,14,.65);
+  }
+  #orgVentana {
+    width:min(880px, 94vw); max-height:88vh; overflow-y:auto;
+    background:#1c212b; border:1px solid #4a5468; border-radius:12px;
+    color:#e8ecf2; box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  #orgCabecera {
+    display:flex; justify-content:space-between; align-items:center;
+    background:#242b38; padding:12px 18px; border-radius:12px 12px 0 0;
+    border-bottom:2px solid #c97b1e; position:sticky; top:0; z-index:1;
+  }
+  #orgCabecera h3 { margin:0; font-size:17px; color:#f0a340; }
+  #orgCerrar { background:none; border:none; color:#9aa5b5; font-size:22px; cursor:pointer; line-height:1; }
+  #orgCerrar:hover { color:#fff; }
+  #orgBody { padding:16px 18px; font-size:13px; line-height:1.5; }
+  .orgNivel { display:flex; justify-content:center; gap:14px; flex-wrap:wrap; }
+  .orgNodo {
+    background:#242b38; border:2px solid #4a5468; border-radius:10px;
+    padding:9px 13px; min-width:160px; max-width:210px; text-align:center; cursor:pointer;
+    transition:background .15s;
+  }
+  .orgNodo:hover { background:#2e3646; }
+  .orgNodo.punteado { border-style:dashed; }
+  .orgNodo .rol { font-weight:bold; font-size:13px; }
+  .orgNodo .nom { font-size:12px; color:#cfd6e0; margin-top:2px; }
+  .orgNodo .aux { font-size:11px; color:#9aa5b5; margin-top:4px; border-top:1px dashed #3a4150; padding-top:4px; }
+  .orgConector { width:2px; height:16px; background:#4a5468; margin:2px auto; }
+  .orgFn { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; padding:5px 2px; border-bottom:1px solid #2c3342; font-size:12.5px; }
+  .orgFn .fnX { color:#e07820; cursor:pointer; font-weight:bold; }
+  .orgFn .fnX:hover { color:#ff9840; }
+  #orgAgregar { display:flex; gap:6px; margin-top:12px; }
+  #orgAgregar input {
+    flex:1; background:#2e3646; border:1px solid #4a5468; color:#e8ecf2;
+    border-radius:6px; padding:7px 10px; font-size:13px;
+  }
+  .orgAccion {
+    background:#2e3646; color:#e8ecf2; border:1px solid #4a5468;
+    padding:8px 12px; border-radius:6px; cursor:pointer; font-size:13px; margin:8px 6px 0 0;
+  }
+  .orgAccion:hover { background:#3d4a62; }
+  .orgAccion.primario { background:#c97b1e; border-color:#f0a340; color:#fff; }
+
+  /* ---- Iconos SVG ---- */
+  .ic svg { width:14px; height:14px; vertical-align:-2px; margin-right:5px; }
+  .ic.solo svg { margin-right:0; }
+  #panel button svg, .orgAccion svg { width:14px; height:14px; vertical-align:-2px; margin-right:6px; }
+
+  /* ---- Indicador de sincronización ---- */
+  .sDot {
+    display:inline-block; width:9px; height:9px; border-radius:50%;
+    margin-right:6px; background:#8a93a3; vertical-align:0;
+  }
+  .sDot.ok { background:#3fbf62; }
+  .sDot.error { background:#e0862a; }
+  .sDot.cargando { background:#4da3ff; }
+
+  /* ---- Gestor de planos (AutoCAD) ---- */
+  #planosOverlay {
+    position:fixed; inset:0; z-index:32; display:none;
+    align-items:center; justify-content:center; background:rgba(5,8,14,.65);
+  }
+  #planosVentana {
+    width:min(640px, 94vw); max-height:84vh; overflow-y:auto;
+    background:#1c212b; border:1px solid #4a5468; border-radius:12px;
+    color:#e8ecf2; box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  #planosCabecera {
+    display:flex; justify-content:space-between; align-items:center;
+    background:#242b38; padding:12px 18px; border-radius:12px 12px 0 0;
+    border-bottom:2px solid #c97b1e; position:sticky; top:0; z-index:1;
+  }
+  #planosCabecera h3 { margin:0; font-size:16px; color:#f0a340; }
+  #planosCerrar { background:none; border:none; color:#9aa5b5; font-size:22px; cursor:pointer; line-height:1; }
+  #planosCerrar:hover { color:#fff; }
+  #planosBody { padding:14px 18px; font-size:13px; line-height:1.5; }
+  .planoFila {
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:7px 4px; border-bottom:1px solid #2c3342; font-size:12.5px;
+  }
+  .planoFila .planoNom { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .planoFila small { color:#9aa5b5; }
+  .planoBtn {
+    background:#2e3646; color:#e8ecf2; border:1px solid #4a5468;
+    padding:5px 8px; border-radius:6px; cursor:pointer; font-size:12px;
+  }
+  .planoBtn:hover { background:#3d4a62; }
+  .planoBtn.peligro:hover { background:#6b2a1e; border-color:#a04030; }
+  .planoBtn svg { width:13px; height:13px; vertical-align:-2px; }
+
+/* ============ RESPONSIVE (móvil y tablet) ============ */
+#btnMenu { display:none; }
+@media (max-width: 820px){
+  /* barra de herramientas: plegada tras el botón Menú */
+  #btnMenu { display:inline-block; }
+  #ui {
+    top:8px; left:8px; right:8px; max-width:none;
+    gap:5px; padding:7px 9px;
+  }
+  #ui:not(.abierto) > *:not(#btnMenu) { display:none; }
+  #ui button, #ui select { font-size:12px; padding:6px 9px; }
+  #ui input[type=range] { width:80px; }
+
+  /* la ayuda de controles no cabe en pantalla pequeña */
+  #ayuda { display:none; }
+
+  /* panel de obra: cajón inferior plegable (solo se ve el título) */
+  #panel {
+    top:auto; bottom:0; left:8px; right:8px; width:auto;
+    max-height:46px; overflow:hidden;
+    border-radius:12px 12px 0 0; padding:12px 16px;
+    transition:max-height .25s ease;
+  }
+  #panel.abierto { max-height:48vh; overflow-y:auto; }
+  #panel h2 { cursor:pointer; user-select:none; }
+  #panel h2::after { content:' ▾'; color:#9aa5b5; font-size:13px; }
+  #panel.abierto h2::after { content:' ▴'; }
+
+  /* avisos reposicionados para no chocar con el cajón */
+  #modoAviso { top:58px; font-size:12px; max-width:90vw; text-align:center; }
+  #avisoGuardado { bottom:54px; }
+}
