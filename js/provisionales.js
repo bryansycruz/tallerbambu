@@ -165,7 +165,7 @@ function detalleCasilleros(g, def){
   });
   textoLocal(g, 'CASILLEROS — 305 TRABAJADORES', 10, 0, -6, '#5a5245');
 }
-/* ---- Baños + vestieres trabajadores ---- */
+/* ---- Baños + vestidores trabajadores ---- */
 function detalleBanosVest(g, def){
   for (let i=0; i<8; i++){
     const x = -7 + i*2;
@@ -180,7 +180,7 @@ function detalleBanosVest(g, def){
   }
   bancaFig(g, -3, 6.5, 6); bancaFig(g, 4, 6.5, 5);
   caja(g, 5, 1.8, 0.5, 0x5a6a7a, 2, 1.02, def.d/2 - 0.6);                // lockers vestier
-  textoLocal(g, 'BAÑOS + VESTIERES (2 módulos de obra)', 11, 0, 7.8, '#5a5245');
+  textoLocal(g, 'BAÑOS + VESTIDORES (2 módulos de obra)', 11, 0, 7.8, '#5a5245');
 }
 /* ---- Acometidas ---- */
 function detalleAcomElec(g, def){
@@ -227,11 +227,11 @@ const PROVISIONALES = [
   { nombre:'Casilleros trabajadores 16×14', w:16, d:14, h:2.5, color:0x8a6a3a, muros:true, techo:true, pos:[-68,-13], detalle:detalleCasilleros,
     material:'Módulos de casilleros metálicos — 224 m²',
     cerramiento:'Caseta cerrada con panel metálico',
-    descripcion:'Guardarropa del personal de obra (16×14 = 224 m²) junto a baños y vestieres, en la zona de bienestar.' },
-  { nombre:'Baños + vestieres trabajadores', w:16, d:18, h:2.5, color:0x4f66c9, muros:true, techo:true, pos:[-42,-10], detalle:detalleBanosVest,
+    descripcion:'Guardarropa del personal de obra (16×14 = 224 m²) junto a baños y vestidores, en la zona de bienestar.' },
+  { nombre:'Baños + vestidores trabajadores', w:16, d:18, h:2.5, color:0x4f66c9, muros:true, techo:true, pos:[-42,-10], detalle:detalleBanosVest,
     material:'Módulos sanitarios prefabricados — 288 m²',
     cerramiento:'Panel metálico, conectado a acometidas provisionales',
-    descripcion:'Batería de baños, duchas y vestieres para el personal (pico 305 trabajadores): 3 módulos en total según el informe (2 de obra + 1 administrativo dentro del campamento).' },
+    descripcion:'Batería de baños, duchas y vestidores para el personal (pico 305 trabajadores): 3 módulos en total según el informe (2 de obra + 1 administrativo dentro del campamento).' },
   { nombre:'Acometida eléctrica', w:2.5, d:2.5, h:2, color:0xd9a521, pos:[78,-14], detalle:detalleAcomElec,
     material:'Tablero temporal con contador, junto a la portería',
     cerramiento:'Gabinete con candado y señalización de riesgo eléctrico',
@@ -239,7 +239,7 @@ const PROVISIONALES = [
   { nombre:'Acometida de agua (abastos)', w:2.5, d:2.5, h:1.5, color:0x2f5d8a, pos:[78,-9], detalle:detalleAcomAgua,
     material:'Empalme a red municipal existente en la vía de acceso',
     cerramiento:'Caja de medidor + registro de corte',
-    descripcion:'Junto a la portería, con empalme a la red municipal de la vía de acceso. Distribuye a comedor, baños/vestieres, almacén (limpieza) y zona de lavado de llantas. Facilita el corte de servicios en emergencia.' }
+    descripcion:'Junto a la portería, con empalme a la red municipal de la vía de acceso. Distribuye a comedor, baños/vestidores, almacén (limpieza) y zona de lavado de llantas. Facilita el corte de servicios en emergencia.' }
 ];
 PROVISIONALES.forEach(crearProvisional);
 

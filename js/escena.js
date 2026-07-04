@@ -486,7 +486,7 @@ function abrirApto(a){
   document.getElementById('aptoTitulo').textContent = a.nom + ' · Piso 4';
   document.getElementById('aptoBody').innerHTML =
     '<table>' +
-    '<tr><td>Proyecto</td><td>Mirador de la Dalia · Etapa I — Torres 01+02, 10 pisos + 3 sótanos</td></tr>' +
+    '<tr><td>Proyecto</td><td>Taller II — Obras Provisionales · Torres 01+02, 10 pisos + 3 sótanos</td></tr>' +
     '<tr><td>Fase</td><td>Cerramientos y acabados (estructura existente)</td></tr>' +
     '<tr><td>Frente de trabajo</td><td>' + a.act + '</td></tr>' +
     '<tr><td>Área aprox.</td><td>60–72 m² según tipo (A-L del cuadro de áreas)</td></tr>' +

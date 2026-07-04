@@ -1,4 +1,4 @@
-/* Interaccion: camara, arrastre, seleccion, bloqueo y tintes */
+/* Interacción: cámara, arrastre, selección, bloqueo y tintes */
 
 /* ============ 11. INTERACCIÓN ============ */
 const camCtrl = { target: new THREE.Vector3(0,6,-8), radius: 170, theta: 0.5, phi: 1.22 };

@@ -1,4 +1,4 @@
-/* Configuracion general: Supabase, iconos SVG y dimensiones del proyecto (CFG) */
+/* Configuración general: conexión compartida, iconos SVG y dimensiones del proyecto (CFG) */
 
 /* ============ CONEXIÓN COMPARTIDA (Supabase) ============
    Completa estos dos valores tras crear tu proyecto gratuito en supabase.com
@@ -51,7 +51,7 @@ function aplicarIconos(){
 
 /* =====================================================================
    PLANO 3D — OBRAS PROVISIONALES (según informe)
-   Mirador de la Dalia · Etapa I — Torres 01 (49.73 m) + 02 (24.30 m)
+   Taller II — Obras Provisionales · Torres 01 (49.73 m) + 02 (24.30 m)
    10 pisos de 2.65 m (26.50 m) + cubierta · Sótanos -3.40/-6.20/-9.00
    Fase: Cerramientos y Acabados (estructura existente)
    Lote: 163.00 × 47.00 m · Fondo de torres: 12.50 m

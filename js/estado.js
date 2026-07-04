@@ -1,4 +1,4 @@
-/* Estado compartido: guardar/cargar, Supabase (tabla estado_obra) y sincronizacion en tiempo real */
+/* Estado compartido: guardar/cargar, base de datos (tabla estado_obra) y sincronización en tiempo real */
 
 /* ============ 12. GUARDAR / CARGAR DISTRIBUCIÓN ============ */
 const rangoMalacate = document.getElementById('rangoMalacate');

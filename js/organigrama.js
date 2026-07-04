@@ -216,7 +216,7 @@ function toggleRiesgos(){
   zonaProv('Campamento', VERDE, cV, 'BAJO · Zona administrativa');
   zonaProv('Comedor', VERDE, cV, 'BAJO · Bienestar');
   zonaProv('Casilleros', VERDE, cV, 'BAJO · Bienestar');
-  zonaProv('vestieres', VERDE, cV, 'BAJO · Bienestar');
+  zonaProv('vestidores', VERDE, cV, 'BAJO · Bienestar');
   zonaProv('Portería', VERDE, cV, 'BAJO · Control de acceso');
   scene.add(zonasRiesgo);
   document.getElementById('orgOverlay').style.display = 'none';

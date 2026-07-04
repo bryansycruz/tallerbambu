@@ -1,4 +1,4 @@
-/* Arranque: botones de la UI, vista Piso 4, menu movil y bucle de animacion */
+/* Arranque: botones de la UI, vista Piso 4, menú móvil y bucle de animación */
 
 aplicarIconos();
 
