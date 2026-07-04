@@ -80,7 +80,7 @@ function actualizarEstadoSync(estado, detalle){
   const txt = document.getElementById('syncTxt');
   if (!dot || !txt) return;
   const textos = {
-    local: 'Modo local (Supabase no configurado)',
+    local: 'Modo local (cambios solo en este dispositivo)',
     cargando: 'Cargando distribución del equipo…',
     ok: 'Sincronizado' + (detalle ? ' · ' + detalle : ''),
     error: 'Sin conexión (usando copia local)'

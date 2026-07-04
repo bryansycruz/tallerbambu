@@ -29,6 +29,20 @@ let rotando = false, paneando = false;
 let x0=0, y0=0, movido=0;
 let seleccionado = null;
 
+/* ---- soporte táctil: pellizco (zoom) y dos dedos (desplazar) ---- */
+const punterosTactiles = new Map();   // pointerId -> {x, y}
+let pinza = null;                     // { dist0, radio0, cx, cy }
+
+/* Desplaza el objetivo de la cámara según un delta en pantalla
+   (lo usan el paneo con clic derecho, el gesto de dos dedos y el pad móvil) */
+function moverCamaraPantalla(dx, dy){
+  const derecha = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
+  const frente = new THREE.Vector3().subVectors(camCtrl.target, camera.position);
+  frente.y = 0; frente.normalize();
+  camCtrl.target.addScaledVector(derecha, -dx * camCtrl.radius * 0.0013);
+  camCtrl.target.addScaledVector(frente,  dy * camCtrl.radius * 0.0013);
+}
+
 function rayoDesdeEvento(e){
   puntero.x = (e.clientX / innerWidth) * 2 - 1;
   puntero.y = -(e.clientY / innerHeight) * 2 + 1;
@@ -51,6 +65,20 @@ function buscarRaiz(obj){
 renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
 
 renderer.domElement.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'touch'){
+    punterosTactiles.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (punterosTactiles.size === 2){
+      // segundo dedo: cancelar arrastre/rotación y empezar pellizco + paneo
+      arrastrando = null; rotando = false; paneando = false; movido = 999;
+      const [a, b] = [...punterosTactiles.values()];
+      pinza = {
+        dist0: Math.hypot(a.x - b.x, a.y - b.y),
+        radio0: camCtrl.radius,
+        cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2
+      };
+      return;
+    }
+  }
   x0 = e.clientX; y0 = e.clientY; movido = 0;
   rayoDesdeEvento(e);
   if (e.button === 2 || e.shiftKey){ paneando = true; return; }
@@ -76,6 +104,20 @@ renderer.domElement.addEventListener('pointerdown', e => {
 });
 
 renderer.domElement.addEventListener('pointermove', e => {
+  if (e.pointerType === 'touch' && punterosTactiles.has(e.pointerId)){
+    punterosTactiles.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinza && punterosTactiles.size >= 2){
+      const [a, b] = [...punterosTactiles.values()];
+      // pellizco = zoom
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      camCtrl.radius = Math.min(500, Math.max(12, pinza.radio0 * (pinza.dist0 / Math.max(dist, 1))));
+      // movimiento del punto medio = desplazamiento (paneo)
+      const cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+      moverCamaraPantalla(cx - pinza.cx, cy - pinza.cy);
+      pinza.cx = cx; pinza.cy = cy;
+      return;
+    }
+  }
   const dx = e.clientX - x0, dy = e.clientY - y0;
   movido += Math.abs(dx) + Math.abs(dy);
   x0 = e.clientX; y0 = e.clientY;
@@ -101,15 +143,20 @@ renderer.domElement.addEventListener('pointermove', e => {
     camCtrl.theta -= dx * 0.0055;
     camCtrl.phi   = Math.min(1.52, Math.max(0.12, camCtrl.phi - dy * 0.0045));
   } else if (paneando){
-    const derecha = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
-    const frente = new THREE.Vector3().subVectors(camCtrl.target, camera.position);
-    frente.y = 0; frente.normalize();
-    camCtrl.target.addScaledVector(derecha, -dx * camCtrl.radius * 0.0013);
-    camCtrl.target.addScaledVector(frente,  dy * camCtrl.radius * 0.0013);
+    moverCamaraPantalla(dx, dy);
   }
 });
 
+renderer.domElement.addEventListener('pointercancel', e => {
+  punterosTactiles.delete(e.pointerId);
+  if (punterosTactiles.size < 2) pinza = null;
+});
+
 renderer.domElement.addEventListener('pointerup', e => {
+  if (e.pointerType === 'touch'){
+    punterosTactiles.delete(e.pointerId);
+    if (punterosTactiles.size < 2) pinza = null;
+  }
   const eraArrastre = arrastrando;
   arrastrando = null; rotando = false; paneando = false;
   if (movido < 6 && e.button === 0 && !modoFlujo){

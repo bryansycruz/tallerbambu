@@ -5,12 +5,15 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a2030);
 scene.fog = new THREE.Fog(0x1a2030, 400, 800);
 
+// calidad gráfica según el dispositivo: en celular/tablet se reduce para que sea fluido
+const ES_MOVIL = Math.min(innerWidth, innerHeight) <= 820 || navigator.maxTouchPoints > 1;
+
 const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.5, 1400);
-const renderer = new THREE.WebGLRenderer({ antialias:true });
+const renderer = new THREE.WebGLRenderer({ antialias: !ES_MOVIL, powerPreference: 'high-performance' });
 renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setPixelRatio(Math.min(devicePixelRatio, ES_MOVIL ? 1.15 : 1.5));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.shadowMap.type = ES_MOVIL ? THREE.BasicShadowMap : THREE.PCFShadowMap;
 document.body.appendChild(renderer.domElement);
 
 const hemi = new THREE.HemisphereLight(0xbfd4ff, 0x3a3428, 0.75);
@@ -18,7 +21,7 @@ scene.add(hemi);
 const sol = new THREE.DirectionalLight(0xfff2dd, 1.0);
 sol.position.set(-90, 130, 70);
 sol.castShadow = true;
-sol.shadow.mapSize.set(1024, 1024);
+sol.shadow.mapSize.set(ES_MOVIL ? 512 : 1024, ES_MOVIL ? 512 : 1024);
 sol.shadow.camera.left = -160; sol.shadow.camera.right = 160;
 sol.shadow.camera.top = 120;  sol.shadow.camera.bottom = -100;
 sol.shadow.camera.far = 500;

@@ -34,7 +34,13 @@ const ICONOS = {
   candadoAbierto:'<rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V7.5A4 4 0 0115.4 5.4"/>',
   abrir:         '<path d="M14 4h6v6M20 4l-9 9M20 13.5V20H4V4h6.5"/>',
   refrescar:     '<path d="M20 11a8 8 0 10.6 4.5M20 5v6h-6"/>',
-  menu:          '<path d="M4 6h16M4 12h16M4 18h16"/>'
+  menu:          '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  flechaArriba:  '<path d="M12 19V5M6 11l6-6 6 6"/>',
+  flechaAbajo:   '<path d="M12 5v14M6 13l6 6 6-6"/>',
+  flechaIzq:     '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  flechaDer:     '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  menos:         '<path d="M5 12h14"/>',
+  ojo:           '<path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/>'
 };
 function icono(n){
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICONOS[n] || '') + '</svg>';

@@ -55,11 +55,45 @@ btnFin.onclick = () => { finalizarRuta(); };
 document.getElementById('btnBorrar').onclick = borrarRutas;
 
 let etiquetasOn = true;
-document.getElementById('btnEtiquetas').onclick = () => {
-  etiquetasOn = !etiquetasOn;
+function setEtiquetas(on){
+  etiquetasOn = on;
   etiquetasTodas.forEach(s => { s.visible = etiquetasOn && !vistaPiso4; });
   document.getElementById('btnEtiquetas').classList.toggle('activo', !etiquetasOn);
+  document.getElementById('padEtiquetas').classList.toggle('activo', !etiquetasOn);
+}
+document.getElementById('btnEtiquetas').onclick = () => setEtiquetas(!etiquetasOn);
+document.getElementById('padEtiquetas').onclick = () => {
+  setEtiquetas(!etiquetasOn);
+  avisoGuardado(etiquetasOn ? 'Etiquetas visibles' : 'Etiquetas ocultas');
 };
+
+// en el celular las etiquetas arrancan ocultas para despejar la vista
+// (se activan con el botón del ojo en el pad o con "Etiquetas" en el menú)
+if (innerWidth <= 820) setEtiquetas(false);
+
+/* ---- Pad de navegación táctil: flechas = desplazarse, +/− = zoom ----
+   Mantener presionado repite el movimiento (como un joystick). */
+const PAD_ACCIONES = {
+  arriba:    () => moverCamaraPantalla(0, 16),
+  abajo:     () => moverCamaraPantalla(0, -16),
+  izquierda: () => moverCamaraPantalla(16, 0),
+  derecha:   () => moverCamaraPantalla(-16, 0),
+  acercar:   () => { camCtrl.radius = Math.max(12, camCtrl.radius * 0.95); },
+  alejar:    () => { camCtrl.radius = Math.min(500, camCtrl.radius * 1.055); }
+};
+document.querySelectorAll('#pad button[data-mover]').forEach(btn => {
+  const accion = PAD_ACCIONES[btn.dataset.mover];
+  let repetidor = null;
+  const iniciar = e => {
+    e.preventDefault(); e.stopPropagation();
+    accion();
+    clearInterval(repetidor);
+    repetidor = setInterval(accion, 70);
+  };
+  const detener = () => { clearInterval(repetidor); repetidor = null; };
+  btn.addEventListener('pointerdown', iniciar);
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, detener));
+});
 
 const nivelTxt = document.getElementById('nivelTxt');
 const chkAuto = document.getElementById('chkAuto');
@@ -119,7 +153,9 @@ function animar(){
   }
   nivelMalacate += (objetivo - nivelMalacate) * 0.06;
   cabina.position.y = 0.2 + nivelMalacate * CFG.hPiso;
-  nivelTxt.textContent = 'P' + (Math.round(nivelMalacate) + 1);
+  // escribir en el DOM solo cuando el nivel cambia (60 escrituras/s → ~1)
+  const nivelEtiqueta = 'P' + (Math.round(nivelMalacate) + 1);
+  if (nivelTxt.textContent !== nivelEtiqueta) nivelTxt.textContent = nivelEtiqueta;
 
   // personas
   personas.forEach(p => {
@@ -147,6 +183,33 @@ function animar(){
 
   actualizarCamara();
   renderer.render(scene, camera);
+  vigilarRendimiento();
 }
+
+/* ---- Degradación automática de calidad si el equipo va lento ----
+   Mide los FPS reales cada 4 s; si bajan de 24, reduce la resolución de
+   render y, si sigue lento, apaga las sombras. Así la app se mantiene
+   fluida también en equipos y celulares modestos. */
+let fpsFrames = 0, fpsT0 = performance.now(), nivelRendimiento = 0;
+function vigilarRendimiento(){
+  fpsFrames++;
+  const t = performance.now();
+  if (t - fpsT0 < 4000) return;
+  const fps = fpsFrames * 1000 / (t - fpsT0);
+  fpsFrames = 0; fpsT0 = t;
+  if (fps >= 24 || nivelRendimiento >= 2) return;
+  nivelRendimiento++;
+  if (nivelRendimiento === 1){
+    renderer.setPixelRatio(1);
+  } else {
+    renderer.shadowMap.enabled = false;
+    scene.traverse(n => {
+      if (n.isMesh && n.material){
+        (Array.isArray(n.material) ? n.material : [n.material]).forEach(m => { m.needsUpdate = true; });
+      }
+    });
+  }
+}
+
 actualizarCamara();
 animar();

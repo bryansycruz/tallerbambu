@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <title>Mirador de la Dalia · Etapa I — Plano 3D de Obra</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="css/estilos.css">
 </head>
 <body>
@@ -75,6 +77,21 @@
     o ver su ficha. Haz clic en el <b>piso 5</b> de la torre para abrir su hoja de detalle.<br><br>
     <b>Guardar</b> además descarga un <i>distribucion_obra.json</i> de respaldo:
     otra persona puede abrirlo con <b>Cargar</b> si no hay conexión compartida.
+  </div>
+</div>
+
+<!-- ============ PAD DE NAVEGACIÓN (móvil) ============ -->
+<div id="pad">
+  <div id="padCruz">
+    <button data-mover="arriba" aria-label="Mover adelante" class="ic solo" data-ic="flechaArriba"></button>
+    <button data-mover="izquierda" aria-label="Mover a la izquierda" class="ic solo" data-ic="flechaIzq"></button>
+    <button data-mover="derecha" aria-label="Mover a la derecha" class="ic solo" data-ic="flechaDer"></button>
+    <button data-mover="abajo" aria-label="Mover atrás" class="ic solo" data-ic="flechaAbajo"></button>
+  </div>
+  <div id="padZoom">
+    <button data-mover="acercar" aria-label="Acercar" class="ic solo" data-ic="mas"></button>
+    <button data-mover="alejar" aria-label="Alejar" class="ic solo" data-ic="menos"></button>
+    <button id="padEtiquetas" aria-label="Mostrar u ocultar etiquetas" class="ic solo" data-ic="ojo"></button>
   </div>
 </div>
 

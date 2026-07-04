@@ -78,13 +78,13 @@ async function renderPlanos(){
       : '<div class="desc">Esta zona aún no tiene planos adjuntos.</div>';
   } catch (e) {
     filas = '<div class="desc">No se pudo cargar la lista (' + esc(e.message || 'error') + ').' +
-      (supabaseClient ? ' Verifica que exista el bucket "planos" en Supabase.' : '') + '</div>';
+      (supabaseClient ? ' Verifica la configuración del almacenamiento compartido.' : '') + '</div>';
   }
   cuerpo.innerHTML =
     '<div class="desc" style="margin-bottom:8px">' +
       (supabaseClient
         ? 'Los planos de esta zona se comparten con todo el equipo.'
-        : 'Sin Supabase configurado, los planos se guardan solo en este navegador.') +
+        : 'En este momento los planos se guardan solo en este navegador.') +
     '</div>' + filas +
     '<button class="orgAccion primario" onclick="document.getElementById(\'planoArchivo\').click()">' +
       icono('subir') + 'Subir plano (.dwg · .dxf · .pdf, máx. ' + MAX_PLANO_MB + ' MB)</button>';
