@@ -70,7 +70,7 @@ function aplicarIconos(){
 /* ============ 1. CONFIG ============ */
 const CFG = {
   largo: 49.73,         // Torre 01: 49.73 m
-  fondo: 12.50,         // fondo de ambas torres (~620 m² y ~305 m² por piso, según README)
+  fondo: 12.50,         // fondo de ambas torres (~620 m² y ~305 m² por piso, según cuadro de áreas)
   torre2: { largo: 24.30, fondo: 12.50, gap: 0.9, dz: 1.2 }, // Torre 02 en línea, con junta y leve desfase
   pisos: 10,
   hPiso: 2.65,          // entrepiso 2.65 m → 10 × 2.65 = 26.50 m

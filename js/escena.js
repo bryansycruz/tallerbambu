@@ -145,9 +145,9 @@ function etiquetaSuelo(texto, x, z, ancho, colorFondo){
   e.position.set(x, alturaTerreno(x, z) + 3.2, z);
   scene.add(e);
 }
-etiquetaSuelo('VÍA DE ACCESO EXISTENTE — 15.00 m', -40, -31, 28, 'rgba(50,55,60,0.85)');
+etiquetaSuelo('ACCESO EXISTENTE', -40, -31, 16, 'rgba(50,55,60,0.85)');
 etiquetaSuelo('SALIDA AUTOPISTA', 107, -20, 16, 'rgba(50,55,60,0.85)');
-etiquetaSuelo('VÍA FUTURA (posterior al proyecto — no utilizable)', 60, 30, 30, 'rgba(140,70,20,0.85)');
+etiquetaSuelo('VÍA FUTURA (no utilizable)', 60, 30, 17, 'rgba(140,70,20,0.85)');
 etiquetaSuelo('LADERA NORTE', -30, 45, 14, 'rgba(50,90,35,0.8)');
 etiquetaSuelo('TALUD', -20, -55, 8, 'rgba(50,90,35,0.8)');
 
@@ -221,7 +221,7 @@ scene.add(cerramiento);
     new THREE.MeshLambertMaterial({ color:0xc9581e }));
   porton.position.set(66.8, 1.1, L.z0 - 0.25);
   cerramiento.add(porton);
-  const etCer = crearEtiqueta('PORTÓN 6.00 m + PUERTA PEATONAL 1.00 m', 22, 'rgba(140,70,20,0.85)');
+  const etCer = crearEtiqueta('PORTÓN + PUERTA PEATONAL', 14, 'rgba(140,70,20,0.85)');
   etCer.position.set(74, 5, L.z0 - 1);
   cerramiento.add(etCer);
 }
@@ -326,7 +326,7 @@ cEsc2.position.set(T2.cx, CFG.alto + 0.95, T2.dz); cEsc2.castShadow = true;
 techoG.add(cEsc2);
 edificio.add(techoG);
 
-const etT1 = crearEtiqueta('TORRES 01+02 — 10 PISOS + CUBIERTA + 3 SÓTANOS', 30, 'rgba(10,110,40,0.85)');
+const etT1 = crearEtiqueta('TORRES 01+02', 12, 'rgba(10,110,40,0.85)');
 etT1.position.set(6, CFG.alto + 4.5, 0);
 edificio.add(etT1);
 
@@ -338,7 +338,7 @@ const sotano = new THREE.Mesh(
 );
 sotano.position.set((T2.gap + T2.largo)/2, -(CFG.sotanos*CFG.hSotano)/2 - 0.1, 0.6);
 edificio.add(sotano);
-const etSot = crearEtiqueta('Sótanos: S1 -3.40 · S2 -6.20 · S3 -9.00 m (recorrido del montacargas)', 30);
+const etSot = crearEtiqueta('SÓTANOS 1-3', 10);
 etSot.position.set(-15, -1.5, CFG.fondo/2 + 5);
 edificio.add(etSot);
 
@@ -388,7 +388,7 @@ mallaCab.userData.op0 = 0.45;
 });
 cabina.position.y = 0.2;
 malacate.add(cabina);
-const etMal = crearEtiqueta('Montacargas 1.000 kg → Piso 4', 17, 'rgba(160,80,10,0.85)');
+const etMal = crearEtiqueta('Montacargas 1.000 kg', 12, 'rgba(160,80,10,0.85)');
 etMal.position.set(0, hTorre + 2, 0);
 malacate.add(etMal);
 
@@ -540,7 +540,7 @@ piso4.add(zDesc);
   piso4.add(p);
 });
 
-const et4a = crearEtiqueta('PISO 4 — Frentes de cerramientos y acabados', 32, 'rgba(160,80,10,0.85)');
+const et4a = crearEtiqueta('PISO 4', 9, 'rgba(160,80,10,0.85)');
 et4a.position.set(0, y4 + 7, 0);
 piso4.add(et4a);
 textoPiso('CIRCULACIÓN CENTRAL', 12, 0, 0, '#8a2020');
