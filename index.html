@@ -98,6 +98,7 @@
   <label>Montacargas <input type="range" id="rangoMalacate" min="0" max="4" step="0.05" value="0"> <span id="nivelTxt">P1</span></label>
   <label><input type="checkbox" id="chkAuto"> Auto</label>
   <select id="selElem"><option value="">— Ir a elemento —</option></select>
+  <label id="estadoSync" title="Estado de sincronización con el equipo">⚪ Modo local</label>
 </div>
 
 <div id="modoAviso">Modo flujo: haz clic sobre el terreno para marcar el recorrido</div>
@@ -121,8 +122,10 @@
     Obras provisionales — fase de <b>cerramientos y acabados</b> (estructura existente).<br><br>
     Haz clic sobre cualquier elemento (torre, montacargas, cerramiento o provisionales) para ver su ficha:
     materiales, altura, cerramiento y ubicación. Arrastra los provisionales para reubicarlos.<br><br>
-    <b>💾 Guardar</b> descarga un <i>distribucion_obra.json</i> que puedes compartir:
-    otra persona lo abre con <b>📂 Cargar</b> y verá tu misma distribución.
+    Los cambios se guardan automáticamente y los ve todo el equipo (indicador 🟢/🟠 arriba).
+    Selecciona un provisional para <b>🔒 Bloquearlo</b> en su lugar y evitar moverlo por error.<br><br>
+    <b>💾 Guardar</b> además descarga un <i>distribucion_obra.json</i> de respaldo:
+    otra persona puede abrirlo con <b>📂 Cargar</b> si no hay conexión compartida.
   </div>
 </div>
 
@@ -138,7 +141,20 @@
         integrity="sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ=="
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js"
+        integrity="sha384-3wY11tldQ5+yWqAvmTN4XtQvnjoTva0cV15O/O/O5NTtp0ivVopSzLOzsVXWZse9"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
 <script>
+/* ============ CONEXIÓN COMPARTIDA (Supabase) ============
+   Completa estos dos valores tras crear tu proyecto gratuito en supabase.com
+   (Project Settings → API). Mientras estén vacíos, la app sigue funcionando
+   en modo local (solo en este navegador), sin romperse. */
+const CFG_SUPABASE = {
+  url: '',      // ej: 'https://xxxxxxxx.supabase.co'
+  anonKey: ''   // ej: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' (clave "anon public")
+};
+
 /* =====================================================================
    PLANO 3D — OBRAS PROVISIONALES (según informe)
    Renovación y Modernización — Torre de 5 Pisos + 3 Sótanos
@@ -178,9 +194,9 @@ scene.fog = new THREE.Fog(0x1a2030, 400, 800);
 const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.5, 1400);
 const renderer = new THREE.WebGLRenderer({ antialias:true });
 renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 document.body.appendChild(renderer.domElement);
 
 const hemi = new THREE.HemisphereLight(0xbfd4ff, 0x3a3428, 0.75);
@@ -188,7 +204,7 @@ scene.add(hemi);
 const sol = new THREE.DirectionalLight(0xfff2dd, 1.0);
 sol.position.set(-90, 130, 70);
 sol.castShadow = true;
-sol.shadow.mapSize.set(2048, 2048);
+sol.shadow.mapSize.set(1024, 1024);
 sol.shadow.camera.left = -160; sol.shadow.camera.right = 160;
 sol.shadow.camera.top = 120;  sol.shadow.camera.bottom = -100;
 sol.shadow.camera.far = 500;
@@ -351,6 +367,8 @@ scene.add(cerramiento);
 {
   const matLam = new THREE.MeshLambertMaterial({ color:0x9fb3a8, transparent:true, opacity:0.55 });
   const matPoste = new THREE.MeshLambertMaterial({ color:0x4a5560 });
+  const geoPoste = new THREE.BoxGeometry(0.12, 2.5, 0.12);
+  const postes = [];
   function tramoCerr(x1, z1, x2, z2){
     const dx = x2-x1, dz = z2-z1, len = Math.hypot(dx, dz);
     if (len < 0.3) return;
@@ -362,9 +380,7 @@ scene.add(cerramiento);
     const n = Math.max(1, Math.floor(len/3));
     for (let i=0; i<=n; i++){
       const t = i/n;
-      const p = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.5, 0.12), matPoste);
-      p.position.set(x1 + dx*t, 1.25, z1 + dz*t);
-      cerramiento.add(p);
+      postes.push([x1 + dx*t, 1.25, z1 + dz*t]);
     }
   }
   const L = CFG.lote;
@@ -375,6 +391,14 @@ scene.add(cerramiento);
   tramoCerr(L.x0, L.z1, L.x1, L.z1);       // norte
   tramoCerr(L.x0, L.z0, L.x0, L.z1);       // occidente
   tramoCerr(L.x1, L.z0, L.x1, L.z1);       // oriente
+  // ~140 postes de la cerca en un solo InstancedMesh (antes: un Mesh c/u)
+  const postesMesh = new THREE.InstancedMesh(geoPoste, matPoste, postes.length);
+  const mtxPoste = new THREE.Matrix4();
+  postes.forEach(([x, y, z], i) => {
+    mtxPoste.makeTranslation(x, y, z);
+    postesMesh.setMatrixAt(i, mtxPoste);
+  });
+  cerramiento.add(postesMesh);
   // portón corredizo de 6.00 m (semiabierto)
   const porton = new THREE.Mesh(new THREE.BoxGeometry(6, 2.2, 0.1),
     new THREE.MeshLambertMaterial({ color:0xc9581e }));
@@ -1096,13 +1120,13 @@ function finalizarRuta(){
   rutaActual.offset = Math.random();
   rutas.push(rutaActual);
   rutaActual = null;
-  guardarLocal();
+  guardarCompartido();
 }
 function borrarRutas(){
   rutas.forEach(r => scene.remove(r.grupo));
   rutas.length = 0;
   if (rutaActual){ scene.remove(rutaActual.grupo); rutaActual = null; }
-  guardarLocal();
+  guardarCompartido();
 }
 
 /* ============ 11. INTERACCIÓN ============ */
@@ -1173,7 +1197,8 @@ renderer.domElement.addEventListener('pointerdown', e => {
   }
   const hits = raycaster.intersectObjects(draggables, true);
   if (hits.length){
-    arrastrando = buscarRaiz(hits[0].object);
+    const raiz = buscarRaiz(hits[0].object);
+    if (raiz && !raiz.userData.bloqueado) arrastrando = raiz;
     return;
   }
   rotando = true;
@@ -1227,7 +1252,7 @@ renderer.domElement.addEventListener('pointerup', e => {
     if (hits.length) seleccionar(buscarRaiz(hits[0].object));
   } else if (eraArrastre){
     if (seleccionado === eraArrastre) actualizarUbicacion(eraArrastre);
-    guardarLocal();
+    guardarCompartido();
   }
 });
 
@@ -1239,23 +1264,34 @@ renderer.domElement.addEventListener('wheel', e => {
 const pTitulo = document.getElementById('pTitulo');
 const pBody   = document.getElementById('pBody');
 
-function resaltar(obj, on){
+function actualizarTinte(obj){
   if (!obj) return;
+  const color = obj === seleccionado ? 0x554400 : (obj.userData.bloqueado ? 0x3a1414 : 0x000000);
   obj.traverse(n => {
     if (n.isMesh && n.material && n.material.emissive !== undefined){
-      n.material.emissive = new THREE.Color(on ? 0x554400 : 0x000000);
+      n.material.emissive = new THREE.Color(color);
     }
   });
 }
+function toggleBloqueo(){
+  if (!seleccionado) return;
+  seleccionado.userData.bloqueado = !seleccionado.userData.bloqueado;
+  actualizarTinte(seleccionado);
+  seleccionar(seleccionado);
+  guardarCompartido();
+  avisoGuardado(seleccionado.userData.bloqueado ? '🔒 Objeto bloqueado' : '🔓 Objeto desbloqueado');
+}
 function seleccionar(obj){
   if (!obj) return;
-  resaltar(seleccionado, false);
+  const anterior = seleccionado;
   seleccionado = obj;
-  resaltar(obj, true);
+  actualizarTinte(anterior);
+  actualizarTinte(obj);
   const d = obj.userData.info;
   pTitulo.textContent = d.nombre;
   const dim = d.dimensiones || (d.w + ' × ' + d.d + ' m');
   const alt = d.altura || (d.h + ' m');
+  const esProvisional = draggables.includes(obj);
   pBody.innerHTML =
     '<table>' +
     '<tr><td>Dimensiones</td><td>' + dim + '</td></tr>' +
@@ -1263,8 +1299,10 @@ function seleccionar(obj){
     '<tr><td>Material</td><td>' + d.material + '</td></tr>' +
     '<tr><td>Cerramiento</td><td>' + d.cerramiento + '</td></tr>' +
     '<tr><td>Ubicación</td><td id="pUbic">—</td></tr>' +
+    (esProvisional ? '<tr><td>Estado</td><td>' + (obj.userData.bloqueado ? '🔒 Bloqueado' : '🔓 Libre (se puede mover)') + '</td></tr>' : '') +
     '</table>' +
     '<div class="desc">' + d.descripcion + '</div>' +
+    (esProvisional ? '<button onclick="toggleBloqueo()">' + (obj.userData.bloqueado ? '🔓 Desbloquear' : '🔒 Bloquear en este lugar') + '</button>' : '') +
     (obj.userData.esEdificio ? '<button onclick="togglePiso4()">🏗️ Ver Piso 4 en detalle</button>' : '');
   actualizarUbicacion(obj);
 }
@@ -1282,13 +1320,14 @@ const rangoMalacate = document.getElementById('rangoMalacate');
 function estadoActual(){
   const elementos = {};
   draggables.forEach(g => {
-    elementos[g.userData.info.nombre] = [
-      Math.round(g.position.x * 100) / 100,
-      Math.round(g.position.z * 100) / 100
-    ];
+    elementos[g.userData.info.nombre] = {
+      x: Math.round(g.position.x * 100) / 100,
+      z: Math.round(g.position.z * 100) / 100,
+      bloqueado: !!g.userData.bloqueado
+    };
   });
   return {
-    version: 2,
+    version: 3,
     proyecto: 'Obras provisionales — Torre 5 pisos + 3 sótanos (cerramientos y acabados)',
     fecha: new Date().toISOString(),
     elementos,
@@ -1298,14 +1337,22 @@ function estadoActual(){
   };
 }
 function guardarLocal(){
-  try { localStorage.setItem('planoObra3D_v2', JSON.stringify(estadoActual())); } catch (e) {}
+  try { localStorage.setItem('planoObra3D_v3', JSON.stringify(estadoActual())); } catch (e) {}
 }
 function aplicarEstado(d){
   if (!d) return;
   if (d.elementos){
     draggables.forEach(g => {
       const p = d.elementos[g.userData.info.nombre];
-      if (p) g.position.set(p[0], alturaTerreno(p[0], p[1]), p[1]);
+      if (!p) return;
+      if (Array.isArray(p)){
+        g.position.set(p[0], alturaTerreno(p[0], p[1]), p[1]);
+        g.userData.bloqueado = false;
+      } else {
+        g.position.set(p.x, alturaTerreno(p.x, p.z), p.z);
+        g.userData.bloqueado = !!p.bloqueado;
+      }
+      actualizarTinte(g);
     });
   }
   rutas.forEach(r => scene.remove(r.grupo));
@@ -1322,6 +1369,93 @@ function aplicarEstado(d){
     actualizarDescargue();
   }
 }
+
+/* ---- Estado compartido (Supabase): guardar/cargar visible para todo el equipo ---- */
+const supabaseClient = (window.supabase && CFG_SUPABASE.url && CFG_SUPABASE.anonKey)
+  ? window.supabase.createClient(CFG_SUPABASE.url, CFG_SUPABASE.anonKey)
+  : null;
+let sincronizandoDesdeFuera = false;
+
+function obtenerAutor(){
+  let autor = null;
+  try { autor = localStorage.getItem('planoObra3D_autor'); } catch (e) {}
+  if (!autor){
+    autor = (prompt('¿Cuál es tu nombre? (se recuerda en este equipo, para saber quién hizo cada cambio)') || '').trim().slice(0, 40) || 'Anónimo';
+    try { localStorage.setItem('planoObra3D_autor', autor); } catch (e) {}
+  }
+  return autor;
+}
+function actualizarEstadoSync(estado, detalle){
+  const el = document.getElementById('estadoSync');
+  if (!el) return;
+  const textos = {
+    local: '⚪ Modo local (Supabase no configurado)',
+    cargando: '🔄 Cargando distribución del equipo…',
+    ok: '🟢 Sincronizado' + (detalle ? ' · ' + detalle : ''),
+    error: '🟠 Sin conexión (usando copia local)'
+  };
+  el.textContent = textos[estado] || textos.local;
+}
+async function guardarCompartido(){
+  guardarLocal();
+  if (!supabaseClient) { actualizarEstadoSync('local'); return; }
+  if (sincronizandoDesdeFuera) return;
+  try {
+    const payload = estadoActual();
+    const autor = obtenerAutor();
+    const { error } = await supabaseClient.from('estado_obra').upsert({
+      id: 1, data: payload, autor, actualizado_en: new Date().toISOString()
+    });
+    if (error) throw error;
+    actualizarEstadoSync('ok', 'guardado por ' + autor);
+  } catch (e) {
+    actualizarEstadoSync('error');
+  }
+}
+function cargarLocalOEjemplo(){
+  let hayEstado = null;
+  try { hayEstado = localStorage.getItem('planoObra3D_v3'); } catch (e) {}
+  if (hayEstado){
+    try { aplicarEstado(JSON.parse(hayEstado)); } catch (e) {}
+  } else {
+    iniciarRuta();
+    [[88,-31],[73,-27],[62,-12],[42,-12],[38,4],[20,-6],[0,-9.2]].forEach(p => agregarPunto({ x:p[0], z:p[1] }));
+    finalizarRuta();
+  }
+}
+async function cargarCompartido(){
+  if (!supabaseClient){ actualizarEstadoSync('local'); cargarLocalOEjemplo(); return; }
+  actualizarEstadoSync('cargando');
+  try {
+    const { data, error } = await supabaseClient.from('estado_obra').select('data, autor').eq('id', 1).maybeSingle();
+    if (error) throw error;
+    if (data && data.data){
+      aplicarEstado(data.data);
+      guardarLocal();
+      actualizarEstadoSync('ok', 'último cambio: ' + (data.autor || '—'));
+    } else {
+      cargarLocalOEjemplo();
+      actualizarEstadoSync('ok', 'primera vez');
+    }
+  } catch (e) {
+    cargarLocalOEjemplo();
+    actualizarEstadoSync('error');
+  }
+  if (supabaseClient){
+    supabaseClient
+      .channel('estado_obra_cambios')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'estado_obra', filter: 'id=eq.1' }, payload => {
+        if (!payload.new || !payload.new.data) return;
+        sincronizandoDesdeFuera = true;
+        aplicarEstado(payload.new.data);
+        guardarLocal();
+        sincronizandoDesdeFuera = false;
+        actualizarEstadoSync('ok', 'actualizado por ' + (payload.new.autor || 'un compañero'));
+        avisoGuardado('🔄 Actualizado por ' + (payload.new.autor || 'un compañero'));
+      })
+      .subscribe();
+  }
+}
 function avisoGuardado(msj){
   const a = document.getElementById('avisoGuardado');
   a.textContent = msj;
@@ -1330,14 +1464,14 @@ function avisoGuardado(msj){
   a._t = setTimeout(() => { a.style.display = 'none'; }, 2500);
 }
 document.getElementById('btnGuardar').onclick = () => {
-  guardarLocal();
+  guardarCompartido();
   const blob = new Blob([JSON.stringify(estadoActual(), null, 2)], { type:'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'distribucion_obra.json';
   a.click();
   URL.revokeObjectURL(a.href);
-  avisoGuardado('✔ Guardado: comparte distribucion_obra.json');
+  avisoGuardado('✔ Guardado para el equipo (+ respaldo distribucion_obra.json)');
 };
 document.getElementById('btnCargar').onclick = () => document.getElementById('fileCarga').click();
 document.getElementById('fileCarga').onchange = e => {
@@ -1347,7 +1481,7 @@ document.getElementById('fileCarga').onchange = e => {
   lector.onload = () => {
     try {
       aplicarEstado(JSON.parse(lector.result));
-      guardarLocal();
+      guardarCompartido();
       avisoGuardado('✔ Distribución cargada');
     } catch (err) { avisoGuardado('⚠ Archivo no válido'); }
   };
@@ -1409,7 +1543,7 @@ document.getElementById('btnEtiquetas').onclick = () => {
 const nivelTxt = document.getElementById('nivelTxt');
 const chkAuto = document.getElementById('chkAuto');
 let nivelMalacate = 0;
-rangoMalacate.addEventListener('change', guardarLocal);
+rangoMalacate.addEventListener('change', guardarCompartido);
 
 selectorUI.onchange = () => {
   const i = selectorUI.value;
@@ -1426,20 +1560,16 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
 });
 
-// restaurar la última distribución; si es la primera vez, dibujar el
-// flujo de materiales del informe (un solo sentido) como ruta de ejemplo
-let hayEstado = null;
-try { hayEstado = localStorage.getItem('planoObra3D_v2'); } catch (e) {}
-if (hayEstado){
-  try { aplicarEstado(JSON.parse(hayEstado)); } catch (e) {}
-} else {
-  iniciarRuta();
-  [[88,-31],[73,-27],[62,-12],[42,-12],[38,4],[20,-6],[0,-9.2]].forEach(p => agregarPunto({ x:p[0], z:p[1] }));
-  finalizarRuta();
-}
+// restaurar la distribución compartida del equipo (Supabase); si no hay
+// conexión, usa la copia local o dibuja la ruta de ejemplo del informe
+cargarCompartido();
 
 const reloj = new THREE.Clock();
 let tiempo = 0;
+const dirTmp = new THREE.Vector3();
+const puntoTmp = new THREE.Vector3();
+const tangenteTmp = new THREE.Vector3();
+const ejeYTmp = new THREE.Vector3(0, 1, 0);
 function animar(){
   requestAnimationFrame(animar);
   const dt = Math.min(reloj.getDelta(), 0.05);
@@ -1472,12 +1602,12 @@ function animar(){
 
   // personas
   personas.forEach(p => {
-    const dir = new THREE.Vector3().subVectors(p.obj, p.g.position);
-    dir.y = 0;
-    if (dir.length() < 1.2){ p.obj = nuevoObjetivo(); return; }
-    dir.normalize();
-    p.g.position.addScaledVector(dir, p.vel * dt);
-    p.g.rotation.y = Math.atan2(dir.x, dir.z);
+    dirTmp.subVectors(p.obj, p.g.position);
+    dirTmp.y = 0;
+    if (dirTmp.length() < 1.2){ p.obj = nuevoObjetivo(); return; }
+    dirTmp.normalize();
+    p.g.position.addScaledVector(dirTmp, p.vel * dt);
+    p.g.rotation.y = Math.atan2(dirTmp.x, dirTmp.z);
     p.g.position.y = alturaTerreno(p.g.position.x, p.g.position.z)
       + 0.1 + Math.abs(Math.sin(tiempo*8 + p.vel*10)) * 0.04;
   });
@@ -1487,10 +1617,10 @@ function animar(){
     if (!r.curva || !r.flechas) return;
     r.flechas.forEach((f, i) => {
       const u = (tiempo*0.08 + r.offset + i/r.flechas.length) % 1;
-      const p = r.curva.getPointAt(u);
-      const tg = r.curva.getTangentAt(u);
-      f.position.copy(p);
-      f.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), tg.normalize());
+      r.curva.getPointAt(u, puntoTmp);
+      r.curva.getTangentAt(u, tangenteTmp);
+      f.position.copy(puntoTmp);
+      f.quaternion.setFromUnitVectors(ejeYTmp, tangenteTmp.normalize());
     });
   });
 
