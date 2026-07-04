@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Piso 5 — Detalle · Mirador de la Dalia, Etapa I</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  html, body { margin:0; padding:0; background:#1a1e26; font-family:'Segoe UI', Arial, sans-serif; color:#e8ecf2; }
+  .contenido { max-width:980px; margin:0 auto; padding:20px 18px 50px; }
+  header {
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+    border-bottom:2px solid #c97b1e; padding-bottom:12px; margin-bottom:18px;
+  }
+  h1 { margin:0; font-size:22px; color:#f0a340; }
+  header small { color:#9aa5b5; display:block; margin-top:3px; font-size:12.5px; }
+  .volver {
+    display:inline-flex; align-items:center; gap:6px; background:#2e3646; color:#e8ecf2;
+    border:1px solid #4a5468; padding:8px 14px; border-radius:6px; font-size:13px;
+    text-decoration:none; cursor:pointer;
+  }
+  .volver:hover { background:#3d4a62; }
+  .volver svg { width:14px; height:14px; }
+  h2 { font-size:15px; color:#f0a340; margin:26px 0 10px; display:flex; align-items:center; gap:7px; }
+  h2 svg { width:15px; height:15px; }
+  .tarjeta {
+    background:rgba(20,24,32,.85); border:1px solid #3a4150; border-radius:10px; padding:14px 16px;
+  }
+  table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  th { text-align:left; color:#9aa5b5; font-weight:600; padding:6px 8px; border-bottom:1px solid #3a4150; }
+  td { padding:6px 8px; border-bottom:1px solid #2c3342; }
+  td:first-child { color:#cfd6e0; }
+  .num { text-align:right; font-variant-numeric:tabular-nums; }
+  tr.total td { color:#f0a340; font-weight:bold; border-top:2px solid #3a4150; }
+  .fila2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:700px){ .fila2 { grid-template-columns:1fr; } }
+  .dato { display:flex; justify-content:space-between; padding:5px 2px; border-bottom:1px solid #2c3342; font-size:13px; }
+  .dato span:first-child { color:#9aa5b5; }
+  .plano-svg { width:100%; height:auto; display:block; }
+  .leyenda { display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; font-size:12px; color:#9aa5b5; }
+  .leyenda i { display:inline-block; width:11px; height:11px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
+  .pendiente {
+    border:2px dashed #4a5468; border-radius:10px; padding:26px 14px;
+    text-align:center; color:#9aa5b5; font-size:13px; line-height:1.6;
+  }
+  .nota { color:#9aa5b5; font-size:12px; margin-top:8px; line-height:1.5; }
+</style>
+</head>
+<body>
+<div class="contenido">
+
+<header>
+  <div>
+    <h1>Piso 5 — Hoja de detalle</h1>
+    <small>Mirador de la Dalia · Etapa I — Torres 01 y 02 · Fase: cerramientos y acabados</small>
+  </div>
+  <a class="volver" href="index.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    Volver al plano 3D
+  </a>
+</header>
+
+<div class="fila2">
+  <div class="tarjeta">
+    <div class="dato"><span>Nivel de piso terminado</span><span>+10.60 m (4 × 2.65 m)</span></div>
+    <div class="dato"><span>Altura de entrepiso</span><span>2.65 m</span></div>
+    <div class="dato"><span>Apartamentos en el piso</span><span>12 (8 en Torre 01 + 4 en Torre 02)</span></div>
+    <div class="dato"><span>Suministro de materiales</span><span>Montacargas 1.000 kg (fachada sur T1)</span></div>
+  </div>
+  <div class="tarjeta">
+    <div class="dato"><span>Área apartamentos Torre 01</span><span>513.98 m²</span></div>
+    <div class="dato"><span>Área apartamentos Torre 02</span><span>258.18 m²</span></div>
+    <div class="dato"><span>Circulación y otras áreas</span><span>105.55 + 51.38 m²</span></div>
+    <div class="dato"><span>Área total del piso</span><span>929.09 m²</span></div>
+  </div>
+</div>
+
+<h2>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15H6z M15 2v5h5 M9.5 12h6M9.5 16h6"/></svg>
+  Esquema en planta
+</h2>
+<div class="tarjeta">
+  <svg class="plano-svg" viewBox="0 0 800 215" role="img" aria-label="Esquema en planta del piso 5">
+    <!-- Torre 01: 49.73 m (escala 10 px/m, origen x=15) -->
+    <g stroke="#e05252" stroke-width="1.5" fill="none">
+      <rect x="15" y="35" width="497" height="125" fill="#8f939a"/>
+      <rect x="521" y="47" width="243" height="125" fill="#8f939a"/>
+    </g>
+    <!-- retrocesos (muescas de fachada) -->
+    <g fill="#22262e">
+      <rect x="140" y="35" width="24" height="14"/>
+      <rect x="308" y="35" width="24" height="14"/>
+      <rect x="150" y="146" width="24" height="14"/>
+      <rect x="322" y="146" width="24" height="14"/>
+      <rect x="612" y="47" width="24" height="14"/>
+      <rect x="685" y="158" width="24" height="14"/>
+    </g>
+    <!-- circulación central -->
+    <rect x="25" y="86" width="477" height="23" fill="#d8cdb0" opacity="0.85"/>
+    <rect x="531" y="98" width="223" height="23" fill="#d8cdb0" opacity="0.85"/>
+    <!-- divisiones de apartamentos Torre 01 -->
+    <g stroke="#3a4150" stroke-width="1">
+      <line x1="139" y1="35" x2="139" y2="86"/><line x1="263" y1="35" x2="263" y2="86"/><line x1="387" y1="35" x2="387" y2="86"/>
+      <line x1="139" y1="109" x2="139" y2="160"/><line x1="263" y1="109" x2="263" y2="160"/><line x1="387" y1="109" x2="387" y2="160"/>
+      <line x1="642" y1="47" x2="642" y2="98"/>
+      <line x1="642" y1="121" x2="642" y2="172"/>
+    </g>
+    <!-- etiquetas de apartamentos (norte: A-D / sur: I-L en T1; E,F / G,H en T2) -->
+    <g font-family="Segoe UI, Arial" font-size="12" fill="#1c212b" text-anchor="middle" font-weight="600">
+      <text x="77"  y="63">A · 61.92</text><text x="201" y="63">B · 61.92</text>
+      <text x="325" y="63">C · 67.05</text><text x="449" y="63">D · 69.90</text>
+      <text x="77"  y="138">I · 67.05</text><text x="201" y="138">J · 64.70</text>
+      <text x="325" y="138">K · 59.52</text><text x="449" y="138">L · 61.92</text>
+      <text x="581" y="75">E · 61.92</text><text x="703" y="75">F · 62.04</text>
+      <text x="581" y="150">G · 72.30</text><text x="703" y="150">H · 61.92</text>
+    </g>
+    <g font-family="Segoe UI, Arial" font-size="10" fill="#5a544a" text-anchor="middle">
+      <text x="263" y="101">CIRCULACIÓN 105.55 m²</text>
+      <text x="642" y="113">CIRC. 51.38 m²</text>
+    </g>
+    <!-- montacargas en fachada sur T1 -->
+    <rect x="252" y="162" width="22" height="16" fill="#d9a521" stroke="#8a6a10"/>
+    <text x="263" y="192" font-family="Segoe UI, Arial" font-size="10" fill="#d9a521" text-anchor="middle">MONTACARGAS</text>
+    <!-- cotas -->
+    <g font-family="Segoe UI, Arial" font-size="11" fill="#9aa5b5" text-anchor="middle">
+      <text x="263" y="22">TORRE 01 — 49.73 m</text>
+      <text x="642" y="22">TORRE 02 — 24.30 m</text>
+      <text x="516" y="120" transform="rotate(90 516 120)">JUNTA</text>
+    </g>
+  </svg>
+  <div class="leyenda">
+    <span><i style="background:#8f939a"></i>Apartamentos</span>
+    <span><i style="background:#d8cdb0"></i>Circulación central</span>
+    <span><i style="background:#22262e"></i>Retrocesos de fachada</span>
+    <span><i style="background:#d9a521"></i>Montacargas</span>
+    <span><i style="background:none;border:1.5px solid #e05252"></i>Límite de losa</span>
+  </div>
+  <div class="nota">Esquema ilustrativo a partir de la planta y el cuadro de áreas (README). La posición exacta de cada tipo dentro del piso se ajustará con el plano arquitectónico definitivo.</div>
+</div>
+
+<h2>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8.5 7h2M13.5 7h2M8.5 11h2M13.5 11h2M8.5 15h2M13.5 15h2M10 21v-3h4v3"/></svg>
+  Cuadro de áreas del Piso 5
+</h2>
+<div class="fila2">
+  <div class="tarjeta">
+    <table>
+      <tr><th colspan="2">Torre 01 (8 apartamentos)</th><th class="num">Área (m²)</th></tr>
+      <tr><td>Tipo A</td><td></td><td class="num">61.92</td></tr>
+      <tr><td>Tipo B</td><td></td><td class="num">61.92</td></tr>
+      <tr><td>Tipo C</td><td></td><td class="num">67.05</td></tr>
+      <tr><td>Tipo D</td><td></td><td class="num">69.90</td></tr>
+      <tr><td>Tipo I</td><td></td><td class="num">67.05</td></tr>
+      <tr><td>Tipo J</td><td></td><td class="num">64.70</td></tr>
+      <tr><td>Tipo K</td><td></td><td class="num">59.52</td></tr>
+      <tr><td>Tipo L</td><td></td><td class="num">61.92</td></tr>
+      <tr><td>Circulación</td><td></td><td class="num">105.55</td></tr>
+      <tr class="total"><td>Total Torre 01</td><td></td><td class="num">619.53</td></tr>
+    </table>
+  </div>
+  <div class="tarjeta">
+    <table>
+      <tr><th colspan="2">Torre 02 (4 apartamentos)</th><th class="num">Área (m²)</th></tr>
+      <tr><td>Tipo E</td><td></td><td class="num">61.92</td></tr>
+      <tr><td>Tipo F</td><td></td><td class="num">62.04</td></tr>
+      <tr><td>Tipo G</td><td></td><td class="num">72.30</td></tr>
+      <tr><td>Tipo H</td><td></td><td class="num">61.92</td></tr>
+      <tr><td>Circulación y otras áreas</td><td></td><td class="num">51.38</td></tr>
+      <tr class="total"><td>Total Torre 02</td><td></td><td class="num">309.56</td></tr>
+    </table>
+    <div class="nota">Fuente: cuadro de áreas Etapa I (README del proyecto), fila PISO 05 de cada torre.</div>
+  </div>
+</div>
+
+<h2>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+  Más detalles del Piso 5
+</h2>
+<div class="pendiente">
+  Zona reservada para los detalles adicionales del Piso 5:<br>
+  planos arquitectónicos por apartamento, frentes de trabajo, fotografías de avance,
+  especificaciones de acabados y observaciones de obra.<br>
+  <small>Envíame el contenido y lo integro en esta hoja.</small>
+</div>
+
+</div>
+</body>
+</html>
