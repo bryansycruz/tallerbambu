@@ -81,6 +81,52 @@
     border:2px dashed #4a5468; border-radius:10px; padding:22px 12px;
     text-align:center; color:#9aa5b5; font-size:12.5px; margin-top:10px;
   }
+
+  /* ---- Organigrama de la obra ---- */
+  #orgOverlay {
+    position:fixed; inset:0; z-index:31; display:none;
+    align-items:center; justify-content:center; background:rgba(5,8,14,.65);
+  }
+  #orgVentana {
+    width:min(880px, 94vw); max-height:88vh; overflow-y:auto;
+    background:#1c212b; border:1px solid #4a5468; border-radius:12px;
+    color:#e8ecf2; box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  #orgCabecera {
+    display:flex; justify-content:space-between; align-items:center;
+    background:#242b38; padding:12px 18px; border-radius:12px 12px 0 0;
+    border-bottom:2px solid #c97b1e; position:sticky; top:0; z-index:1;
+  }
+  #orgCabecera h3 { margin:0; font-size:17px; color:#f0a340; }
+  #orgCerrar { background:none; border:none; color:#9aa5b5; font-size:22px; cursor:pointer; line-height:1; }
+  #orgCerrar:hover { color:#fff; }
+  #orgBody { padding:16px 18px; font-size:13px; line-height:1.5; }
+  .orgNivel { display:flex; justify-content:center; gap:14px; flex-wrap:wrap; }
+  .orgNodo {
+    background:#242b38; border:2px solid #4a5468; border-radius:10px;
+    padding:9px 13px; min-width:160px; max-width:210px; text-align:center; cursor:pointer;
+    transition:background .15s;
+  }
+  .orgNodo:hover { background:#2e3646; }
+  .orgNodo.punteado { border-style:dashed; }
+  .orgNodo .rol { font-weight:bold; font-size:13px; }
+  .orgNodo .nom { font-size:12px; color:#cfd6e0; margin-top:2px; }
+  .orgNodo .aux { font-size:11px; color:#9aa5b5; margin-top:4px; border-top:1px dashed #3a4150; padding-top:4px; }
+  .orgConector { width:2px; height:16px; background:#4a5468; margin:2px auto; }
+  .orgFn { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; padding:5px 2px; border-bottom:1px solid #2c3342; font-size:12.5px; }
+  .orgFn .fnX { color:#e07820; cursor:pointer; font-weight:bold; }
+  .orgFn .fnX:hover { color:#ff9840; }
+  #orgAgregar { display:flex; gap:6px; margin-top:12px; }
+  #orgAgregar input {
+    flex:1; background:#2e3646; border:1px solid #4a5468; color:#e8ecf2;
+    border-radius:6px; padding:7px 10px; font-size:13px;
+  }
+  .orgAccion {
+    background:#2e3646; color:#e8ecf2; border:1px solid #4a5468;
+    padding:8px 12px; border-radius:6px; cursor:pointer; font-size:13px; margin:8px 6px 0 0;
+  }
+  .orgAccion:hover { background:#3d4a62; }
+  .orgAccion.primario { background:#c97b1e; border-color:#f0a340; color:#fff; }
 </style>
 </head>
 <body>
@@ -94,8 +140,9 @@
   <button id="btnGuardar">💾 Guardar</button>
   <button id="btnCargar">📂 Cargar</button>
   <button id="btnEtiquetas">🏷 Etiquetas</button>
+  <button id="btnOrg">👷 Organigrama</button>
   <input type="file" id="fileCarga" accept=".json" style="display:none">
-  <label>Montacargas <input type="range" id="rangoMalacate" min="0" max="4" step="0.05" value="0"> <span id="nivelTxt">P1</span></label>
+  <label>Montacargas <input type="range" id="rangoMalacate" min="0" max="9" step="0.05" value="0"> <span id="nivelTxt">P1</span></label>
   <label><input type="checkbox" id="chkAuto"> Auto</label>
   <select id="selElem"><option value="">— Ir a elemento —</option></select>
   <label id="estadoSync" title="Estado de sincronización con el equipo">⚪ Modo local</label>
@@ -112,6 +159,17 @@
       <button id="aptoCerrar" title="Cerrar">✕</button>
     </div>
     <div id="aptoBody"></div>
+  </div>
+</div>
+
+<!-- ============ ORGANIGRAMA DE LA OBRA ============ -->
+<div id="orgOverlay">
+  <div id="orgVentana">
+    <div id="orgCabecera">
+      <h3 id="orgTitulo">👷 Organigrama de la obra</h3>
+      <button id="orgCerrar" title="Cerrar">✕</button>
+    </div>
+    <div id="orgBody"></div>
   </div>
 </div>
 
@@ -134,7 +192,8 @@
   <b>Provisionales:</b> clic y arrastrar para mover · clic corto = ficha<br>
   <b>Montacargas:</b> arrástralo alrededor de la torre; se ancla a la fachada más cercana<br>
   <b>Piso 4:</b> botón "Ver Piso 4" y clic sobre cada sector para su detalle<br>
-  <b>Flujo:</b> "Trazar flujo" → clics en el terreno → "Finalizar ruta"
+  <b>Flujo:</b> "Trazar flujo" → clics en el terreno → "Finalizar ruta"<br>
+  <b>Organigrama:</b> botón 👷 → clic en cada rol: funciones, resaltar su área y zonas de riesgo 🚦
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
@@ -157,9 +216,10 @@ const CFG_SUPABASE = {
 
 /* =====================================================================
    PLANO 3D — OBRAS PROVISIONALES (según informe)
-   Renovación y Modernización — Torre de 5 Pisos + 3 Sótanos
+   Mirador de la Dalia · Etapa I — Torres 01 (49.73 m) + 02 (24.30 m)
+   10 pisos de 2.65 m (26.50 m) + cubierta · Sótanos -3.40/-6.20/-9.00
    Fase: Cerramientos y Acabados (estructura existente)
-   Lote: 163.00 × 47.00 m · Torre: 46.00 × 14.00 m · Entrepiso: 2.90 m
+   Lote: 163.00 × 47.00 m · Fondo de torres: 12.50 m
    Vía de acceso existente de 15.00 m · Cerramiento perimetral ~420 m
    Montacargas tipo cremallera (1.000 kg) al punto medio de la fachada.
    Estructura del código:
@@ -174,17 +234,20 @@ const CFG_SUPABASE = {
 
 /* ============ 1. CONFIG ============ */
 const CFG = {
-  largo: 46.0,          // torre 46.00 m
-  fondo: 14.0,          // torre 14.00 m
-  pisos: 5,
-  hPiso: 2.90,          // entrepiso 2.90 m → 5 × 2.90 = 14.50 m
+  largo: 49.73,         // Torre 01: 49.73 m
+  fondo: 12.50,         // fondo de ambas torres (~620 m² y ~305 m² por piso, según README)
+  torre2: { largo: 24.30, fondo: 12.50, gap: 0.9, dz: 1.2 }, // Torre 02 en línea, con junta y leve desfase
+  pisos: 10,
+  hPiso: 2.65,          // entrepiso 2.65 m → 10 × 2.65 = 26.50 m
   sotanos: 3,
-  hSotano: 2.90,        // recorrido total montacargas ≈ 23.2 m
-  malacateX: 0,         // montacargas al punto medio de los 46.00 m
+  hSotano: 3.0,         // niveles: S1 -3.40 · S2 -6.20 · S3 -9.00 m
+  malacateX: 0,         // montacargas al punto medio de la Torre 01
   lote: { x0:-81.5, x1:81.5, z0:-23.5, z1:23.5 },  // 163.00 × 47.00 m
   limites: { xMin:-80, xMax:80, zMin:-37, zMax:22 }
 };
-CFG.alto = CFG.pisos * CFG.hPiso; // 14.5
+CFG.alto = CFG.pisos * CFG.hPiso; // 26.50 m
+CFG.torre2.x0 = CFG.largo/2 + CFG.torre2.gap;            // arranque Torre 02
+CFG.torre2.cx = CFG.torre2.x0 + CFG.torre2.largo/2;      // centro Torre 02
 
 /* ============ 2. ESCENA ============ */
 const scene = new THREE.Scene();
@@ -412,12 +475,12 @@ scene.add(cerramiento);
 /* ============ 4. TORRE (estructura existente — fase acabados) ============ */
 const edificio = new THREE.Group();
 edificio.userData.info = {
-  nombre: 'Torre en renovación — 5 pisos + 3 sótanos',
-  dimensiones: '46.00 m × 14.00 m',
-  altura: '14.50 m (5 pisos de 2.90 m) + 3 sótanos · recorrido montacargas 23.2 m',
+  nombre: 'Torres 01 y 02 — 10 pisos + cubierta + 3 sótanos',
+  dimensiones: 'Torre 01: 49.73 × 12.50 m (8 aptos/piso) · Torre 02: 24.30 × 12.50 m (4 aptos/piso), en línea',
+  altura: '26.50 m (10 pisos de 2.65 m) + cubierta · Sótanos: S1 -3.40 · S2 -6.20 · S3 -9.00 m',
   material: 'Estructura existente en concreto, completamente construida (la fase actual es solo cerramientos y acabados)',
-  cerramiento: 'En ejecución: mampostería de fachada, ventanería y acabados interiores',
-  descripcion: 'Torre en posición intermedia del lote de 163.00 m. El flujo es de un solo sentido: ingreso → zona operativa (portería, maniobra, paletizado, almacén) → torre → zona administrativa y de bienestar, con salida por el mismo portón pasando por el lavado de llantas. Usa "Ver Piso 4" y haz clic en cada sector para el detalle de los frentes de trabajo.'
+  cerramiento: 'En ejecución: mampostería de fachada, ventanería y acabados interiores · 80 + 40 apartamentos (tipos A-L)',
+  descripcion: 'Edificio en posición intermedia del lote de 163.00 m: Torre 01 y Torre 02 en línea con junta entre ambas y retrocesos de fachada según planta. El flujo es de un solo sentido: ingreso → zona operativa (portería, maniobra, paletizado, almacén) → torre → zona administrativa y de bienestar, con salida por el mismo portón pasando por el lavado de llantas. Usa "Ver Piso 4" y haz clic en cada sector para el detalle de los frentes de trabajo.'
 };
 edificio.userData.esEdificio = true;
 scene.add(edificio);
@@ -455,9 +518,12 @@ const matLado  = new THREE.MeshLambertMaterial({ color:0x64676c });
 const matTecho = new THREE.MeshLambertMaterial({ color:0x74777c });
 
 const pisosMesh = [];
+const T2 = CFG.torre2;
+const matLosaT = new THREE.MeshLambertMaterial({ color:0x8a8d92 });
 for (let i=0; i<CFG.pisos; i++){
   const g = new THREE.Group();
   const y = i*CFG.hPiso;
+  // Torre 01 (49.73 m)
   const matFrente = new THREE.MeshLambertMaterial({ map: texFach.clone() });
   matFrente.map.needsUpdate = true;
   matFrente.map.repeat.set(8,1);
@@ -466,34 +532,59 @@ for (let i=0; i<CFG.pisos; i++){
   caja0.position.y = y + CFG.hPiso/2;
   caja0.castShadow = true; caja0.receiveShadow = true;
   g.add(caja0);
-  const losa = new THREE.Mesh(
-    new THREE.BoxGeometry(CFG.largo+0.6, 0.22, CFG.fondo+0.4),
-    new THREE.MeshLambertMaterial({ color:0x8a8d92 })
-  );
+  const losa = new THREE.Mesh(new THREE.BoxGeometry(CFG.largo+0.6, 0.22, CFG.fondo+0.4), matLosaT.clone());
   losa.position.y = (i+1)*CFG.hPiso;
   g.add(losa);
+  // Torre 02 (24.30 m), en línea con junta y leve desfase según planta
+  const matFrente2 = new THREE.MeshLambertMaterial({ map: texFach.clone() });
+  matFrente2.map.needsUpdate = true;
+  matFrente2.map.repeat.set(4,1);
+  const mats2 = [matLado.clone(), matLado.clone(), matTecho.clone(), matTecho.clone(), matFrente2, matFrente2.clone()];
+  const caja2 = new THREE.Mesh(new THREE.BoxGeometry(T2.largo, CFG.hPiso, T2.fondo), mats2);
+  caja2.position.set(T2.cx, y + CFG.hPiso/2, T2.dz);
+  caja2.castShadow = true; caja2.receiveShadow = true;
+  g.add(caja2);
+  const losa2 = new THREE.Mesh(new THREE.BoxGeometry(T2.largo+0.6, 0.22, T2.fondo+0.4), matLosaT.clone());
+  losa2.position.set(T2.cx, (i+1)*CFG.hPiso, T2.dz);
+  g.add(losa2);
   edificio.add(g);
   pisosMesh.push(g);
 }
-// cubierta: cuarto de máquinas
+// retrocesos de fachada (muescas de la planta, en ambas torres)
+const matRetro = new THREE.MeshLambertMaterial({ color:0x22262e });
+[[-10.9, 1],[5.9, 1],[-9.9, -1],[7.4, -1]].forEach(([x, lado]) => {
+  const r = new THREE.Mesh(new THREE.BoxGeometry(2.4, CFG.alto, 1.4), matRetro);
+  r.position.set(x, CFG.alto/2, lado*(CFG.fondo/2 - 0.5));
+  edificio.add(r);
+});
+[[T2.cx-2.4, 1],[T2.cx+4.9, -1]].forEach(([x, lado]) => {
+  const r = new THREE.Mesh(new THREE.BoxGeometry(2.4, CFG.alto, 1.4), matRetro);
+  r.position.set(x, CFG.alto/2, T2.dz + lado*(T2.fondo/2 - 0.5));
+  edificio.add(r);
+});
+// cubierta: cuarto de máquinas (T1, 19.70 m²) + escaleras/circulación (T2, 20.68 m²)
 const techoG = new THREE.Group();
 const cMaq = new THREE.Mesh(new THREE.BoxGeometry(5, 2.2, 4), new THREE.MeshLambertMaterial({ color:0x6d7075 }));
 cMaq.position.set(-8, CFG.alto + 1.1, 0); cMaq.castShadow = true;
 techoG.add(cMaq);
+const cEsc2 = new THREE.Mesh(new THREE.BoxGeometry(4.5, 1.9, 3), new THREE.MeshLambertMaterial({ color:0x6d7075 }));
+cEsc2.position.set(T2.cx, CFG.alto + 0.95, T2.dz); cEsc2.castShadow = true;
+techoG.add(cEsc2);
 edificio.add(techoG);
 
-const etT1 = crearEtiqueta('TORRE 46×14 — 5 PISOS + 3 SÓTANOS', 26, 'rgba(10,110,40,0.85)');
-etT1.position.set(0, CFG.alto + 4, 0);
+const etT1 = crearEtiqueta('TORRES 01+02 — 10 PISOS + CUBIERTA + 3 SÓTANOS', 30, 'rgba(10,110,40,0.85)');
+etT1.position.set(6, CFG.alto + 4.5, 0);
 edificio.add(etT1);
 
-// Sótanos (3 niveles — el montacargas también los recorre)
+// Sótanos (S1 -3.40 · S2 -6.20 · S3 -9.00 — el montacargas también los recorre)
+const sotLargo = CFG.largo + T2.gap + T2.largo;
 const sotano = new THREE.Mesh(
-  new THREE.BoxGeometry(CFG.largo+6, CFG.sotanos*CFG.hSotano, CFG.fondo+8),
+  new THREE.BoxGeometry(sotLargo+6, CFG.sotanos*CFG.hSotano, CFG.fondo+8),
   new THREE.MeshLambertMaterial({ color:0x7a6748, transparent:true, opacity:0.35 })
 );
-sotano.position.y = -(CFG.sotanos*CFG.hSotano)/2 - 0.1;
+sotano.position.set((T2.gap + T2.largo)/2, -(CFG.sotanos*CFG.hSotano)/2 - 0.1, 0.6);
 edificio.add(sotano);
-const etSot = crearEtiqueta('Sótanos 1-3 (recorrido del montacargas)', 24);
+const etSot = crearEtiqueta('Sótanos: S1 -3.40 · S2 -6.20 · S3 -9.00 m (recorrido del montacargas)', 30);
 etSot.position.set(-15, -1.5, CFG.fondo/2 + 5);
 edificio.add(etSot);
 
@@ -503,10 +594,10 @@ malacate.position.set(CFG.malacateX, 0, -(CFG.fondo/2) - 2.2); // punto medio, f
 malacate.userData.info = {
   nombre: 'Montacargas de obra tipo cremallera',
   dimensiones: 'Cabina 1.50 × 1.50 × 2.10 m aprox.',
-  altura: 'Recorrido requerido 23.2 m (3 sótanos + 5 pisos + cubierta)',
+  altura: 'Recorrido requerido ≈ 35.5 m (sótano 3 a -9.00 m + 10 pisos de 2.65 m + cubierta)',
   material: 'Elevador mixto (personas + material) · 1.000 kg / 8-10 personas · 30-40 m/min · alimentación trifásica 220/440 V con tablero propio y parada de emergencia',
   cerramiento: 'Cabina con malla + puertas por nivel · arriostrado a la estructura cada 2 niveles (máx. 6 m) · Resolución 1409 de 2012',
-  descripcion: 'Ubicado en la fachada que da hacia el patio y el almacén, en el punto medio de los 46.00 m para repartir de forma equilibrada el recorrido horizontal hacia ambos extremos del edificio. Complemento horizontal: 4-6 carretillas tipo buggy (80-100 kg c/u), recorrido almacén → pie del montacargas ≈15-25 m. ARRÁSTRALO alrededor de la torre: se ancla a la fachada más cercana.'
+  descripcion: 'Ubicado en la fachada que da hacia el patio y el almacén, en el punto medio de los 49.73 m de la Torre 01 para repartir de forma equilibrada el recorrido horizontal hacia ambos extremos del edificio. Complemento horizontal: 4-6 carretillas tipo buggy (80-100 kg c/u), recorrido almacén → pie del montacargas ≈15-25 m. ARRÁSTRALO alrededor de la torre: se ancla a la fachada más cercana.'
 };
 malacate.userData.esMalacate = true;
 scene.add(malacate);
@@ -568,10 +659,10 @@ piso4.add(circ1);
 
 // puntos fijos: ascensor + escalera (occidente) y escalera (oriente)
 const matNucleo = new THREE.MeshLambertMaterial({ color:0x98a2ad });
-const nucleoO = new THREE.Mesh(new THREE.BoxGeometry(4, 2.3, 13.4), matNucleo);
+const nucleoO = new THREE.Mesh(new THREE.BoxGeometry(4, 2.3, 11.9), matNucleo);
 nucleoO.position.set(-21, y4 + 1.25, 0);
 piso4.add(nucleoO);
-const nucleoE = new THREE.Mesh(new THREE.BoxGeometry(4, 2.3, 13.4), matNucleo);
+const nucleoE = new THREE.Mesh(new THREE.BoxGeometry(4, 2.3, 11.9), matNucleo);
 nucleoE.position.set(21, y4 + 1.25, 0);
 piso4.add(nucleoE);
 
@@ -617,20 +708,20 @@ const aptosClick = [];
 SECTORES.forEach(a => {
   const cx = (a.x0 + a.x1) / 2, ancho = a.x1 - a.x0;
   [a.x0, a.x1].forEach(x => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.3, 5.6), matMuro);
-    m.position.set(x, y4 + 1.25, a.lado * 4.2);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.3, 4.9), matMuro);
+    m.position.set(x, y4 + 1.25, a.lado * 3.65);
     piso4.add(m);
   });
   const mc = new THREE.Mesh(new THREE.BoxGeometry(ancho - 1.2, 2.3, 0.12), matMuro);
   mc.position.set(cx - 0.6, y4 + 1.25, a.lado * 1.2);
   piso4.add(mc);
   textoPiso(a.nom, 5.5, cx, a.lado * 3.2, '#166e2a');
-  textoPiso('~55 m²', 3.6, cx, a.lado * 5.2, '#555049');
+  textoPiso('60-72 m²', 3.6, cx, a.lado * 5.2, '#555049');
   const zona = new THREE.Mesh(
-    new THREE.BoxGeometry(ancho - 0.4, 2.2, 5.4),
+    new THREE.BoxGeometry(ancho - 0.4, 2.2, 4.8),
     new THREE.MeshLambertMaterial({ color:0xffffff, transparent:true, opacity:0.04 })
   );
-  zona.position.set(cx, y4 + 1.2, a.lado * 4.2);
+  zona.position.set(cx, y4 + 1.2, a.lado * 3.7);
   zona.userData.apto = a;
   piso4.add(zona);
   aptosClick.push(zona);
@@ -641,10 +732,10 @@ function abrirApto(a){
   document.getElementById('aptoTitulo').textContent = a.nom + ' · Piso 4';
   document.getElementById('aptoBody').innerHTML =
     '<table>' +
-    '<tr><td>Proyecto</td><td>Renovación y Modernización — Torre 5 pisos + 3 sótanos</td></tr>' +
+    '<tr><td>Proyecto</td><td>Mirador de la Dalia · Etapa I — Torres 01+02, 10 pisos + 3 sótanos</td></tr>' +
     '<tr><td>Fase</td><td>Cerramientos y acabados (estructura existente)</td></tr>' +
     '<tr><td>Frente de trabajo</td><td>' + a.act + '</td></tr>' +
-    '<tr><td>Área aprox.</td><td>~55 m² (9.5 × 5.8 m)</td></tr>' +
+    '<tr><td>Área aprox.</td><td>60–72 m² según tipo (A-L del cuadro de áreas)</td></tr>' +
     '<tr><td>Costado</td><td>' + (a.lado > 0 ? 'Norte' : 'Sur') + ' de la circulación central</td></tr>' +
     '<tr><td>Suministro</td><td>Materiales por montacargas (1.000 kg) + distribución interna en carretillas buggy</td></tr>' +
     '</table>' +
@@ -1266,7 +1357,9 @@ const pBody   = document.getElementById('pBody');
 
 function actualizarTinte(obj){
   if (!obj) return;
-  const color = obj === seleccionado ? 0x554400 : (obj.userData.bloqueado ? 0x3a1414 : 0x000000);
+  const color = obj === seleccionado ? 0x554400
+    : (rolPintado && esObjetivoRol(ORG[rolPintado], obj)) ? ORG[rolPintado].emissive
+    : (obj.userData.bloqueado ? 0x3a1414 : 0x000000);
   obj.traverse(n => {
     if (n.isMesh && n.material && n.material.emissive !== undefined){
       n.material.emissive = new THREE.Color(color);
@@ -1333,7 +1426,8 @@ function estadoActual(){
     elementos,
     rutas: rutas.map(r => r.puntos.map(p => [Math.round(p.x*100)/100, Math.round(p.z*100)/100])),
     malacate: parseFloat(rangoMalacate.value),
-    malacatePos: [Math.round(malacate.position.x*100)/100, Math.round(malacate.position.z*100)/100]
+    malacatePos: [Math.round(malacate.position.x*100)/100, Math.round(malacate.position.z*100)/100],
+    organigrama: funcionesExtra
   };
 }
 function guardarLocal(){
@@ -1367,6 +1461,9 @@ function aplicarEstado(d){
     const s = ajustarMalacate(d.malacatePos[0], d.malacatePos[1]);
     malacate.position.set(s.x, 0, s.z);
     actualizarDescargue();
+  }
+  if (d.organigrama && typeof d.organigrama === 'object' && !Array.isArray(d.organigrama)){
+    funcionesExtra = d.organigrama;
   }
 }
 
@@ -1489,6 +1586,240 @@ document.getElementById('fileCarga').onchange = e => {
   e.target.value = '';
 };
 
+/* ============ 12b. ORGANIGRAMA DE LA OBRA ============ */
+const ORG = {
+  coordinador: {
+    titulo:'Coordinadora General', nombre:'Manuela Garcia', color:'#b06ad4', emissive:0x3a1d4d, pinta:null,
+    resumen:'Encargada de todo el proyecto: responde por el resultado global ante la gerencia.',
+    funciones:[
+      'Representa a la gerencia y responde por el resultado global del proyecto',
+      'Aprueba el presupuesto maestro, el cronograma general y los cambios mayores',
+      'Coordina diseño, construcción, ventas y entregas entre etapas',
+      'Gestiona licencias, pólizas y contratos marco',
+      'Preside los comités de obra y reporta a la junta directiva'
+    ]
+  },
+  interventor: {
+    titulo:'Interventor', nombre:'Jorge Pineda', color:'#16a085', emissive:0x0b4d40, pinta:'todo', punteado:true,
+    resumen:'Revisa todo el proyecto en términos de ejecución: verifica que lo construido cumpla lo contratado.',
+    funciones:[
+      'Verifica que la ejecución cumpla planos y especificaciones',
+      'Revisa y aprueba actas de avance y cortes de obra',
+      'Avala pagos según la obra realmente ejecutada',
+      'Exige correcciones cuando encuentra no conformidades',
+      'Informa al contratante sobre el estado real del proyecto'
+    ]
+  },
+  director: {
+    titulo:'Director de Obra', nombre:'Carlos Holguin', color:'#f0a340', emissive:0x664411, pinta:'todo',
+    resumen:'Encargado de todo lo que se hace en obra.',
+    funciones:[
+      'Dirige toda la ejecución en obra: programación semanal y frentes de trabajo',
+      'Administra contratistas y mano de obra',
+      'Controla calidad, plazos y rendimientos',
+      'Aprueba requisiciones de materiales y equipos',
+      'Es el interlocutor con la interventoría y la coordinación'
+    ]
+  },
+  resAdmin: {
+    titulo:'Residente Administrativo', nombre:'Bryan Yama', auxiliar:'Sofía Delgado', color:'#4da3ff', emissive:0x123a66, pinta:'costos',
+    resumen:'Encargado de todo lo que genera dinero o aumenta los gastos de la obra.',
+    funciones:[
+      'Controla costos, presupuesto y flujo de caja de la obra',
+      'Maneja el almacén, los inventarios y las compras (requisiciones)',
+      'Administra nómina, contratos y seguridad social del personal',
+      'Elabora cortes de obra y facturación',
+      'Controla los gastos generales del campamento'
+    ]
+  },
+  resEstructura: {
+    titulo:'Residente de Estructura', nombre:'Bryan Yama', auxiliar:'Julián Mora', color:'#9fb6c9', emissive:0x2c3f52, pinta:'estructura',
+    resumen:'Encargado de toda la estructura.',
+    funciones:[
+      'Supervisa armado de acero, formaleta y vaciados de concreto',
+      'Controla resistencias (cilindros) y calidad del concreto',
+      'Hace el replanteo y control topográfico de la estructura',
+      'Coordina izajes y el uso del montacargas para estructura',
+      'Revisa juntas, desplomes y tolerancias'
+    ]
+  },
+  resCerramiento: {
+    titulo:'Residente de Cerramiento y Acabados', nombre:'Laura Cardona', auxiliar:'Esteban Ruiz', color:'#58b368', emissive:0x1d5b2a, pinta:'acabados',
+    resumen:'Encargada de los acabados y de las cuadrillas de mamposteros.',
+    funciones:[
+      'Dirige mampostería, pañetes y cerramientos de fachada',
+      'Coordina las cuadrillas de mamposteros y acabados',
+      'Controla enchapes, estuco, pintura y carpinterías',
+      'Recibe apartamentos y gestiona los remates',
+      'Solicita los materiales de acabados al almacén'
+    ]
+  },
+  sst: {
+    titulo:'Residente SST', nombre:'Camila Ríos', color:'#e74c3c', emissive:0x661111, pinta:null, riesgos:true,
+    resumen:'Seguridad y salud en el trabajo de toda la obra: identifica y señaliza las zonas de mayor riesgo (semáforo 🔴🟡🟢).',
+    funciones:[
+      'Implementa el plan SST y la matriz de riesgos de la obra',
+      'Autoriza permisos de trabajo en altura y espacios confinados',
+      'Inspecciona andamios, arneses, líneas de vida y montacargas',
+      'Capacita al personal e investiga incidentes',
+      'Señaliza y controla las zonas de riesgo (estilo semáforo)'
+    ]
+  }
+};
+let funcionesExtra = {};   // funciones agregadas por el equipo → se comparten vía Supabase
+let rolPintado = null;     // rol cuya área está resaltada en el 3D
+let zonasRiesgo = null;    // grupo de zonas semáforo del SST
+
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+function nodoOrg(id){
+  const r = ORG[id];
+  return '<div class="orgNodo' + (r.punteado ? ' punteado' : '') + '" style="border-color:' + r.color + '" onclick="abrirRol(\'' + id + '\')">' +
+    '<div class="rol" style="color:' + r.color + '">' + r.titulo + '</div>' +
+    '<div class="nom">' + r.nombre + '</div>' +
+    (r.auxiliar ? '<div class="aux">Auxiliar: ' + r.auxiliar + '</div>' : '') +
+    '</div>';
+}
+function renderOrganigrama(){
+  document.getElementById('orgTitulo').textContent = '👷 Organigrama de la obra';
+  document.getElementById('orgBody').innerHTML =
+    '<div class="orgNivel">' + nodoOrg('coordinador') + nodoOrg('interventor') + '</div>' +
+    '<div class="orgConector"></div>' +
+    '<div class="orgNivel">' + nodoOrg('director') + '</div>' +
+    '<div class="orgConector"></div>' +
+    '<div class="orgNivel">' + nodoOrg('resAdmin') + nodoOrg('resEstructura') + nodoOrg('resCerramiento') + nodoOrg('sst') + '</div>' +
+    '<div class="desc" style="margin-top:12px">Haz clic sobre cualquier rol para ver sus funciones, agregarle trabajos, resaltar su área en el 3D o ver las zonas de riesgo (SST). Cada residente cuenta con un auxiliar de residente en campo.</div>';
+}
+function abrirRol(id){
+  const r = ORG[id];
+  if (!r) return;
+  const extra = funcionesExtra[id] || [];
+  document.getElementById('orgTitulo').textContent = r.titulo + ' — ' + r.nombre;
+  document.getElementById('orgBody').innerHTML =
+    '<div style="border-left:4px solid ' + r.color + '; padding-left:10px; margin-bottom:10px">' +
+      '<b style="color:' + r.color + '">' + r.titulo + '</b> · ' + r.nombre +
+      (r.auxiliar ? '<br><small>Auxiliar de residente: ' + r.auxiliar + '</small>' : '') +
+      '<div class="desc">' + r.resumen + '</div>' +
+    '</div>' +
+    '<b>Funciones:</b>' +
+    r.funciones.map(f => '<div class="orgFn"><span>• ' + f + '</span></div>').join('') +
+    extra.map((f, i) =>
+      '<div class="orgFn"><span>➕ ' + esc(f) + '</span><span class="fnX" title="Quitar" onclick="quitarFuncion(\'' + id + '\',' + i + ')">✕</span></div>'
+    ).join('') +
+    '<div id="orgAgregar">' +
+      '<input id="fnNueva" maxlength="140" placeholder="Agregar otro trabajo / función a este rol…">' +
+      '<button class="orgAccion primario" style="margin:0" onclick="agregarFuncion(\'' + id + '\')">➕ Agregar</button>' +
+    '</div>' +
+    '<div style="margin-top:6px">' +
+      (r.pinta ? '<button class="orgAccion" onclick="pintarRol(\'' + id + '\')">' +
+        (rolPintado === id ? '🧹 Quitar resaltado del 3D' : '🎨 Resaltar su área en el 3D') + '</button>' : '') +
+      (r.riesgos ? '<button class="orgAccion" onclick="toggleRiesgos()">' +
+        (zonasRiesgo ? '🚦 Ocultar zonas de riesgo' : '🚦 Ver zonas de riesgo en 3D') + '</button>' : '') +
+      '<button class="orgAccion" onclick="renderOrganigrama()">← Volver al organigrama</button>' +
+    '</div>';
+  const inp = document.getElementById('fnNueva');
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') agregarFuncion(id); });
+}
+function agregarFuncion(id){
+  const inp = document.getElementById('fnNueva');
+  const txt = (inp.value || '').trim().slice(0, 140);
+  if (!txt) return;
+  if (!funcionesExtra[id]) funcionesExtra[id] = [];
+  funcionesExtra[id].push(txt);
+  guardarCompartido();
+  abrirRol(id);
+  avisoGuardado('✔ Función agregada a ' + ORG[id].titulo);
+}
+function quitarFuncion(id, i){
+  if (!funcionesExtra[id]) return;
+  funcionesExtra[id].splice(i, 1);
+  guardarCompartido();
+  abrirRol(id);
+}
+
+/* ---- Resaltar en el 3D el área de cada rol ---- */
+function esObjetivoRol(rol, obj){
+  if (!rol || !rol.pinta) return false;
+  if (rol.pinta === 'todo') return true;
+  const nom = (obj.userData.info && obj.userData.info.nombre) || '';
+  if (rol.pinta === 'costos') return /Almacén|paletizado|Portería|Campamento|Acometida/i.test(nom);
+  if (rol.pinta === 'estructura') return obj === edificio || obj === malacate;
+  if (rol.pinta === 'acabados') return obj === edificio || /Almacén central/i.test(nom);
+  return false;
+}
+function repintarTodo(){
+  [...draggables, edificio, cerramiento, malacate].forEach(actualizarTinte);
+}
+function pintarRol(id){
+  rolPintado = (rolPintado === id) ? null : id;
+  repintarTodo();
+  document.getElementById('orgOverlay').style.display = 'none';
+  avisoGuardado(rolPintado ? '🎨 Resaltado: área de ' + ORG[id].titulo : '🧹 Resaltado quitado');
+}
+
+/* ---- Zonas de riesgo estilo semáforo (SST) ---- */
+function buscarProv(sub){
+  return draggables.find(g => g.userData.info.nombre.toLowerCase().includes(sub.toLowerCase()));
+}
+function crearZonaRiesgo(x, z, w, d, color, rgba, texto){
+  const caja = new THREE.Mesh(
+    new THREE.BoxGeometry(w, 2.4, d),
+    new THREE.MeshLambertMaterial({ color, transparent:true, opacity:0.25, depthWrite:false })
+  );
+  caja.position.set(x, 1.2, z);
+  zonasRiesgo.add(caja);
+  const et = crearEtiqueta(texto, 22, rgba);
+  et.position.set(x, 4.6, z);
+  zonasRiesgo.add(et);
+}
+function zonaProv(sub, color, rgba, texto){
+  const p = buscarProv(sub);
+  if (p) crearZonaRiesgo(p.position.x, p.position.z, p.userData.info.w + 3, p.userData.info.d + 3, color, rgba, texto);
+}
+function toggleRiesgos(){
+  if (zonasRiesgo){
+    scene.remove(zonasRiesgo);
+    zonasRiesgo = null;
+    avisoGuardado('🚦 Zonas de riesgo ocultas');
+    if (document.getElementById('orgOverlay').style.display === 'flex') abrirRol('sst');
+    return;
+  }
+  zonasRiesgo = new THREE.Group();
+  const ROJO = 0xd63030, AMAR = 0xe0b020, VERDE = 0x35a04a;
+  const cR = 'rgba(160,25,25,0.88)', cA = 'rgba(150,110,10,0.88)', cV = 'rgba(20,110,45,0.88)';
+  // 🔴 ALTO
+  crearZonaRiesgo(0, 0, CFG.largo + 5, CFG.fondo + 5, ROJO, cR, '🔴 ALTO · Trabajo en altura / caída de objetos — Torre 01');
+  crearZonaRiesgo(CFG.torre2.cx, CFG.torre2.dz, CFG.torre2.largo + 5, CFG.torre2.fondo + 5, ROJO, cR, '🔴 ALTO · Trabajo en altura — Torre 02');
+  crearZonaRiesgo(malacate.position.x, malacate.position.z, 7, 7, ROJO, cR, '🔴 ALTO · Izaje de cargas (montacargas)');
+  zonaProv('maniobra', ROJO, cR, '🔴 ALTO · Maquinaria y volquetas en movimiento');
+  // 🟡 MEDIO
+  zonaProv('Almacén central', AMAR, cA, '🟡 MEDIO · Manipulación y acopio de cargas');
+  zonaProv('paletizado', AMAR, cA, '🟡 MEDIO · Acopio de materiales');
+  zonaProv('Acometida eléctrica', AMAR, cA, '🟡 MEDIO · Riesgo eléctrico');
+  zonaProv('Lavado', AMAR, cA, '🟡 MEDIO · Piso húmedo');
+  // 🟢 BAJO
+  zonaProv('Campamento', VERDE, cV, '🟢 BAJO · Zona administrativa');
+  zonaProv('Comedor', VERDE, cV, '🟢 BAJO · Bienestar');
+  zonaProv('Casilleros', VERDE, cV, '🟢 BAJO · Bienestar');
+  zonaProv('vestieres', VERDE, cV, '🟢 BAJO · Bienestar');
+  zonaProv('Portería', VERDE, cV, '🟢 BAJO · Control de acceso');
+  scene.add(zonasRiesgo);
+  document.getElementById('orgOverlay').style.display = 'none';
+  avisoGuardado('🚦 Zonas de riesgo visibles (SST)');
+}
+
+document.getElementById('btnOrg').onclick = () => {
+  renderOrganigrama();
+  document.getElementById('orgOverlay').style.display = 'flex';
+};
+document.getElementById('orgCerrar').onclick = () => {
+  document.getElementById('orgOverlay').style.display = 'none';
+};
+document.getElementById('orgOverlay').addEventListener('click', e => {
+  if (e.target.id === 'orgOverlay') e.target.style.display = 'none';
+});
+
 /* ============ 13. UI + LOOP ============ */
 let vistaPiso4 = false;
 function setFantasma(grupo, on){
@@ -1593,7 +1924,7 @@ function animar(){
   // montacargas (30-40 m/min a escala visual)
   let objetivo = parseFloat(rangoMalacate.value);
   if (chkAuto.checked){
-    objetivo = (Math.sin(tiempo*0.35)*0.5 + 0.5) * 4;
+    objetivo = (Math.sin(tiempo*0.35)*0.5 + 0.5) * 9;
     rangoMalacate.value = objetivo;
   }
   nivelMalacate += (objetivo - nivelMalacate) * 0.06;
