@@ -82,25 +82,43 @@ function lineaTerreno(puntos, color, offset, cerrar, punteada){
   return l;
 }
 
-/* ---- Lote utilizable 163×47 (afirmado) ---- */
-poligonoPlano([[-81.5,-23.5],[81.5,-23.5],[81.5,23.5],[-81.5,23.5]], 0xa8a49a, 0.05);
-// andén de la torre
-poligonoPlano([[-25,-8.5],[25,-8.5],[25,8.5],[-25,8.5]], 0xb9bcc0, 0.12);
+/* ============ DISTRIBUCIÓN DEL TERRENO (según plano Via.JPG) ============
+   La vía entra por el occidente, corre al sur del edificio y sube al noreste
+   hacia la autopista. El edificio (rosado) queda al norte de la vía; alrededor,
+   plataforma afirmada (gris) y pasto (verde). Límites: azul (propiedad) y rojo (sur). */
 
-/* ---- Vía de acceso existente — 15.00 m (borde sur del lote) ---- */
-poligonoPlano([[-90,-38.5],[100,-38.5],[100,-23.5],[-90,-23.5]], 0x55585e, 0.09);
-poligonoPlano([[-88,-31.4],[98,-31.4],[98,-30.6],[-88,-30.6]], 0xd8d8d0, 0.11); // línea central
-// salida de autopista (extremo oriental)
-poligonoPlano([[95,-45],[118,-45],[118,35],[95,35]], 0x4a4d53, 0.08);
-poligonoPlano([[106,-43],[107,-43],[107,33],[106,33]], 0xd8d8d0, 0.10);
+/* Plataforma de obra afirmada (gris claro) — forma orgánica que envuelve el edificio */
+poligonoPlano([
+  [-90,-20],[-92,-4],[-80,9],[-54,16],[-18,19],[22,19],[54,14],[70,4],
+  [86,16],[104,32],[112,29],[103,8],[86,-6],[70,-16],[36,-21],[-4,-22],[-46,-21],[-78,-21]
+], 0xa8a49a, 0.05);
 
-/* ---- Vía futura diagonal (superior; NO utilizable en obra) ---- */
-lineaTerreno([[20,42],[95,8]], 0xc9581e, 0.6, false, true);
-lineaTerreno([[28,48],[100,14]], 0xc9581e, 0.6, false, true);
+/* Andén del edificio (más claro), bajo las dos torres */
+poligonoPlano([[-27,-8],[52,-8],[52,8],[-27,8]], 0xb9bcc0, 0.12);
 
-/* ---- Límites del plano base: azul (lote) y rojo (cerramiento) ---- */
-lineaTerreno([[-81.5,-23.5],[81.5,-23.5],[81.5,23.5],[-81.5,23.5]], 0x2f7fff, 0.7, true, false);
-lineaTerreno([[-83,-40],[100,-40],[100,25],[-83,25]], 0xc9302e, 0.7, true, true);
+/* Vía principal (gris oscuro): entra por el occidente y corre al sur del edificio */
+poligonoPlano([[-91,-19],[64,-19],[64,-9],[-91,-9]], 0x55585e, 0.08);
+poligonoPlano([[-89,-14.4],[62,-14.4],[62,-13.6],[-89,-13.6]], 0xd8d8d0, 0.10); // línea central
+
+/* Curva que sube al noreste conectando con la autopista */
+poligonoPlano([[46,-19],[66,-19],[97,10],[112,32],[99,35],[83,12],[56,-9],[44,-9]], 0x55585e, 0.08);
+
+/* Autopista (diagonal en el noreste) */
+poligonoPlano([[80,15],[122,42],[113,50],[72,23]], 0x4a4d53, 0.08);
+poligonoPlano([[86,20.5],[112,37.5],[111,39],[85,22]], 0xd8d8d0, 0.10); // línea central
+
+/* Marca de topografía (referencia del plano) en el noreste */
+lineaTerreno([[104,44],[118,52]], 0x2fbf5a, 0.6, false, false);
+lineaTerreno([[110,40],[114,56]], 0x2fbf5a, 0.6, false, false);
+
+/* ---- Límite de propiedad (AZUL, discontinuo) — contorno orgánico ---- */
+lineaTerreno([
+  [-96,-8],[-90,-21],[-58,-25],[-16,-26],[30,-25],[66,-21],[92,-8],[110,8],
+  [116,30],[100,40],[74,26],[46,30],[6,32],[-32,29],[-64,22],[-90,10]
+], 0x2f7fff, 0.7, true, true);
+
+/* ---- Límite sur de la plataforma (ROJO) ---- */
+lineaTerreno([[-91,-20],[-40,-20.5],[8,-21],[52,-20.5]], 0xc9302e, 0.7, false, false);
 
 /* ---- Etiquetas flotantes (sprites); el botón Etiquetas las oculta/muestra ---- */
 const etiquetasTodas = [];
@@ -124,9 +142,9 @@ function etiquetaSuelo(texto, x, z, ancho, colorFondo){
   e.position.set(x, alturaTerreno(x, z) + 3.2, z);
   scene.add(e);
 }
-etiquetaSuelo('ACCESO EXISTENTE', -40, -31, 16, 'rgba(50,55,60,0.85)');
-etiquetaSuelo('SALIDA AUTOPISTA', 107, -20, 16, 'rgba(50,55,60,0.85)');
-etiquetaSuelo('VÍA FUTURA (no utilizable)', 60, 30, 17, 'rgba(120,110,20,0.85)');
+etiquetaSuelo('ACCESO — VÍA', -80, -14, 14, 'rgba(50,55,60,0.85)');
+etiquetaSuelo('SALIDA AUTOPISTA', 100, 36, 16, 'rgba(50,55,60,0.85)');
+etiquetaSuelo('VÍA FUTURA (no utilizable)', 58, 44, 17, 'rgba(120,110,20,0.85)');
 
 /* ---- Árboles (referencia de profundidad) — instanciados: 2 draw calls
    en total, en vez de 2 mallas por árbol ---- */
