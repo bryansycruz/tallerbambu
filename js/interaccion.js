@@ -12,9 +12,9 @@ function actualizarCamara(){
   );
   camera.lookAt(camCtrl.target);
 }
-function irA(tx, ty, tz, radius, theta, phi){
+function irA(tx, ty, tz, radius, theta, phi, dur){
   animCam = {
-    t0: performance.now(), dur: 900,
+    t0: performance.now(), dur: dur || 900,
     de: { x:camCtrl.target.x, y:camCtrl.target.y, z:camCtrl.target.z, r:camCtrl.radius, th:camCtrl.theta, ph:camCtrl.phi },
     a:  { x:tx, y:ty, z:tz, r:radius, th:theta, ph:phi }
   };

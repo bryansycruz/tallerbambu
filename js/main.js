@@ -3,6 +3,18 @@
 aplicarIconos();
 repintarTodo();   // semáforo inicial: provisionales libres en verde, bloqueados en rojo
 
+/* al pulsar "Ver la obra" (Play) en la portada: revela la obra con un
+   barrido de cámara desde una vista alta y lejana hasta la vista normal */
+(function(){
+  const btn = document.getElementById('inicioBtn');
+  if (btn) btn.addEventListener('click', () => {
+    camCtrl.target.set(4, 9, -4);
+    camCtrl.radius = 400; camCtrl.theta = 1.0; camCtrl.phi = 0.32;
+    actualizarCamara();
+    irA(0, 6, -8, 170, 0.5, 1.22, 2200);
+  });
+})();
+
 /* ---- Menú móvil y panel plegable (solo visible en pantallas pequeñas) ---- */
 document.getElementById('btnMenu').onclick = () => {
   document.getElementById('ui').classList.toggle('abierto');
