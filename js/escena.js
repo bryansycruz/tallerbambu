@@ -83,39 +83,40 @@ function lineaTerreno(puntos, color, offset, cerrar, punteada){
 }
 
 /* ============ DISTRIBUCIÓN DEL TERRENO (según plano Via.JPG) ============
-   La vía entra por el occidente, corre al norte del edificio y sube al noreste
-   hacia la autopista, en un solo trazado. El edificio queda al sur de la vía;
-   alrededor, plataforma afirmada (gris) y pasto (verde). Límites: azul y rojo. */
+   La vía entra por el occidente, corre al NORTE del edificio (el edificio queda
+   AL OTRO LADO, al sur de la vía) y sube al noreste hacia la autopista, en un
+   solo trazado; alrededor, plataforma afirmada (gris) y pasto (verde). Toda la
+   implantación de obra acompaña a la vía en ese costado. Límites: azul y rojo. */
 
-/* Plataforma de obra afirmada (gris claro) — envuelve el edificio (a la izquierda,
-   AL OTRO LADO de la vía) y la vía, que se prolonga como una península a la derecha */
+/* Plataforma de obra afirmada (gris claro) — envuelve el edificio y la vía,
+   que se prolonga como una península hacia la autopista (arriba a la derecha) */
 poligonoPlano([
-  [-80,8],[-82,-6],[-70,-16],[-38,-22],[2,-23],[42,-20],[62,-16],[166,-50],[160,-42],
-  [66,2],[34,13],[-6,14],[-46,13],[-72,12]
+  [-80,-8],[-82,6],[-70,16],[-38,22],[2,23],[42,20],[62,16],[166,50],[160,42],
+  [66,-2],[34,-13],[-6,-14],[-46,-13],[-72,-12]
 ], 0xa8a49a, 0.05);
 
 /* Andén del edificio (más claro), bajo las dos torres */
 poligonoPlano([[-27,-8],[52,-8],[52,8],[-27,8]], 0xb9bcc0, 0.12);
 
-/* Vía (gris oscuro) — UN SOLO trazado: corre al SUR del edificio (edificio al otro
-   lado) y sale como un corredor diagonal largo hacia la derecha */
+/* Vía (gris oscuro) — UN SOLO trazado: corre al NORTE del edificio (edificio al
+   otro lado) y sale como un corredor diagonal largo hacia la derecha */
 poligonoPlano([
-  [-78,-8],[52,-8],[166,-46],[159,-55],[44,-18],[-78,-18]
+  [-78,8],[52,8],[166,46],[159,55],[44,18],[-78,18]
 ], 0x55585e, 0.08);
-poligonoPlano([[-75,-12.5],[44,-12.5],[44,-13.5],[-75,-13.5]], 0xd8d8d0, 0.10); // línea central
+poligonoPlano([[-75,12.5],[44,12.5],[44,13.5],[-75,13.5]], 0xd8d8d0, 0.10); // línea central
 
 /* Marca de topografía (referencia del plano) al final de la vía */
-lineaTerreno([[152,-52],[166,-60]], 0x2fbf5a, 0.6, false, false);
-lineaTerreno([[158,-48],[162,-64]], 0x2fbf5a, 0.6, false, false);
+lineaTerreno([[152,52],[166,60]], 0x2fbf5a, 0.6, false, false);
+lineaTerreno([[158,48],[162,64]], 0x2fbf5a, 0.6, false, false);
 
 /* ---- Límite de propiedad (AZUL, discontinuo) — contorno orgánico ---- */
 lineaTerreno([
-  [-86,-4],[-80,10],[-44,15],[-4,16],[36,14],[62,4],[166,-42],[164,-58],
-  [56,-26],[30,-30],[-8,-31],[-46,-28],[-70,-20],[-84,-8]
+  [-86,4],[-80,-10],[-44,-15],[-4,-16],[36,-14],[62,-4],[166,42],[164,58],
+  [56,26],[30,30],[-8,31],[-46,28],[-70,20],[-84,8]
 ], 0x2f7fff, 0.7, true, true);
 
-/* ---- Límite sur de la vía (ROJO) ---- */
-lineaTerreno([[-78,-18],[-28,-18.5],[16,-19],[54,-18.5]], 0xc9302e, 0.7, false, false);
+/* ---- Límite norte de la vía (ROJO) ---- */
+lineaTerreno([[-78,18],[-28,18.5],[16,19],[54,18.5]], 0xc9302e, 0.7, false, false);
 
 /* ---- Etiquetas flotantes (sprites); el botón Etiquetas las oculta/muestra ---- */
 const etiquetasTodas = [];
@@ -139,9 +140,9 @@ function etiquetaSuelo(texto, x, z, ancho, colorFondo){
   e.position.set(x, alturaTerreno(x, z) + 3.2, z);
   scene.add(e);
 }
-etiquetaSuelo('ACCESO — VÍA', -70, -13, 14, 'rgba(50,55,60,0.85)');
-etiquetaSuelo('SALIDA AUTOPISTA', 150, -50, 16, 'rgba(50,55,60,0.85)');
-etiquetaSuelo('VÍA FUTURA (no utilizable)', 60, -44, 17, 'rgba(120,110,20,0.85)');
+etiquetaSuelo('ACCESO — VÍA', -70, 13, 14, 'rgba(50,55,60,0.85)');
+etiquetaSuelo('SALIDA AUTOPISTA', 150, 50, 16, 'rgba(50,55,60,0.85)');
+etiquetaSuelo('VÍA FUTURA (no utilizable)', 60, 44, 17, 'rgba(120,110,20,0.85)');
 
 /* ---- Árboles (referencia de profundidad) — instanciados: 2 draw calls
    en total, en vez de 2 mallas por árbol ---- */
@@ -173,16 +174,16 @@ etiquetaSuelo('VÍA FUTURA (no utilizable)', 60, -44, 17, 'rgba(120,110,20,0.85)
   scene.add(copas);
 }
 
-/* ---- Cerramiento provisional perimetral (~420 m) ---- */
+/* ---- Cerramiento provisional perimetral (sigue el lindero de propiedad, ~640 m) ---- */
 const cerramiento = new THREE.Group();
 cerramiento.userData.info = {
   nombre: 'Cerramiento provisional perimetral',
   aforo: 'No aplica (elemento perimetral)',
-  dimensiones: 'Envolvente 163.00 × 47.00 m (~420 m de perímetro)',
+  dimensiones: 'Sigue el lindero de propiedad (azul): abarca todo el lote y la península de acceso hasta la autopista (~640 m de perímetro)',
   altura: '2.40 m sobre nivel de andén',
   material: 'Lámina prepintada Zn-Alum calibre 26, acanalada, sobre postes tubulares Ø3" cada 3.00 m, en dados de concreto de 3.000 PSI (Ø0.30 × 0.50 m)',
   cerramiento: 'Franja inferior antisalpicadura + señalización de obra cada 20 m',
-  descripcion: 'Cerramiento continuo en todo el perímetro del lote (límites azul y rojo del plano base). Accesos: 1 portón vehicular corredizo de 6.00 m + 1 puerta peatonal independiente de 1.00 m, ambos en el extremo de ingreso junto a la salida de la autopista.'
+  descripcion: 'Cerramiento continuo sobre todo el lindero de propiedad (límite azul del plano base), envolviendo el lote completo y la zona de obra hasta la salida a la autopista. Único acceso: 1 portón vehicular corredizo de 6.00 m + 1 puerta peatonal independiente de 1.00 m, en el extremo de la vía junto a la salida de la autopista.'
 };
 scene.add(cerramiento);
 {
@@ -204,15 +205,31 @@ scene.add(cerramiento);
       postes.push([x1 + dx*t, 1.25, z1 + dz*t]);
     }
   }
-  const L = CFG.lote;
-  // costado sur con portón (x 70→76) y puerta peatonal (x 77→78)
-  tramoCerr(L.x0, L.z0, 70, L.z0);
-  tramoCerr(76, L.z0, 77, L.z0);
-  tramoCerr(78, L.z0, L.x1, L.z0);
-  tramoCerr(L.x0, L.z1, L.x1, L.z1);       // norte
-  tramoCerr(L.x0, L.z0, L.x0, L.z1);       // occidente
-  tramoCerr(L.x1, L.z0, L.x1, L.z1);       // oriente
-  // ~140 postes de la cerca en un solo InstancedMesh (antes: un Mesh c/u)
+  // Perímetro = lindero de propiedad (mismo trazado del límite AZUL): abarca
+  // todo el lote y la península de acceso, mucha más área que el lote base.
+  const P = [
+    [-86,4],[-80,-10],[-44,-15],[-4,-16],[36,-14],[62,-4],[166,42],
+    [164,58],[56,26],[30,30],[-8,31],[-46,28],[-70,20],[-84,8]
+  ];
+  // el tramo P[6]→P[7] (punta NE, hacia la autopista) lleva el acceso:
+  // portón vehicular 6 m + puerta peatonal 1 m; el resto va cerrado.
+  const ACC = 6;
+  let gate = null;
+  for (let i=0; i<P.length; i++){
+    const a = P[i], b = P[(i+1) % P.length];
+    if (i === ACC){
+      const dx = b[0]-a[0], dz = b[1]-a[1], len = Math.hypot(dx, dz);
+      const ux = dx/len, uz = dz/len;
+      const px = f => a[0] + ux*len*f, pz = f => a[1] + uz*len*f;
+      tramoCerr(px(0),    pz(0),    px(0.30), pz(0.30));   // fence hasta el portón
+      tramoCerr(px(0.68), pz(0.68), px(0.74), pz(0.74));   // machón portón / peatonal
+      tramoCerr(px(0.80), pz(0.80), px(1),    pz(1));      // fence tras la puerta peatonal
+      gate = { x: px(0.49), z: pz(0.49), rot: -Math.atan2(dz, dx) };
+    } else {
+      tramoCerr(a[0], a[1], b[0], b[1]);
+    }
+  }
+  // postes de la cerca en un solo InstancedMesh
   const postesMesh = new THREE.InstancedMesh(geoPoste, matPoste, postes.length);
   const mtxPoste = new THREE.Matrix4();
   postes.forEach(([x, y, z], i) => {
@@ -220,13 +237,14 @@ scene.add(cerramiento);
     postesMesh.setMatrixAt(i, mtxPoste);
   });
   cerramiento.add(postesMesh);
-  // portón corredizo de 6.00 m (semiabierto)
+  // portón corredizo de 6.00 m (semiabierto), alineado con la vía de acceso
   const porton = new THREE.Mesh(new THREE.BoxGeometry(6, 2.2, 0.1),
     new THREE.MeshLambertMaterial({ color:0xc9581e }));
-  porton.position.set(66.8, 1.1, L.z0 - 0.25);
+  porton.position.set(gate.x, 1.1, gate.z);
+  porton.rotation.y = gate.rot;
   cerramiento.add(porton);
-  const etCer = crearEtiqueta('PORTÓN + PUERTA PEATONAL', 14, 'rgba(70,120,45,0.9)');
-  etCer.position.set(74, 5, L.z0 - 1);
+  const etCer = crearEtiqueta('PORTÓN + PUERTA PEATONAL', 15, 'rgba(70,120,45,0.9)');
+  etCer.position.set(gate.x, 5, gate.z);
   cerramiento.add(etCer);
 }
 
