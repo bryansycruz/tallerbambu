@@ -120,7 +120,7 @@ function cargarLocalOEjemplo(){
     try { aplicarEstado(JSON.parse(hayEstado)); } catch (e) {}
   } else {
     iniciarRuta();
-    [[-82,-14],[-45,-13.5],[-10,-13],[28,-13],[58,-12.5],[80,-11]].forEach(p => agregarPunto({ x:p[0], z:p[1] }));
+    [[-84,14.5],[-45,14.5],[-8,14],[30,14],[60,16],[92,34]].forEach(p => agregarPunto({ x:p[0], z:p[1] }));
     finalizarRuta();
   }
 }

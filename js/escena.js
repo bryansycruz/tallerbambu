@@ -83,42 +83,38 @@ function lineaTerreno(puntos, color, offset, cerrar, punteada){
 }
 
 /* ============ DISTRIBUCIÓN DEL TERRENO (según plano Via.JPG) ============
-   La vía entra por el occidente, corre al sur del edificio y sube al noreste
-   hacia la autopista. El edificio (rosado) queda al norte de la vía; alrededor,
-   plataforma afirmada (gris) y pasto (verde). Límites: azul (propiedad) y rojo (sur). */
+   La vía entra por el occidente, corre al norte del edificio y sube al noreste
+   hacia la autopista, en un solo trazado. El edificio queda al sur de la vía;
+   alrededor, plataforma afirmada (gris) y pasto (verde). Límites: azul y rojo. */
 
-/* Plataforma de obra afirmada (gris claro) — forma orgánica que envuelve el edificio */
+/* Plataforma de obra afirmada (gris claro) — forma orgánica que envuelve el edificio y la vía */
 poligonoPlano([
-  [-90,-20],[-92,-4],[-80,9],[-54,16],[-18,19],[22,19],[54,14],[70,4],
-  [86,16],[104,32],[112,29],[103,8],[86,-6],[70,-16],[36,-21],[-4,-22],[-46,-21],[-78,-21]
+  [-92,-8],[-94,6],[-84,17],[-58,23],[-20,25],[24,24],[46,21],[70,25],
+  [104,46],[116,42],[100,14],[70,-6],[36,-14],[-4,-15],[-46,-14],[-80,-13]
 ], 0xa8a49a, 0.05);
 
 /* Andén del edificio (más claro), bajo las dos torres */
 poligonoPlano([[-27,-8],[52,-8],[52,8],[-27,8]], 0xb9bcc0, 0.12);
 
-/* Vía principal (gris oscuro): entra por el occidente y corre al sur del edificio */
-poligonoPlano([[-91,-19],[64,-19],[64,-9],[-91,-9]], 0x55585e, 0.08);
-poligonoPlano([[-89,-14.4],[62,-14.4],[62,-13.6],[-89,-13.6]], 0xd8d8d0, 0.10); // línea central
-
-/* Curva que sube al noreste conectando con la autopista */
-poligonoPlano([[46,-19],[66,-19],[97,10],[112,32],[99,35],[83,12],[56,-9],[44,-9]], 0x55585e, 0.08);
-
-/* Autopista (diagonal en el noreste) */
-poligonoPlano([[80,15],[122,42],[113,50],[72,23]], 0x4a4d53, 0.08);
-poligonoPlano([[86,20.5],[112,37.5],[111,39],[85,22]], 0xd8d8d0, 0.10); // línea central
+/* Vía (gris oscuro) — UN SOLO trazado: corre al norte del edificio y gira al
+   noreste hacia la autopista (sin fragmentos superpuestos) */
+poligonoPlano([
+  [-92,9],[44,9],[120,40],[112,48],[36,20],[-92,20]
+], 0x55585e, 0.08);
+poligonoPlano([[-89,14.4],[36,14.4],[36,15.6],[-89,15.6]], 0xd8d8d0, 0.10); // línea central
 
 /* Marca de topografía (referencia del plano) en el noreste */
-lineaTerreno([[104,44],[118,52]], 0x2fbf5a, 0.6, false, false);
-lineaTerreno([[110,40],[114,56]], 0x2fbf5a, 0.6, false, false);
+lineaTerreno([[104,48],[118,56]], 0x2fbf5a, 0.6, false, false);
+lineaTerreno([[110,44],[114,60]], 0x2fbf5a, 0.6, false, false);
 
 /* ---- Límite de propiedad (AZUL, discontinuo) — contorno orgánico ---- */
 lineaTerreno([
-  [-96,-8],[-90,-21],[-58,-25],[-16,-26],[30,-25],[66,-21],[92,-8],[110,8],
-  [116,30],[100,40],[74,26],[46,30],[6,32],[-32,29],[-64,22],[-90,10]
+  [-98,-4],[-92,-14],[-58,-18],[-16,-19],[30,-18],[64,-14],[90,-2],[104,10],
+  [118,36],[104,50],[74,34],[46,36],[8,38],[-34,35],[-66,28],[-96,12]
 ], 0x2f7fff, 0.7, true, true);
 
 /* ---- Límite sur de la plataforma (ROJO) ---- */
-lineaTerreno([[-91,-20],[-40,-20.5],[8,-21],[52,-20.5]], 0xc9302e, 0.7, false, false);
+lineaTerreno([[-92,-14],[-40,-14.5],[8,-15],[50,-14.5]], 0xc9302e, 0.7, false, false);
 
 /* ---- Etiquetas flotantes (sprites); el botón Etiquetas las oculta/muestra ---- */
 const etiquetasTodas = [];
@@ -142,9 +138,9 @@ function etiquetaSuelo(texto, x, z, ancho, colorFondo){
   e.position.set(x, alturaTerreno(x, z) + 3.2, z);
   scene.add(e);
 }
-etiquetaSuelo('ACCESO — VÍA', -80, -14, 14, 'rgba(50,55,60,0.85)');
-etiquetaSuelo('SALIDA AUTOPISTA', 100, 36, 16, 'rgba(50,55,60,0.85)');
-etiquetaSuelo('VÍA FUTURA (no utilizable)', 58, 44, 17, 'rgba(120,110,20,0.85)');
+etiquetaSuelo('ACCESO — VÍA', -82, 14.5, 14, 'rgba(50,55,60,0.85)');
+etiquetaSuelo('SALIDA AUTOPISTA', 104, 46, 16, 'rgba(50,55,60,0.85)');
+etiquetaSuelo('VÍA FUTURA (no utilizable)', 40, 46, 17, 'rgba(120,110,20,0.85)');
 
 /* ---- Árboles (referencia de profundidad) — instanciados: 2 draw calls
    en total, en vez de 2 mallas por árbol ---- */
