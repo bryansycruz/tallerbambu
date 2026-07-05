@@ -59,6 +59,15 @@ function alturaTerreno(x, z){
     h += Math.sin(x*0.05)*0.8 + Math.cos(z*0.07)*0.6;  // ondulación natural
   return h;
 }
+/* Altura de apoyo de un objeto: el punto más alto bajo su base (esquinas +
+   centro) para que no se entierre por el lado cuesta arriba en pendientes. */
+function alturaApoyo(x, z, w, d){
+  const hw = (w || 2) / 2, hd = (d || 2) / 2;
+  let h = alturaTerreno(x, z);
+  for (const [dx, dz] of [[-hw,-hd],[hw,-hd],[-hw,hd],[hw,hd]])
+    h = Math.max(h, alturaTerreno(x + dx, z + dz));
+  return h;
+}
 const terrenoGeo = new THREE.PlaneGeometry(400, 240, 120, 80);
 terrenoGeo.rotateX(-Math.PI/2);
 terrenoGeo.translate(10, 0, -5);

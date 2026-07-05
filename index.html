@@ -13,6 +13,36 @@
 </head>
 <body>
 
+<!-- ============ PANTALLA DE INICIO ============ -->
+<div id="inicio">
+  <div id="inicioCard">
+    <div id="inicioLogo">
+      <img src="logo/Logotipo_de_la_Universidad_Nacional_de_Colombia.svg.webp" alt="Universidad Nacional de Colombia">
+    </div>
+    <div id="inicioUni">Universidad Nacional de Colombia</div>
+    <div class="inicioLinea"></div>
+    <div id="inicioMateria">Taller II</div>
+    <div id="inicioProyecto">Obras Provisionales · Plano 3D de Obra</div>
+    <div id="inicioEquipo">
+      <span>Bryan Yamá Cruz</span>
+      <span>Manuela Gómez</span>
+      <span>Carlos Holguín</span>
+    </div>
+    <button id="inicioBtn">Comenzar</button>
+  </div>
+</div>
+<script>
+  (function () {
+    var btn = document.getElementById('inicioBtn');
+    function entrar() {
+      var el = document.getElementById('inicio');
+      el.classList.add('oculto');
+      setTimeout(function () { el.style.display = 'none'; }, 500);
+    }
+    btn.addEventListener('click', entrar);
+  })();
+</script>
+
 <!-- ============ BARRA DE HERRAMIENTAS (agrupada por temas) ============ -->
 <div id="ui">
   <button id="btnMenu"><span class="ic" data-ic="menu"></span>Menú</button>

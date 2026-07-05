@@ -6,7 +6,7 @@ const selectorUI = document.getElementById('selElem');
 
 function crearProvisional(def){
   const g = new THREE.Group();
-  g.position.set(def.pos[0], alturaTerreno(def.pos[0], def.pos[1]), def.pos[1]);
+  g.position.set(def.pos[0], alturaApoyo(def.pos[0], def.pos[1], def.w, def.d), def.pos[1]);
   g.userData.esProvisional = true;
   g.userData.info = def;
   caja(g, def.w, 0.12, def.d, 0xb5b8bc, 0, 0.06, 0);

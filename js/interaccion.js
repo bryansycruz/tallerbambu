@@ -133,7 +133,8 @@ renderer.domElement.addEventListener('pointermove', e => {
       } else {
         const nx = Math.min(CFG.limites.xMax, Math.max(CFG.limites.xMin, p.x));
         const nz = Math.min(CFG.limites.zMax, Math.max(CFG.limites.zMin, p.z));
-        arrastrando.position.set(nx, alturaTerreno(nx, nz), nz);
+        const inf = arrastrando.userData.info;
+        arrastrando.position.set(nx, alturaApoyo(nx, nz, inf.w, inf.d), nz);
       }
       if (seleccionado === arrastrando) actualizarUbicacion(arrastrando);
     }
@@ -227,6 +228,7 @@ function seleccionar(obj){
     '</table>' +
     '<div class="desc">' + d.descripcion + '</div>' +
     (esProvisional ? '<button onclick="toggleBloqueo()">' + icono(obj.userData.bloqueado ? 'candadoAbierto' : 'candado') + (obj.userData.bloqueado ? 'Desbloquear' : 'Bloquear en este lugar') + '</button>' : '') +
+    (esProvisional ? '<button onclick="programarCamionZona(seleccionado.userData.info.nombre)">' + icono('camion') + 'Programar camión a esta zona</button>' : '') +
     '<button onclick="abrirPlanos(seleccionado.userData.info.nombre)">' + icono('plano') + 'Ficha técnica, planos y enlaces</button>' +
     (obj.userData.esEdificio ? '<button onclick="togglePiso4()">' + icono('edificio') + 'Ver Piso 4 en detalle</button>' +
       '<button onclick="abrirHojaPiso5()">' + icono('abrir') + 'Abrir hoja del Piso 5</button>' : '');

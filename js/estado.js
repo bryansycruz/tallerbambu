@@ -34,11 +34,12 @@ function aplicarEstado(d){
     draggables.forEach(g => {
       const p = d.elementos[g.userData.info.nombre];
       if (!p) return;
+      const inf = g.userData.info;
       if (Array.isArray(p)){
-        g.position.set(p[0], alturaTerreno(p[0], p[1]), p[1]);
+        g.position.set(p[0], alturaApoyo(p[0], p[1], inf.w, inf.d), p[1]);
         g.userData.bloqueado = false;
       } else {
-        g.position.set(p.x, alturaTerreno(p.x, p.z), p.z);
+        g.position.set(p.x, alturaApoyo(p.x, p.z, inf.w, inf.d), p.z);
         g.userData.bloqueado = !!p.bloqueado;
       }
       actualizarTinte(g);

@@ -2,6 +2,41 @@
   html, body { margin:0; padding:0; overflow:hidden; height:100%; background:#1a1e26; font-family:'Titillium Web', 'Segoe UI', Arial, sans-serif; }
   canvas { display:block; touch-action:none; }
 
+  /* ============ PANTALLA DE INICIO ============ */
+  #inicio {
+    position:fixed; inset:0; z-index:100;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 50% 28%, #26303f, #12151c 72%);
+    transition:opacity .5s ease;
+  }
+  #inicio.oculto { opacity:0; pointer-events:none; }
+  #inicioCard { text-align:center; padding:26px 24px; max-width:540px; }
+  #inicioLogo {
+    width:158px; height:158px; margin:0 auto 22px; padding:16px;
+    background:#fff; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 12px 44px rgba(0,0,0,.55);
+  }
+  #inicioLogo img { width:100%; height:100%; object-fit:contain; }
+  #inicioUni { font-size:15px; letter-spacing:1.2px; color:#cfd6e0; text-transform:uppercase; }
+  .inicioLinea { width:64px; height:3px; background:#c97b1e; margin:16px auto; border-radius:2px; }
+  #inicioMateria { font-size:48px; font-weight:700; color:#f0a340; line-height:1; }
+  #inicioProyecto { font-size:15px; color:#9aa5b5; margin-top:8px; }
+  #inicioEquipo { margin:24px 0 28px; display:flex; flex-direction:column; gap:5px; }
+  #inicioEquipo span { font-size:15px; color:#e8ecf2; }
+  #inicioBtn {
+    background:#c97b1e; color:#fff; border:none; border-radius:8px;
+    padding:13px 40px; font-size:16px; font-weight:600; cursor:pointer;
+    font-family:inherit; transition:background .15s;
+  }
+  #inicioBtn:hover { background:#e08c28; }
+  @media (max-width:600px){
+    #inicioLogo { width:124px; height:124px; }
+    #inicioUni { font-size:12px; }
+    #inicioMateria { font-size:38px; }
+    #inicioProyecto, #inicioEquipo span { font-size:13px; }
+  }
+
   #ui {
     position:absolute; top:12px; left:12px; z-index:10;
     display:flex; flex-wrap:wrap; gap:8px; align-items:center;
@@ -258,11 +293,22 @@
     font-size:10px; letter-spacing:.6px; text-transform:uppercase;
     color:#8a93a3; margin-bottom:2px;
   }
-  #ui button, #ui select { font-size:13px; padding:9px 12px; }
+  #ui button, #ui select { font-size:11px; padding:6px 8px; }
+  #ui .ic svg { width:12px; height:12px; }
+  #ui label { font-size:11px; }
   #ui input[type=range] { width:80px; }
+  #relojObra { font-size:11px; padding:4px 8px; }
 
   /* la ayuda de controles no cabe en pantalla pequeña */
   #ayuda { display:none; }
+
+  /* textos de ventanas y panel, más compactos en celular */
+  #panel h2 { font-size:14px; }
+  #panel .desc, #panel td, #pBody { font-size:11px; }
+  #panel button, .orgAccion, .planoBtn { font-size:11px; }
+  #orgBody, #planosBody, #camBody, #aptoBody { font-size:11px; }
+  .orgNodo .rol { font-size:11px; }
+  .orgNodo .nom { font-size:10px; }
 
   /* pad de navegación visible en móvil; su posición vertical exacta la
      ajusta JS (posicionarPad) para que nunca quede sobre el panel */
