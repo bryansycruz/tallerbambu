@@ -1,14 +1,18 @@
-/* Planos AutoCAD por zona (Supabase Storage / IndexedDB) y hoja del Piso 5 */
+/* Documentos por zona: planos AutoCAD, fichas técnicas y enlaces de página.
+   También la hoja del Piso 5. */
 
-/* ============ 12c. PLANOS AUTOCAD POR ZONA ============
+/* ============ 12c. DOCUMENTOS POR ZONA ============
    Cada zona (provisional, torre, montacargas, cerramiento o sector del piso 4)
-   puede tener planos adjuntos (.dwg, .dxf, .pdf): subir, descargar y eliminar.
-   Con Supabase configurado se comparten con el equipo (bucket "planos");
-   sin Supabase se guardan solo en este navegador (IndexedDB). */
-const EXT_PLANOS = ['dwg', 'dxf', 'pdf'];
+   puede tener adjuntos: planos (.dwg, .dxf), fichas técnicas (PDF, imagen,
+   Word/Excel) y enlaces a páginas web (ej: catálogo de la maquinaria).
+   Los archivos se comparten vía el almacenamiento en la nube (bucket "planos")
+   o quedan en este navegador (IndexedDB) si aún no está configurado.
+   Los enlaces viajan con el estado compartido, como las posiciones. */
+const EXT_PLANOS = ['dwg', 'dxf', 'pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'];
 const MAX_PLANO_MB = 25;
 let zonaPlanos = null;      // { nombre, slug }
-let planosCache = [];       // lista mostrada actualmente
+let planosCache = [];       // lista de archivos mostrada actualmente
+let enlaces = {};           // { zonaSlug: [{ titulo, url }] } — compartido con el equipo
 
 function slugZona(nombre){
   return String(nombre).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -60,8 +64,8 @@ async function listarPlanos(){
 }
 async function renderPlanos(){
   const cuerpo = document.getElementById('planosBody');
-  document.getElementById('planosTitulo').textContent = 'Planos — ' + zonaPlanos.nombre;
-  cuerpo.innerHTML = '<div class="desc">Cargando lista de planos…</div>';
+  document.getElementById('planosTitulo').textContent = 'Documentos — ' + zonaPlanos.nombre;
+  cuerpo.innerHTML = '<div class="desc">Cargando documentos…</div>';
   let filas = '';
   try {
     planosCache = await listarPlanos();
@@ -75,28 +79,77 @@ async function renderPlanos(){
               '<button class="planoBtn peligro" title="Eliminar" onclick="eliminarPlano(' + i + ')">' + icono('basura') + '</button>' +
             '</span>' +
           '</div>').join('')
-      : '<div class="desc">Esta zona aún no tiene planos adjuntos.</div>';
+      : '<div class="desc">Esta zona aún no tiene archivos adjuntos.</div>';
   } catch (e) {
     filas = '<div class="desc">No se pudo cargar la lista (' + esc(e.message || 'error') + ').' +
       (supabaseClient ? ' Verifica la configuración del almacenamiento compartido.' : '') + '</div>';
   }
+  const lst = enlaces[zonaPlanos.slug] || [];
+  const filasEnlaces = lst.length
+    ? lst.map((e2, i) =>
+        '<div class="planoFila">' +
+          '<span class="planoNom">' + icono('abrir') + ' ' + esc(e2.titulo || e2.url) +
+            (e2.titulo ? ' <small>' + esc(e2.url.slice(0, 60)) + '</small>' : '') + '</span>' +
+          '<span>' +
+            '<button class="planoBtn" title="Abrir página" onclick="abrirEnlace(' + i + ')">' + icono('abrir') + '</button> ' +
+            '<button class="planoBtn peligro" title="Quitar" onclick="quitarEnlace(' + i + ')">' + icono('basura') + '</button>' +
+          '</span>' +
+        '</div>').join('')
+    : '<div class="desc">Sin enlaces todavía.</div>';
   cuerpo.innerHTML =
     '<div class="desc" style="margin-bottom:8px">' +
       (supabaseClient
-        ? 'Los planos de esta zona se comparten con todo el equipo.'
-        : 'En este momento los planos se guardan solo en este navegador.') +
-    '</div>' + filas +
+        ? 'Los documentos de esta zona se comparten con todo el equipo.'
+        : 'En este momento los archivos se guardan solo en este navegador; los enlaces sí se comparten al conectar el equipo.') +
+    '</div>' +
+    '<b>Ficha técnica y planos (archivos)</b>' + filas +
     '<button class="orgAccion primario" onclick="document.getElementById(\'planoArchivo\').click()">' +
-      icono('subir') + 'Subir plano (.dwg · .dxf · .pdf, máx. ' + MAX_PLANO_MB + ' MB)</button>';
+      icono('subir') + 'Subir archivo (plano, PDF, imagen, Word/Excel · máx. ' + MAX_PLANO_MB + ' MB)</button>' +
+    '<div style="margin-top:16px"><b>Enlaces de página</b></div>' + filasEnlaces +
+    '<div style="display:flex; flex-direction:column; gap:6px; margin-top:10px">' +
+      '<input id="enlNombre" maxlength="80" placeholder="Nombre (ej: Ficha técnica del montacargas)">' +
+      '<div style="display:flex; gap:6px">' +
+        '<input id="enlUrl" maxlength="300" placeholder="https://…" style="flex:1">' +
+        '<button class="orgAccion primario" style="margin:0" onclick="agregarEnlace()">' + icono('mas') + 'Agregar</button>' +
+      '</div>' +
+    '</div>';
+  const inpUrl = document.getElementById('enlUrl');
+  inpUrl.addEventListener('keydown', e => { if (e.key === 'Enter') agregarEnlace(); });
 }
 function abrirPlanos(nombreZona){
   zonaPlanos = { nombre: nombreZona, slug: slugZona(nombreZona) };
   document.getElementById('planosOverlay').style.display = 'flex';
   renderPlanos();
 }
+
+/* ---- Enlaces de página por zona (ficha técnica online, catálogos, etc.) ---- */
+function agregarEnlace(){
+  const nom = (document.getElementById('enlNombre').value || '').trim().slice(0, 80);
+  let url = (document.getElementById('enlUrl').value || '').trim().slice(0, 300);
+  if (!url){ avisoGuardado('Escribe la dirección de la página'); return; }
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  try { new URL(url); } catch (e) { avisoGuardado('La dirección no es válida'); return; }
+  if (!enlaces[zonaPlanos.slug]) enlaces[zonaPlanos.slug] = [];
+  enlaces[zonaPlanos.slug].push({ titulo: nom, url });
+  guardarCompartido();
+  renderPlanos();
+  avisoGuardado('Enlace agregado' + (nom ? ': ' + nom : ''));
+}
+function abrirEnlace(i){
+  const e2 = (enlaces[zonaPlanos.slug] || [])[i];
+  if (!e2) return;
+  if (!/^https?:\/\//i.test(e2.url)){ avisoGuardado('Dirección no permitida'); return; }
+  window.open(e2.url, '_blank', 'noopener');
+}
+function quitarEnlace(i){
+  if (!enlaces[zonaPlanos.slug]) return;
+  enlaces[zonaPlanos.slug].splice(i, 1);
+  guardarCompartido();
+  renderPlanos();
+}
 async function subirPlano(archivo){
   const ext = (archivo.name.split('.').pop() || '').toLowerCase();
-  if (!EXT_PLANOS.includes(ext)){ avisoGuardado('Solo se permiten archivos .dwg, .dxf o .pdf'); return; }
+  if (!EXT_PLANOS.includes(ext)){ avisoGuardado('Solo se permiten planos (.dwg, .dxf), PDF, imágenes o documentos de Office'); return; }
   if (archivo.size > MAX_PLANO_MB * 1048576){ avisoGuardado('El plano supera los ' + MAX_PLANO_MB + ' MB'); return; }
   const nombre = Date.now() + '_' + archivo.name.replace(/[^\w.\-]+/g, '_');
   document.getElementById('planosBody').innerHTML = '<div class="desc">Subiendo ' + esc(archivo.name) + '…</div>';

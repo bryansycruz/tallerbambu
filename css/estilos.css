@@ -167,6 +167,11 @@
   .planoBtn:hover { background:#3d4a62; }
   .planoBtn.peligro:hover { background:#6b2a1e; border-color:#a04030; }
   .planoBtn svg { width:13px; height:13px; vertical-align:-2px; }
+  #planosBody input {
+    background:#2e3646; border:1px solid #4a5468; color:#e8ecf2;
+    border-radius:6px; padding:7px 10px; font-size:13px;
+  }
+  #planosBody b { color:#f0a340; font-size:13px; }
 
 /* ============ PAD DE NAVEGACIÓN (móvil) ============ */
 #pad {
@@ -210,15 +215,23 @@
   /* la ayuda de controles no cabe en pantalla pequeña */
   #ayuda { display:none; }
 
-  /* pad de navegación visible en móvil */
+  /* pad de navegación visible en móvil; su posición vertical exacta la
+     ajusta JS (posicionarPad) para que nunca quede sobre el panel */
   #pad { display:flex; }
 
-  /* panel de obra: cajón inferior plegable (solo se ve el título) */
+  /* con el panel abierto queda poco espacio vertical: se ocultan las
+     flechas de dirección (el gesto de dos dedos ya desplaza la cámara)
+     y zoom + mostrar/ocultar etiquetas pasan a una fila compacta */
+  #panel.abierto ~ #pad #padCruz { display:none; }
+  #panel.abierto ~ #pad #padZoom { flex-direction:row; }
+
+  /* panel de obra: cajón inferior plegable (solo se ve el título).
+     Sin transición: el cambio de alto debe ser instantáneo para que
+     posicionarPad() en main.js pueda medir su borde real sin demora. */
   #panel {
     top:auto; bottom:0; left:8px; right:8px; width:auto;
     max-height:46px; overflow:hidden;
     border-radius:12px 12px 0 0; padding:12px 16px;
-    transition:max-height .25s ease;
   }
   #panel.abierto { max-height:48vh; overflow-y:auto; }
   #panel h2 { cursor:pointer; user-select:none; }

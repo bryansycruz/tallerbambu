@@ -20,7 +20,8 @@ function estadoActual(){
     rutas: rutas.map(r => r.puntos.map(p => [Math.round(p.x*100)/100, Math.round(p.z*100)/100])),
     malacate: parseFloat(rangoMalacate.value),
     malacatePos: [Math.round(malacate.position.x*100)/100, Math.round(malacate.position.z*100)/100],
-    organigrama: funcionesExtra
+    organigrama: funcionesExtra,
+    enlaces: enlaces
   };
 }
 function guardarLocal(){
@@ -57,6 +58,9 @@ function aplicarEstado(d){
   }
   if (d.organigrama && typeof d.organigrama === 'object' && !Array.isArray(d.organigrama)){
     funcionesExtra = d.organigrama;
+  }
+  if (d.enlaces && typeof d.enlaces === 'object' && !Array.isArray(d.enlaces)){
+    enlaces = d.enlaces;
   }
 }
 

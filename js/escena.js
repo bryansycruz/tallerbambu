@@ -14,6 +14,10 @@ renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio, ES_MOVIL ? 1.15 : 1.5));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = ES_MOVIL ? THREE.BasicShadowMap : THREE.PCFShadowMap;
+// el mapa de sombras solo se recalcula cada 3 cuadros (ver animar en main.js):
+// visualmente imperceptible y la GPU se ahorra 2 de cada 3 pasadas de sombra
+renderer.shadowMap.autoUpdate = false;
+renderer.shadowMap.needsUpdate = true;
 document.body.appendChild(renderer.domElement);
 
 const hemi = new THREE.HemisphereLight(0xbfd4ff, 0x3a3428, 0.75);
@@ -151,24 +155,35 @@ etiquetaSuelo('VÍA FUTURA (no utilizable)', 60, 30, 17, 'rgba(140,70,20,0.85)')
 etiquetaSuelo('LADERA NORTE', -30, 45, 14, 'rgba(50,90,35,0.8)');
 etiquetaSuelo('TALUD', -20, -55, 8, 'rgba(50,90,35,0.8)');
 
-/* ---- Árboles (referencia de profundidad) ---- */
-function arbol(x, z, s){
-  const g = new THREE.Group();
-  const tr = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.15*s, 0.2*s, 1.2*s, 6),
-    new THREE.MeshLambertMaterial({ color:0x6a4a2a })
+/* ---- Árboles (referencia de profundidad) — instanciados: 2 draw calls
+   en total, en vez de 2 mallas por árbol ---- */
+{
+  const posArboles = [[-60,40],[-20,44],[10,48],[-90,30],[-110,10],[-105,-20],[-40,-52],[0,-56],
+    [40,-52],[70,-50],[-120,-40],[-95,45],[35,52],[-70,-55]];
+  const troncos = new THREE.InstancedMesh(
+    new THREE.CylinderGeometry(0.15, 0.2, 1.2, 6),
+    new THREE.MeshLambertMaterial({ color:0x6a4a2a }),
+    posArboles.length
   );
-  tr.position.y = 0.6*s; g.add(tr);
-  const copa = new THREE.Mesh(
-    new THREE.ConeGeometry(1.1*s, 2.2*s, 8),
-    new THREE.MeshLambertMaterial({ color:0x3f6f34 })
+  const copas = new THREE.InstancedMesh(
+    new THREE.ConeGeometry(1.1, 2.2, 8),
+    new THREE.MeshLambertMaterial({ color:0x3f6f34 }),
+    posArboles.length
   );
-  copa.position.y = 2.1*s; copa.castShadow = true; g.add(copa);
-  g.position.set(x, alturaTerreno(x, z), z);
-  scene.add(g);
+  copas.castShadow = true;
+  const mtx = new THREE.Matrix4();
+  posArboles.forEach(([x, z], i) => {
+    const s = 1.6 + Math.random()*1.2;
+    const y = alturaTerreno(x, z);
+    mtx.makeScale(s, s, s);
+    mtx.setPosition(x, y + 0.6*s, z);
+    troncos.setMatrixAt(i, mtx);
+    mtx.setPosition(x, y + 2.1*s, z);
+    copas.setMatrixAt(i, mtx);
+  });
+  scene.add(troncos);
+  scene.add(copas);
 }
-[[-60,40],[-20,44],[10,48],[-90,30],[-110,10],[-105,-20],[-40,-52],[0,-56],[40,-52],[70,-50],
- [-120,-40],[-95,45],[35,52],[-70,-55]].forEach(([x,z]) => arbol(x, z, 1.6 + Math.random()*1.2));
 
 /* ---- Cerramiento provisional perimetral (~420 m) ---- */
 const cerramiento = new THREE.Group();
@@ -497,7 +512,7 @@ function abrirApto(a){
     ['Replanteo', 'Mampostería', 'Instalaciones embebidas', 'Pañete / estuco', 'Enchapes', 'Pintura', 'Carpintería', 'Aparatos y remates']
       .map(s => '<span class="chipEspacio">' + s + '</span>').join('') +
     '</div>' +
-    '<button onclick="abrirPlanos(\'Piso 4 · ' + a.nom + '\')">' + icono('plano') + 'Planos AutoCAD del ' + a.nom + '</button>' +
+    '<button onclick="abrirPlanos(\'Piso 4 · ' + a.nom + '\')">' + icono('plano') + 'Ficha técnica y planos del ' + a.nom + '</button>' +
     '<div class="zonaImg">Zona reservada para imágenes / detalles del ' + a.nom +
     '<br><small>Aquí se integrarán las imágenes y los detalles adicionales que me envíes.</small></div>';
   document.getElementById('aptoOverlay').style.display = 'flex';

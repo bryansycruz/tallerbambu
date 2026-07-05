@@ -63,7 +63,7 @@
     <div id="planosBody"></div>
   </div>
 </div>
-<input type="file" id="planoArchivo" accept=".dwg,.dxf,.pdf" style="display:none">
+<input type="file" id="planoArchivo" accept=".dwg,.dxf,.pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" style="display:none">
 
 <!-- ============ PANEL DE INFORMACIÓN ============ -->
 <div id="panel">
@@ -73,8 +73,9 @@
     Haz clic sobre cualquier elemento (torre, montacargas, cerramiento o provisionales) para ver su ficha:
     materiales, altura, cerramiento y ubicación. Arrastra los provisionales para reubicarlos.<br><br>
     Los cambios se guardan automáticamente y los ve todo el equipo (punto verde/naranja arriba).
-    Selecciona un provisional para <b>bloquearlo</b> en su lugar, <b>adjuntarle planos de AutoCAD</b>
-    o ver su ficha. Haz clic en el <b>piso 5</b> de la torre para abrir su hoja de detalle.<br><br>
+    Selecciona cualquier zona o maquinaria para <b>bloquearla</b> en su lugar o adjuntarle su
+    <b>ficha técnica, planos y enlaces de página</b>. Haz clic en el <b>piso 5</b> de la torre
+    para abrir su hoja de detalle.<br><br>
     <b>Guardar</b> además descarga un <i>distribucion_obra.json</i> de respaldo:
     otra persona puede abrirlo con <b>Cargar</b> si no hay conexión compartida.
   </div>
@@ -103,7 +104,7 @@
   <b>Piso 5:</b> clic sobre el piso 5 de la torre = abre su hoja de detalle<br>
   <b>Flujo:</b> "Trazar flujo" → clics en el terreno → "Finalizar ruta"<br>
   <b>Organigrama:</b> clic en cada rol: funciones, resaltar su área y zonas de riesgo<br>
-  <b>Planos:</b> selecciona una zona → "Planos AutoCAD" para subir, descargar o eliminar
+  <b>Documentos:</b> selecciona una zona → ficha técnica, planos y enlaces de página
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"

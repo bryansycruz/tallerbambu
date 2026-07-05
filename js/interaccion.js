@@ -226,12 +226,13 @@ function seleccionar(obj){
     '</table>' +
     '<div class="desc">' + d.descripcion + '</div>' +
     (esProvisional ? '<button onclick="toggleBloqueo()">' + icono(obj.userData.bloqueado ? 'candadoAbierto' : 'candado') + (obj.userData.bloqueado ? 'Desbloquear' : 'Bloquear en este lugar') + '</button>' : '') +
-    '<button onclick="abrirPlanos(seleccionado.userData.info.nombre)">' + icono('plano') + 'Planos AutoCAD de esta zona</button>' +
+    '<button onclick="abrirPlanos(seleccionado.userData.info.nombre)">' + icono('plano') + 'Ficha técnica, planos y enlaces</button>' +
     (obj.userData.esEdificio ? '<button onclick="togglePiso4()">' + icono('edificio') + 'Ver Piso 4 en detalle</button>' +
       '<button onclick="abrirHojaPiso5()">' + icono('abrir') + 'Abrir hoja del Piso 5</button>' : '');
   actualizarUbicacion(obj);
   // en móvil el panel es un cajón inferior: se abre al seleccionar un elemento
   document.getElementById('panel').classList.add('abierto');
+  posicionarPad();
 }
 function actualizarUbicacion(obj){
   const u = document.getElementById('pUbic');

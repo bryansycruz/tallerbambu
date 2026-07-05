@@ -8,7 +8,23 @@ document.getElementById('btnMenu').onclick = () => {
 };
 document.getElementById('pTitulo').onclick = () => {
   document.getElementById('panel').classList.toggle('abierto');
+  posicionarPad();
 };
+
+/* ---- Pad de navegación: se reubica según el borde real del panel para
+   nunca quedar encima de su texto (más fiable que usar unidades vh, que
+   varían con la barra de direcciones del navegador móvil). El panel no
+   tiene transición en móvil, así que la medición es siempre instantánea
+   y exacta, sin necesidad de esperar ninguna animación. ---- */
+function posicionarPad(){
+  const pad = document.getElementById('pad');
+  const panel = document.getElementById('panel');
+  if (!pad || !panel || getComputedStyle(pad).display === 'none') return;
+  const top = panel.getBoundingClientRect().top;
+  pad.style.bottom = Math.max(64, innerHeight - top + 14) + 'px';
+}
+addEventListener('resize', posicionarPad);
+posicionarPad();
 
 /* ============ 13. UI + LOOP ============ */
 let vistaPiso4 = false;
@@ -121,6 +137,7 @@ cargarCompartido();
 
 const reloj = new THREE.Clock();
 let tiempo = 0;
+let numFrame = 0;
 const dirTmp = new THREE.Vector3();
 const puntoTmp = new THREE.Vector3();
 const tangenteTmp = new THREE.Vector3();
@@ -182,6 +199,8 @@ function animar(){
   });
 
   actualizarCamara();
+  numFrame++;
+  if (numFrame % 3 === 0) renderer.shadowMap.needsUpdate = true;
   renderer.render(scene, camera);
   vigilarRendimiento();
 }
