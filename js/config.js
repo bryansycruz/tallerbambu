@@ -59,7 +59,7 @@ function aplicarIconos(){
    Fase: Cerramientos y Acabados (estructura existente)
    Lote: 163.00 × 47.00 m · Fondo de torres: 12.50 m
    Vía de acceso existente de 15.00 m · Cerramiento perimetral ~420 m
-   Montacargas tipo cremallera (1.000 kg) al punto medio de la fachada.
+   Malacate tipo cremallera (1.000 kg) al punto medio de la fachada.
    Estructura del código:
      1. CONFIG            8. PROVISIONALES (dimensiones reales del informe)
      2. ESCENA            9. PERSONAS
@@ -79,7 +79,7 @@ const CFG = {
   hPiso: 2.65,          // entrepiso 2.65 m → 10 × 2.65 = 26.50 m
   sotanos: 3,
   hSotano: 3.0,         // niveles: S1 -3.40 · S2 -6.20 · S3 -9.00 m
-  malacateX: 0,         // montacargas al punto medio de la Torre 01
+  malacateX: 0,         // malacate al punto medio de la Torre 01
   lote: { x0:-81.5, x1:81.5, z0:-23.5, z1:23.5 },  // 163.00 × 47.00 m
   limites: { xMin:-80, xMax:80, zMin:-37, zMax:22 }
 };

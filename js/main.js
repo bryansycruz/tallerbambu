@@ -188,7 +188,7 @@ function animar(){
     if (k === 1) animCam = null;
   }
 
-  // montacargas (30-40 m/min a escala visual)
+  // malacate (30-40 m/min a escala visual)
   let objetivo = parseFloat(rangoMalacate.value);
   if (chkAuto.checked){
     objetivo = (Math.sin(tiempo*0.35)*0.5 + 0.5) * 9;

@@ -139,12 +139,18 @@ function detalleLavadoInforme(g, def){
   caja(g, 8, 0.06, 2, 0xc9ccd0, 0, 0.15, -6.8);                          // escurrido
   textoLocal(g, 'SALIDA → PORTERÍA', 6, 0, -7.6, '#7a2e00');
 }
-/* ---- Portería / control de acceso ---- */
+/* ---- Portería / control de acceso — portón del ancho de la vía ---- */
 function detallePorteria(g, def){
-  caja(g, 1.6, 0.95, 0.5, 0x9a7a48, 0, 0.48, def.d/2 - 0.7);
-  sillaFig(g, 0, def.d/2 - 1.4);
-  cilindro(g, 0.08, 1.1, 0xd8d8d0, def.w/2 + 0.7, 0.55, 0.5);
-  caja(g, 3, 0.09, 0.09, 0xc9302e, def.w/2 + 2.1, 1.05, 0.5);
+  const w = def.w;
+  // caseta del vigilante en un extremo
+  caja(g, 2.6, 2.1, def.d, 0x9a7a48, -w/2 + 1.4, 1.05, 0, 1);
+  caja(g, 2.9, 0.12, def.d + 0.3, 0x6d7075, -w/2 + 1.4, 2.2, 0, 1); // techito
+  sillaFig(g, -w/2 + 1.4, 0.4);
+  // postes a ambos lados de la vía
+  cilindro(g, 0.13, 2.4, 0xd8d8d0, -w/2 + 3, 1.2, 0);
+  cilindro(g, 0.13, 2.4, 0xd8d8d0,  w/2 - 0.5, 1.2, 0);
+  // barrera roja/blanca que cruza toda la vía (del ancho de la vía)
+  caja(g, w - 3.5, 0.16, 0.16, 0xc9302e, ((-w/2 + 3) + (w/2 - 0.5)) / 2, 1.7, 0);
 }
 /* ---- Comedor + cocineta trabajadores (~87 m²) ---- */
 function detalleComedor(g, def){
@@ -203,11 +209,11 @@ const PROVISIONALES = [
   { aforo:'8 personas (almacenista y ayudantes)', nombre:'Almacén central', w:38, d:14, h:4, color:0xd9a521, muros:true, techo:true, pos:[38,15], detalle:detalleAlmacen,
     material:'Estructura metálica, cubierto y ventilado — 532 m²',
     cerramiento:'Cerrado con control de humedad (materiales delicados)',
-    descripcion:'Almacén de 38×14 = 532 m² junto a la torre para minimizar la manipulación de cerámica, enchapes, pintura, grifería y aparatos sanitarios. Desde aquí el material va en carretillas buggy al pie del montacargas (≈15-25 m).' },
+    descripcion:'Almacén de 38×14 = 532 m² junto a la torre para minimizar la manipulación de cerámica, enchapes, pintura, grifería y aparatos sanitarios. Desde aquí el material va en carretillas buggy al pie del malacate (≈15-25 m).' },
   { aforo:'6 personas en labores de acopio', nombre:'Paletizado', w:22, d:16, h:1.6, color:0xb08f5a, pos:[38,-14], detalle:detallePaletizado,
     material:'Superficie afirmada con estibas — 352 m²',
     cerramiento:'Demarcada, a cielo abierto',
-    descripcion:'Recepción y organización de estibas (22×16 = 352 m²) antes de su ingreso al almacén o directamente al pie del montacargas.' },
+    descripcion:'Recepción y organización de estibas (22×16 = 352 m²) antes de su ingreso al almacén o directamente al pie del malacate.' },
   { aforo:'4 personas (conductor y señaleros)', nombre:'Patio de maniobra', w:15, d:18, h:2.4, color:0xe0c040, pos:[62,-12], detalle:detalleManiobra,
     material:'Placa afirmada señalizada — 270 m²',
     cerramiento:'Demarcación con franjas y conos',
@@ -216,9 +222,9 @@ const PROVISIONALES = [
     material:'Rejilla metálica + cepillos giratorios y aspersores — 192 m²',
     cerramiento:'Poceta de sedimentación + trampa de grasas antes de descarga',
     descripcion:'1 unidad de 12×16 = 192 m², inmediatamente antes de la portería: todo vehículo que sale pasa obligatoriamente por el lavado antes de incorporarse a la vía de acceso / autopista. Capacidad ~3-4 min/vehículo, con recirculación de agua y purga de lodos a disposición autorizada.' },
-  { aforo:'2 vigilantes', nombre:'Portería', w:4, d:3, h:2.5, color:0xb8371f, muros:true, techo:true, pos:[72,-19], detalle:detallePorteria,
-    material:'Caseta prefabricada junto al portón de 6.00 m',
-    cerramiento:'Portón vehicular corredizo 6.00 m + puerta peatonal 1.00 m',
+  { aforo:'2 vigilantes', nombre:'Portería', w:12, d:4, h:2.5, color:0xb8371f, muros:false, techo:false, pos:[84,-24], detalle:detallePorteria,
+    material:'Caseta de vigilancia + portón del ancho de la vía (~12 m)',
+    cerramiento:'Portón vehicular en toda la vía + puerta peatonal',
     descripcion:'Único acceso vehicular y peatonal del lote, en el extremo donde la vía de 15.00 m conecta con la salida de la autopista. Concentra el control de ingreso; requiere señalización para evitar cruces de flujo.' },
   { aforo:'64 personas por turno', nombre:'Comedor', w:12.5, d:7, h:2.7, color:0x5fae4a, muros:true, techo:true, pos:[-45,18], detalle:detalleComedor,
     material:'Estructura metálica con cubierta — ≈87 m² (≈1.2 m²/trabajador en pico)',
@@ -235,7 +241,7 @@ const PROVISIONALES = [
   { aforo:'1 técnico autorizado', nombre:'Acometida eléctrica', w:2.5, d:2.5, h:2, color:0xd9a521, pos:[78,-14], detalle:detalleAcomElec,
     material:'Tablero temporal con contador, junto a la portería',
     cerramiento:'Gabinete con candado y señalización de riesgo eléctrico',
-    descripcion:'Junto a la portería para facilitar lectura y mantenimiento de la empresa prestadora. Distribuye a montacargas, oficinas, almacén y comedor. Concentrarla en el ingreso reduce redes expuestas en el patio de maniobra.' },
+    descripcion:'Junto a la portería para facilitar lectura y mantenimiento de la empresa prestadora. Distribuye a malacate, oficinas, almacén y comedor. Concentrarla en el ingreso reduce redes expuestas en el patio de maniobra.' },
   { aforo:'1 técnico autorizado', nombre:'Acometida de agua', w:2.5, d:2.5, h:1.5, color:0x2f5d8a, pos:[78,-9], detalle:detalleAcomAgua,
     material:'Empalme a red municipal existente en la vía de acceso',
     cerramiento:'Caja de medidor + registro de corte',

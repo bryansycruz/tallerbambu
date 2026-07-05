@@ -188,11 +188,11 @@ const pBody   = document.getElementById('pBody');
 
 function actualizarTinte(obj){
   if (!obj) return;
-  // provisionales: semáforo de estado — rojo = bloqueado, verde = libre
-  const esProv = obj.userData.esProvisional;
+  // los objetos NO se tiñen por estado; solo se resalta el seleccionado (ámbar)
+  // o el área de un rol del organigrama. El bloqueo se indica en el texto del panel.
   const color = obj === seleccionado ? 0x554400
     : (rolPintado && esObjetivoRol(ORG[rolPintado], obj)) ? ORG[rolPintado].emissive
-    : (obj.userData.bloqueado ? 0x8a1616 : (esProv ? 0x145020 : 0x000000));
+    : 0x000000;
   obj.traverse(n => {
     if (n.isMesh && n.material && n.material.emissive !== undefined){
       n.material.emissive = new THREE.Color(color);
@@ -227,13 +227,13 @@ function seleccionar(obj){
     '<tr><td>Aforo máximo</td><td>' + (d.aforo || '—') + '</td></tr>' +
     '</table>' +
     '<div class="desc">' + d.descripcion + '</div>' +
-    (esProvisional ? '<button onclick="toggleBloqueo()">' + icono(obj.userData.bloqueado ? 'candadoAbierto' : 'candado') + (obj.userData.bloqueado ? 'Desbloquear' : 'Bloquear en este lugar') + '</button>' : '') +
+    (esProvisional ? '<button class="btnBloqueo ' + (obj.userData.bloqueado ? 'bloqueado' : 'libre') + '" onclick="toggleBloqueo()">' + icono(obj.userData.bloqueado ? 'candadoAbierto' : 'candado') + (obj.userData.bloqueado ? 'Bloqueado — toca para desbloquear' : 'Libre — toca para bloquear') + '</button>' : '') +
     (esProvisional ? '<button onclick="programarCamionZona(seleccionado.userData.info.nombre)">' + icono('camion') + 'Programar camión a esta zona</button>' : '') +
     '<button onclick="abrirPlanos(seleccionado.userData.info.nombre)">' + icono('plano') + 'Ficha técnica, planos y enlaces</button>' +
     (obj.userData.esEdificio ? '<button onclick="togglePiso4()">' + icono('edificio') + 'Ver Piso 4 en detalle</button>' +
       '<button onclick="abrirHojaPiso5()">' + icono('abrir') + 'Abrir hoja del Piso 5</button>' : '');
-  // en móvil el panel es un cajón inferior: se abre al seleccionar un elemento
-  document.getElementById('panel').classList.add('abierto');
+  // en móvil el cajón se muestra plegado (solo el nombre + flecha); el usuario
+  // toca la flecha para desplegar toda la descripción
   posicionarPad();
 }
 function actualizarUbicacion(obj){

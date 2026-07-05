@@ -39,7 +39,7 @@ function posicionZona(nombre){
   const g = draggables.find(d => d.userData.info.nombre === nombre);
   if (g) return { x: g.position.x, z: g.position.z, w: g.userData.info.w, d: g.userData.info.d };
   if (nombre && /torre|piso|edificio/i.test(nombre)) return { x: 0, z: 0, w: CFG.largo, d: CFG.fondo };
-  if (nombre && /montacargas/i.test(nombre)) return { x: malacate.position.x, z: malacate.position.z, w: 3, d: 3 };
+  if (nombre && /malacate/i.test(nombre)) return { x: malacate.position.x, z: malacate.position.z, w: 3, d: 3 };
   const alm = draggables.find(d => d.userData.info.nombre === 'Almacén central');
   return alm ? { x: alm.position.x, z: alm.position.z, w: alm.userData.info.w, d: alm.userData.info.d }
              : { x: 38, z: 15, w: 38, d: 14 };
@@ -65,8 +65,12 @@ function recorridoCamion(nombreZona){
   const pPatio = patio ? [patio.position.x, patio.position.z + patio.userData.info.d/2 + 2] : [62, -3];
   const lav = buscarProv('Lavado de llantas');
   const pLav = lav ? [lav.position.x, lav.position.z] : [76, 4];
-  const ida = [[106,-30],[88,-28],[70,-22], pPatio, aprox];
-  const vuelta = [aprox, pLav, [70,-24],[88,-29],[106,-31]];
+  const port = buscarProv('Portería');
+  const pPort = port ? [port.position.x, port.position.z] : [84, -24];
+  const autop = [124, -40];   // ingreso desde la autopista
+  // los camiones SIEMPRE entran y salen por la portería
+  const ida = [autop, pPort, pPatio, aprox];
+  const vuelta = [aprox, pLav, pPort, autop];
   return { ida, vuelta, descarga: aprox };
 }
 

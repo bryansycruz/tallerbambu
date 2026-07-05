@@ -1,4 +1,4 @@
-/* Escena 3D: renderer, luces, terreno, cerramiento, torres, montacargas, piso 4 y helpers */
+/* Escena 3D: renderer, luces, terreno, cerramiento, torres, malacate, piso 4 y helpers */
 
 /* ============ 2. ESCENA ============ */
 const scene = new THREE.Scene();
@@ -87,35 +87,35 @@ function lineaTerreno(puntos, color, offset, cerrar, punteada){
    hacia la autopista, en un solo trazado. El edificio queda al sur de la vía;
    alrededor, plataforma afirmada (gris) y pasto (verde). Límites: azul y rojo. */
 
-/* Plataforma de obra afirmada (gris claro) — envuelve el edificio (a la izquierda)
-   y la vía, que se prolonga como una península hacia la derecha */
+/* Plataforma de obra afirmada (gris claro) — envuelve el edificio (a la izquierda,
+   AL OTRO LADO de la vía) y la vía, que se prolonga como una península a la derecha */
 poligonoPlano([
-  [-80,-8],[-82,6],[-70,16],[-38,22],[2,23],[42,20],[62,16],[166,50],[160,42],
-  [66,-2],[34,-13],[-6,-14],[-46,-13],[-72,-12]
+  [-80,8],[-82,-6],[-70,-16],[-38,-22],[2,-23],[42,-20],[62,-16],[166,-50],[160,-42],
+  [66,2],[34,13],[-6,14],[-46,13],[-72,12]
 ], 0xa8a49a, 0.05);
 
 /* Andén del edificio (más claro), bajo las dos torres */
 poligonoPlano([[-27,-8],[52,-8],[52,8],[-27,8]], 0xb9bcc0, 0.12);
 
-/* Vía (gris oscuro) — UN SOLO trazado: corre junto al edificio y sale como un
-   corredor diagonal largo hacia la derecha (así el edificio queda a la izquierda) */
+/* Vía (gris oscuro) — UN SOLO trazado: corre al SUR del edificio (edificio al otro
+   lado) y sale como un corredor diagonal largo hacia la derecha */
 poligonoPlano([
-  [-78,8],[52,8],[166,46],[159,55],[44,18],[-78,18]
+  [-78,-8],[52,-8],[166,-46],[159,-55],[44,-18],[-78,-18]
 ], 0x55585e, 0.08);
-poligonoPlano([[-75,12.5],[44,12.5],[44,13.5],[-75,13.5]], 0xd8d8d0, 0.10); // línea central
+poligonoPlano([[-75,-12.5],[44,-12.5],[44,-13.5],[-75,-13.5]], 0xd8d8d0, 0.10); // línea central
 
 /* Marca de topografía (referencia del plano) al final de la vía */
-lineaTerreno([[152,52],[166,60]], 0x2fbf5a, 0.6, false, false);
-lineaTerreno([[158,48],[162,64]], 0x2fbf5a, 0.6, false, false);
+lineaTerreno([[152,-52],[166,-60]], 0x2fbf5a, 0.6, false, false);
+lineaTerreno([[158,-48],[162,-64]], 0x2fbf5a, 0.6, false, false);
 
 /* ---- Límite de propiedad (AZUL, discontinuo) — contorno orgánico ---- */
 lineaTerreno([
-  [-86,-2],[-78,-12],[-44,-16],[-4,-17],[36,-16],[60,-12],[166,42],[164,58],
-  [56,26],[32,30],[-8,32],[-46,29],[-70,22],[-84,10]
+  [-86,-4],[-80,10],[-44,15],[-4,16],[36,14],[62,4],[166,-42],[164,-58],
+  [56,-26],[30,-30],[-8,-31],[-46,-28],[-70,-20],[-84,-8]
 ], 0x2f7fff, 0.7, true, true);
 
-/* ---- Límite sur de la plataforma (ROJO) ---- */
-lineaTerreno([[-78,-12],[-28,-12.5],[16,-13],[54,-12.5]], 0xc9302e, 0.7, false, false);
+/* ---- Límite sur de la vía (ROJO) ---- */
+lineaTerreno([[-78,-18],[-28,-18.5],[16,-19],[54,-18.5]], 0xc9302e, 0.7, false, false);
 
 /* ---- Etiquetas flotantes (sprites); el botón Etiquetas las oculta/muestra ---- */
 const etiquetasTodas = [];
@@ -139,9 +139,9 @@ function etiquetaSuelo(texto, x, z, ancho, colorFondo){
   e.position.set(x, alturaTerreno(x, z) + 3.2, z);
   scene.add(e);
 }
-etiquetaSuelo('ACCESO — VÍA', -70, 13, 14, 'rgba(50,55,60,0.85)');
-etiquetaSuelo('SALIDA AUTOPISTA', 150, 50, 16, 'rgba(50,55,60,0.85)');
-etiquetaSuelo('VÍA FUTURA (no utilizable)', 60, 44, 17, 'rgba(120,110,20,0.85)');
+etiquetaSuelo('ACCESO — VÍA', -70, -13, 14, 'rgba(50,55,60,0.85)');
+etiquetaSuelo('SALIDA AUTOPISTA', 150, -50, 16, 'rgba(50,55,60,0.85)');
+etiquetaSuelo('VÍA FUTURA (no utilizable)', 60, -44, 17, 'rgba(120,110,20,0.85)');
 
 /* ---- Árboles (referencia de profundidad) — instanciados: 2 draw calls
    en total, en vez de 2 mallas por árbol ---- */
@@ -339,7 +339,7 @@ const etT1 = crearEtiqueta('TORRES 01+02', 12, 'rgba(10,110,40,0.85)');
 etT1.position.set(6, CFG.alto + 4.5, 0);
 edificio.add(etT1);
 
-// Sótanos (S1 -3.40 · S2 -6.20 · S3 -9.00 — el montacargas también los recorre)
+// Sótanos (S1 -3.40 · S2 -6.20 · S3 -9.00 — el malacate también los recorre)
 const sotLargo = CFG.largo + T2.gap + T2.largo;
 const sotano = new THREE.Mesh(
   new THREE.BoxGeometry(sotLargo+6, CFG.sotanos*CFG.hSotano, CFG.fondo+8),
@@ -355,13 +355,13 @@ edificio.add(etSot);
 const malacate = new THREE.Group();
 malacate.position.set(CFG.malacateX, 0, -(CFG.fondo/2) - 2.2); // punto medio, fachada hacia patio/almacén
 malacate.userData.info = {
-  nombre: 'Montacargas de obra tipo cremallera',
+  nombre: 'Malacate de obra tipo cremallera',
   aforo: '8-10 personas o 1.000 kg por viaje',
   dimensiones: 'Cabina 1.50 × 1.50 × 2.10 m aprox.',
   altura: 'Recorrido requerido ≈ 35.5 m (sótano 3 a -9.00 m + 10 pisos de 2.65 m + cubierta)',
   material: 'Elevador mixto (personas + material) · 1.000 kg / 8-10 personas · 30-40 m/min · alimentación trifásica 220/440 V con tablero propio y parada de emergencia',
   cerramiento: 'Cabina con malla + puertas por nivel · arriostrado a la estructura cada 2 niveles (máx. 6 m) · Resolución 1409 de 2012',
-  descripcion: 'Ubicado en la fachada que da hacia el patio y el almacén, en el punto medio de los 49.73 m de la Torre 01 para repartir de forma equilibrada el recorrido horizontal hacia ambos extremos del edificio. Complemento horizontal: 4-6 carretillas tipo buggy (80-100 kg c/u), recorrido almacén → pie del montacargas ≈15-25 m. ARRÁSTRALO alrededor de la torre: se ancla a la fachada más cercana.'
+  descripcion: 'Ubicado en la fachada que da hacia el patio y el almacén, en el punto medio de los 49.73 m de la Torre 01 para repartir de forma equilibrada el recorrido horizontal hacia ambos extremos del edificio. Complemento horizontal: 4-6 carretillas tipo buggy (80-100 kg c/u), recorrido almacén → pie del malacate ≈15-25 m. ARRÁSTRALO alrededor de la torre: se ancla a la fachada más cercana.'
 };
 malacate.userData.esMalacate = true;
 scene.add(malacate);
@@ -398,7 +398,7 @@ mallaCab.userData.op0 = 0.45;
 });
 cabina.position.y = 0.2;
 malacate.add(cabina);
-const etMal = crearEtiqueta('Montacargas 1.000 kg', 12, 'rgba(70,120,45,0.9)');
+const etMal = crearEtiqueta('Malacate 1.000 kg', 12, 'rgba(70,120,45,0.9)');
 etMal.position.set(0, hTorre + 2, 0);
 malacate.add(etMal);
 
@@ -501,7 +501,7 @@ function abrirApto(a){
     '<tr><td>Tipología</td><td>' + a.tipo + '</td></tr>' +
     '<tr><td>Frente de trabajo</td><td>' + a.act + '</td></tr>' +
     '<tr><td>Costado</td><td>' + (a.lado > 0 ? 'Norte' : 'Sur') + ' de la circulación central (105,55 m²), con balcón a fachada</td></tr>' +
-    '<tr><td>Suministro</td><td>Materiales por montacargas (1.000 kg) + distribución interna en carretillas buggy</td></tr>' +
+    '<tr><td>Suministro</td><td>Materiales por malacate (1.000 kg) + distribución interna en carretillas buggy</td></tr>' +
     '</table>' +
     '<div><b style="color:#6fb3c9">Actividades típicas:</b><br>' +
     ['Replanteo', 'Mampostería', 'Instalaciones embebidas', 'Pañete / estuco', 'Enchapes', 'Pintura', 'Carpintería', 'Aparatos y remates']
@@ -546,7 +546,7 @@ matBar.userData.op0 = 0.6;
   piso4.add(b);
 });
 
-// zona de descargue del montacargas + acopio en losa
+// zona de descargue del malacate + acopio en losa
 const zDesc = new THREE.Mesh(
   new THREE.BoxGeometry(5, 0.08, 3.5),
   new THREE.MeshLambertMaterial({ color:0xc9581e, transparent:true, opacity:0.65 })
@@ -567,7 +567,7 @@ textoPiso('CIRCULACIÓN · 105,55 m²', 8.5, 2.3, 0, '#7a5210');
 const txtDesc = textoPiso('DESCARGUE MONTACARGAS', 5.5, CFG.malacateX, -CFG.fondo/2 + 2, '#7a2e00');
 textoSobre('ESCALAS Y ASCENSORES', 6, -22.4, 0, y4 + 2.62, Math.PI/2);
 
-/* ---- Montacargas móvil: se ancla al perímetro de la torre ---- */
+/* ---- Malacate móvil: se ancla al perímetro de la torre ---- */
 function ajustarMalacate(px, pz){
   const hx = CFG.largo/2 + 2.2, hz = CFG.fondo/2 + 2.2;
   const cx = Math.max(-CFG.largo/2 + 3, Math.min(CFG.largo/2 - 3, px));

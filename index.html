@@ -75,9 +75,9 @@
     <button id="btnGuardar" title="Guarda para el equipo y descarga un respaldo"><span class="ic" data-ic="guardar"></span>Guardar</button>
     <button id="btnCargar" title="Carga un respaldo descargado"><span class="ic" data-ic="carpeta"></span>Cargar</button>
   </div>
-  <div class="uiGrupo" data-nombre="Montacargas y reloj">
-    <label title="Nivel al que sube el montacargas">Montacargas <input type="range" id="rangoMalacate" min="0" max="9" step="0.05" value="0"> <span id="nivelTxt">P1</span></label>
-    <label title="El montacargas sube y baja solo"><input type="checkbox" id="chkAuto"> Auto</label>
+  <div class="uiGrupo" data-nombre="Malacate y reloj">
+    <label title="Nivel al que sube el malacate">Malacate <input type="range" id="rangoMalacate" min="0" max="9" step="0.05" value="0"> <span id="nivelTxt">P1</span></label>
+    <label title="El malacate sube y baja solo"><input type="checkbox" id="chkAuto"> Auto</label>
     <label id="relojObra" title="Hora simulada de la obra (1 segundo = 1 minuto)"><span class="ic" data-ic="reloj"></span><b id="horaObraTxt">06:00</b></label>
   </div>
   <div class="uiGrupo" data-nombre="Ubicar">
@@ -140,7 +140,7 @@
   <h2 id="pTitulo">Panel de obra</h2>
   <div id="pBody" class="desc">
     Proyecto <b>Bambú</b> — Marinilla, Antioquia · Torres 01 y 02 (120 aptos). Fase de <b>cerramientos y acabados</b> (estructura existente).<br><br>
-    Haz clic sobre cualquier elemento (torre, montacargas, cerramiento o provisionales) para ver su ficha:
+    Haz clic sobre cualquier elemento (torre, malacate, cerramiento o provisionales) para ver su ficha:
     materiales, altura, cerramiento y ubicación. Arrastra los provisionales para reubicarlos.<br><br>
     Los cambios se guardan automáticamente y los ve todo el equipo (punto verde/naranja arriba).
     Selecciona cualquier zona o maquinaria para <b>bloquearla</b> en su lugar o adjuntarle su
@@ -152,8 +152,8 @@
 </div>
 
 <!-- ============ PAD DE NAVEGACIÓN (móvil) ============ -->
-<div id="pad">
-  <button id="padToggle" class="ic solo" data-ic="menos" title="Ocultar / mostrar el mando" aria-label="Ocultar o mostrar el mando"></button>
+<div id="pad" class="contraido">
+  <button id="padToggle" class="ic solo" data-ic="mando" title="Mostrar el mando" aria-label="Mostrar u ocultar el mando"></button>
   <div id="padCruz">
     <button data-mover="arriba" aria-label="Mover adelante" class="ic solo" data-ic="flechaArriba"></button>
     <button data-mover="izquierda" aria-label="Mover a la izquierda" class="ic solo" data-ic="flechaIzq"></button>
@@ -170,7 +170,7 @@
 <div id="ayuda">
   <b>Controles:</b> Arrastrar (clic izq. en vacío) = rotar · Clic derecho = mover cámara · Rueda = zoom<br>
   <b>Provisionales:</b> clic y arrastrar para mover · clic corto = ficha<br>
-  <b>Montacargas:</b> arrástralo alrededor de la torre; se ancla a la fachada más cercana<br>
+  <b>Malacate:</b> arrástralo alrededor de la torre; se ancla a la fachada más cercana<br>
   <b>Piso 4:</b> botón "Ver Piso 4" y clic sobre cada sector para su detalle<br>
   <b>Piso 5:</b> clic sobre el piso 5 de la torre = abre su hoja de detalle<br>
   <b>Flujo:</b> "Trazar flujo" → clics en el terreno → "Finalizar ruta"<br>

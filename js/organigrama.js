@@ -53,7 +53,7 @@ const ORG = {
       'Supervisa armado de acero, formaleta y vaciados de concreto',
       'Controla resistencias (cilindros) y calidad del concreto',
       'Hace el replanteo y control topográfico de la estructura',
-      'Coordina izajes y el uso del montacargas para estructura',
+      'Coordina izajes y el uso del malacate para estructura',
       'Revisa juntas, desplomes y tolerancias'
     ]
   },
@@ -74,7 +74,7 @@ const ORG = {
     funciones:[
       'Implementa el plan SST y la matriz de riesgos de la obra',
       'Autoriza permisos de trabajo en altura y espacios confinados',
-      'Inspecciona andamios, arneses, líneas de vida y montacargas',
+      'Inspecciona andamios, arneses, líneas de vida y malacate',
       'Capacita al personal e investiga incidentes',
       'Señaliza y controla las zonas de riesgo (estilo semáforo)'
     ]
@@ -205,7 +205,7 @@ function toggleRiesgos(){
   // ALTO
   crearZonaRiesgo(0, 0, CFG.largo + 5, CFG.fondo + 5, ROJO, cR, 'ALTO · Trabajo en altura / caída de objetos — Torre 01');
   crearZonaRiesgo(CFG.torre2.cx, CFG.torre2.dz, CFG.torre2.largo + 5, CFG.torre2.fondo + 5, ROJO, cR, 'ALTO · Trabajo en altura — Torre 02');
-  crearZonaRiesgo(malacate.position.x, malacate.position.z, 7, 7, ROJO, cR, 'ALTO · Izaje de cargas (montacargas)');
+  crearZonaRiesgo(malacate.position.x, malacate.position.z, 7, 7, ROJO, cR, 'ALTO · Izaje de cargas (malacate)');
   zonaProv('maniobra', ROJO, cR, 'ALTO · Maquinaria y volquetas en movimiento');
   // MEDIO
   zonaProv('Almacén central', AMAR, cA, 'MEDIO · Manipulación y acopio de cargas');

@@ -2,7 +2,7 @@
    También la hoja del Piso 5. */
 
 /* ============ 12c. DOCUMENTOS POR ZONA ============
-   Cada zona (provisional, torre, montacargas, cerramiento o sector del piso 4)
+   Cada zona (provisional, torre, malacate, cerramiento o sector del piso 4)
    puede tener adjuntos: planos (.dwg, .dxf), fichas técnicas (PDF, imagen,
    Word/Excel) y enlaces a páginas web (ej: catálogo de la maquinaria).
    Los archivos se comparten vía el almacenamiento en la nube (bucket "planos")
@@ -107,7 +107,7 @@ async function renderPlanos(){
       icono('subir') + 'Subir archivo (plano, PDF, imagen, Word/Excel · máx. ' + MAX_PLANO_MB + ' MB)</button>' +
     '<div style="margin-top:16px"><b>Enlaces de página</b></div>' + filasEnlaces +
     '<div style="display:flex; flex-direction:column; gap:6px; margin-top:10px">' +
-      '<input id="enlNombre" maxlength="80" placeholder="Nombre (ej: Ficha técnica del montacargas)">' +
+      '<input id="enlNombre" maxlength="80" placeholder="Nombre (ej: Ficha técnica del malacate)">' +
       '<div style="display:flex; gap:6px">' +
         '<input id="enlUrl" maxlength="300" placeholder="https://…" style="flex:1">' +
         '<button class="orgAccion primario" style="margin:0" onclick="agregarEnlace()">' + icono('mas') + 'Agregar</button>' +
