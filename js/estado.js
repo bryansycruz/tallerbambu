@@ -21,7 +21,8 @@ function estadoActual(){
     malacate: parseFloat(rangoMalacate.value),
     malacatePos: [Math.round(malacate.position.x*100)/100, Math.round(malacate.position.z*100)/100],
     organigrama: funcionesExtra,
-    enlaces: enlaces
+    enlaces: enlaces,
+    camiones: camiones
   };
 }
 function guardarLocal(){
@@ -61,6 +62,9 @@ function aplicarEstado(d){
   }
   if (d.enlaces && typeof d.enlaces === 'object' && !Array.isArray(d.enlaces)){
     enlaces = d.enlaces;
+  }
+  if (Array.isArray(d.camiones)){
+    camiones = d.camiones;
   }
 }
 

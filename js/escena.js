@@ -135,7 +135,7 @@ function crearEtiqueta(texto, ancho, colorFondo){
   const ctx = c.getContext('2d');
   ctx.fillStyle = colorFondo || 'rgba(15,20,30,0.78)';
   ctx.beginPath(); ctx.rect(0,16,512,96); ctx.fill();
-  ctx.font = 'bold 44px Arial'; ctx.fillStyle = '#ffffff';
+  ctx.font = '600 44px \"Titillium Web\", Arial'; ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(texto, 256, 66);
   const tex = new THREE.CanvasTexture(c);
@@ -189,6 +189,7 @@ etiquetaSuelo('TALUD', -20, -55, 8, 'rgba(50,90,35,0.8)');
 const cerramiento = new THREE.Group();
 cerramiento.userData.info = {
   nombre: 'Cerramiento provisional perimetral',
+  aforo: 'No aplica (elemento perimetral)',
   dimensiones: 'Envolvente 163.00 × 47.00 m (~420 m de perímetro)',
   altura: '2.40 m sobre nivel de andén',
   material: 'Lámina prepintada Zn-Alum calibre 26, acanalada, sobre postes tubulares Ø3" cada 3.00 m, en dados de concreto de 3.000 PSI (Ø0.30 × 0.50 m)',
@@ -245,6 +246,7 @@ scene.add(cerramiento);
 const edificio = new THREE.Group();
 edificio.userData.info = {
   nombre: 'Torres 01 y 02 — 10 pisos + cubierta + 3 sótanos',
+  aforo: '305 trabajadores en pico de obra',
   dimensiones: 'Torre 01: 49.73 × 12.50 m (8 aptos/piso) · Torre 02: 24.30 × 12.50 m (4 aptos/piso), en línea',
   altura: '26.50 m (10 pisos de 2.65 m) + cubierta · Sótanos: S1 -3.40 · S2 -6.20 · S3 -9.00 m',
   material: 'Estructura existente en concreto, completamente construida (la fase actual es solo cerramientos y acabados)',
@@ -319,18 +321,22 @@ for (let i=0; i<CFG.pisos; i++){
   edificio.add(g);
   pisosMesh.push(g);
 }
-// retrocesos de fachada (muescas de la planta, en ambas torres)
-const matRetro = new THREE.MeshLambertMaterial({ color:0x22262e });
+// retrocesos de fachada (muescas de la planta, en ambas torres);
+// van en su propio grupo para atenuarlos en la vista del piso 4
+const retrocesosG = new THREE.Group();
 [[-10.9, 1],[5.9, 1],[-9.9, -1],[7.4, -1]].forEach(([x, lado]) => {
-  const r = new THREE.Mesh(new THREE.BoxGeometry(2.4, CFG.alto, 1.4), matRetro);
+  const r = new THREE.Mesh(new THREE.BoxGeometry(2.4, CFG.alto, 1.4),
+    new THREE.MeshLambertMaterial({ color:0x22262e }));
   r.position.set(x, CFG.alto/2, lado*(CFG.fondo/2 - 0.5));
-  edificio.add(r);
+  retrocesosG.add(r);
 });
 [[T2.cx-2.4, 1],[T2.cx+4.9, -1]].forEach(([x, lado]) => {
-  const r = new THREE.Mesh(new THREE.BoxGeometry(2.4, CFG.alto, 1.4), matRetro);
+  const r = new THREE.Mesh(new THREE.BoxGeometry(2.4, CFG.alto, 1.4),
+    new THREE.MeshLambertMaterial({ color:0x22262e }));
   r.position.set(x, CFG.alto/2, T2.dz + lado*(T2.fondo/2 - 0.5));
-  edificio.add(r);
+  retrocesosG.add(r);
 });
+edificio.add(retrocesosG);
 // cubierta: cuarto de máquinas (T1, 19.70 m²) + escaleras/circulación (T2, 20.68 m²)
 const techoG = new THREE.Group();
 const cMaq = new THREE.Mesh(new THREE.BoxGeometry(5, 2.2, 4), new THREE.MeshLambertMaterial({ color:0x6d7075 }));
@@ -362,6 +368,7 @@ const malacate = new THREE.Group();
 malacate.position.set(CFG.malacateX, 0, -(CFG.fondo/2) - 2.2); // punto medio, fachada hacia patio/almacén
 malacate.userData.info = {
   nombre: 'Montacargas de obra tipo cremallera',
+  aforo: '8-10 personas o 1.000 kg por viaje',
   dimensiones: 'Cabina 1.50 × 1.50 × 2.10 m aprox.',
   altura: 'Recorrido requerido ≈ 35.5 m (sótano 3 a -9.00 m + 10 pisos de 2.65 m + cubierta)',
   material: 'Elevador mixto (personas + material) · 1.000 kg / 8-10 personas · 30-40 m/min · alimentación trifásica 220/440 V con tablero propio y parada de emergencia',
@@ -420,38 +427,37 @@ const losa4 = new THREE.Mesh(
 losa4.position.y = y4 + 0.06;
 piso4.add(losa4);
 
-// circulación central
-const circ1 = new THREE.Mesh(new THREE.BoxGeometry(CFG.largo-8, 0.06, 2.4),
+// circulación central (105,55 m² según la planta)
+const circ1 = new THREE.Mesh(new THREE.BoxGeometry(44.6, 0.06, 2.4),
   new THREE.MeshLambertMaterial({ color:0xf0e6c8 }));
-circ1.position.set(0, y4 + 0.16, 0);
+circ1.position.set(2.3, y4 + 0.16, 0);
 piso4.add(circ1);
 
-// puntos fijos: ascensor + escalera (occidente) y escalera (oriente)
+// punto fijo: escalas y ascensores en el extremo occidental (según la planta)
 const matNucleo = new THREE.MeshLambertMaterial({ color:0x98a2ad });
-const nucleoO = new THREE.Mesh(new THREE.BoxGeometry(4, 2.3, 11.9), matNucleo);
-nucleoO.position.set(-21, y4 + 1.25, 0);
+const nucleoO = new THREE.Mesh(new THREE.BoxGeometry(4.5, 2.3, 11.9), matNucleo);
+nucleoO.position.set(-22.4, y4 + 1.25, 0);
 piso4.add(nucleoO);
-const nucleoE = new THREE.Mesh(new THREE.BoxGeometry(4, 2.3, 11.9), matNucleo);
-nucleoE.position.set(21, y4 + 1.25, 0);
-piso4.add(nucleoE);
 
-/* Sectores de trabajo del piso (fase cerramientos y acabados) */
+/* Apartamentos del piso según la planta arquitectónica:
+   norte (arriba): L · K · J · I — sur (abajo): A · B · C · D.
+   Cada uno conserva además su frente de trabajo (fase de acabados). */
 const SECTORES = [
-  { nom:'Sector N1', act:'Cerramientos de fachada (mampostería)', x0:-19, x1:-9.5, lado: 1 },
-  { nom:'Sector N2', act:'Mampostería y muros divisorios',        x0:-9.5, x1:0,   lado: 1 },
-  { nom:'Sector N3', act:'Enchapes de baños y cocinas',           x0:0,    x1:9.5, lado: 1 },
-  { nom:'Sector N4', act:'Pintura y estuco',                      x0:9.5,  x1:19,  lado: 1 },
-  { nom:'Sector S1', act:'Pisos y acabados de piso',              x0:-19, x1:-9.5, lado:-1 },
-  { nom:'Sector S2', act:'Carpintería, puertas y marcos',         x0:-9.5, x1:0,   lado:-1 },
-  { nom:'Sector S3', act:'Aparatos sanitarios y grifería',        x0:0,    x1:9.5, lado:-1 },
-  { nom:'Sector S4', act:'Ventanería y vidrios',                  x0:9.5,  x1:19,  lado:-1 }
+  { nom:'Apto L', area:'61,92 m²', tipo:'2 alcobas + estudio', act:'Cerramientos de fachada (mampostería)', x0:-20,   x1:-8.85, lado: 1 },
+  { nom:'Apto K', area:'59,52 m²', tipo:'2 alcobas + estudio', act:'Mampostería y muros divisorios',        x0:-8.85, x1:2.3,   lado: 1 },
+  { nom:'Apto J', area:'67,05 m²', tipo:'3 alcobas',           act:'Enchapes de baños y cocinas',           x0:2.3,   x1:13.45, lado: 1 },
+  { nom:'Apto I', area:'67,05 m²', tipo:'3 alcobas',           act:'Pintura y estuco',                      x0:13.45, x1:24.6,  lado: 1 },
+  { nom:'Apto A', area:'59,52 m²', tipo:'2 alcobas + estudio', act:'Pisos y acabados de piso',              x0:-20,   x1:-8.85, lado:-1 },
+  { nom:'Apto B', area:'61,92 m²', tipo:'2 alcobas + estudio', act:'Carpintería, puertas y marcos',         x0:-8.85, x1:2.3,   lado:-1 },
+  { nom:'Apto C', area:'67,05 m²', tipo:'3 alcobas',           act:'Aparatos sanitarios y grifería',        x0:2.3,   x1:13.45, lado:-1 },
+  { nom:'Apto D', area:'72,30 m²', tipo:'3 alcobas',           act:'Ventanería y vidrios',                  x0:13.45, x1:24.6,  lado:-1 }
 ];
 
 /* Texto pintado sobre la losa */
 function textoPiso(texto, w, x, z, color, rot){
   const c = document.createElement('canvas'); c.width = 512; c.height = 128;
   const ctx = c.getContext('2d');
-  ctx.font = 'bold 42px Arial';
+  ctx.font = '600 42px \"Titillium Web\", Arial';
   ctx.fillStyle = color || '#1a6e2e';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(texto, 256, 64);
@@ -485,7 +491,7 @@ SECTORES.forEach(a => {
   mc.position.set(cx - 0.6, y4 + 1.25, a.lado * 1.2);
   piso4.add(mc);
   textoPiso(a.nom, 5.5, cx, a.lado * 3.2, '#166e2a');
-  textoPiso('60-72 m²', 3.6, cx, a.lado * 5.2, '#555049');
+  textoPiso(a.area, 3.6, cx, a.lado * 5.2, '#555049');
   const zona = new THREE.Mesh(
     new THREE.BoxGeometry(ancho - 0.4, 2.2, 4.8),
     new THREE.MeshLambertMaterial({ color:0xffffff, transparent:true, opacity:0.04 })
@@ -503,9 +509,10 @@ function abrirApto(a){
     '<table>' +
     '<tr><td>Proyecto</td><td>Taller II — Obras Provisionales · Torres 01+02, 10 pisos + 3 sótanos</td></tr>' +
     '<tr><td>Fase</td><td>Cerramientos y acabados (estructura existente)</td></tr>' +
+    '<tr><td>Área</td><td>' + a.area + '</td></tr>' +
+    '<tr><td>Tipología</td><td>' + a.tipo + '</td></tr>' +
     '<tr><td>Frente de trabajo</td><td>' + a.act + '</td></tr>' +
-    '<tr><td>Área aprox.</td><td>60–72 m² según tipo (A-L del cuadro de áreas)</td></tr>' +
-    '<tr><td>Costado</td><td>' + (a.lado > 0 ? 'Norte' : 'Sur') + ' de la circulación central</td></tr>' +
+    '<tr><td>Costado</td><td>' + (a.lado > 0 ? 'Norte' : 'Sur') + ' de la circulación central (105,55 m²), con balcón a fachada</td></tr>' +
     '<tr><td>Suministro</td><td>Materiales por montacargas (1.000 kg) + distribución interna en carretillas buggy</td></tr>' +
     '</table>' +
     '<div><b style="color:#f0a340">Actividades típicas:</b><br>' +
@@ -531,11 +538,21 @@ document.getElementById('aptoOverlay').addEventListener('click', e => {
   piso4.add(m);
 });
 
-// cerramiento provisional perimetral (baranda naranja de seguridad)
+// balcones de los apartamentos en ambas fachadas (según la planta)
+const matBalcon = new THREE.MeshLambertMaterial({ color:0xcfd6dc });
+[1, -1].forEach(lado => {
+  const b = new THREE.Mesh(new THREE.BoxGeometry(44.6, 0.12, 1.0), matBalcon);
+  b.position.set(2.3, y4 + 0.12, lado * (CFG.fondo/2 + 0.5));
+  piso4.add(b);
+  textoPiso('BALCONES', 5, 2.3, lado * (CFG.fondo/2 + 0.5), '#4a5560');
+});
+
+// cerramiento provisional perimetral (baranda naranja de seguridad,
+// por fuera del borde de los balcones)
 const matBar = new THREE.MeshLambertMaterial({ color:0xe07820, transparent:true, opacity:0.6 });
 matBar.userData.op0 = 0.6;
-[[0, CFG.fondo/2+0.15, CFG.largo+0.4, 0.1],[0,-CFG.fondo/2-0.15, CFG.largo+0.4, 0.1],
- [-CFG.largo/2-0.15, 0, 0.1, CFG.fondo+0.4],[CFG.largo/2+0.15, 0, 0.1, CFG.fondo+0.4]].forEach(([px,pz,w,d]) => {
+[[0, CFG.fondo/2+1.15, CFG.largo+0.4, 0.1],[0,-CFG.fondo/2-1.15, CFG.largo+0.4, 0.1],
+ [-CFG.largo/2-0.15, 0, 0.1, CFG.fondo+2.4],[CFG.largo/2+0.15, 0, 0.1, CFG.fondo+2.4]].forEach(([px,pz,w,d]) => {
   const b = new THREE.Mesh(new THREE.BoxGeometry(w, 1.1, d), matBar.clone());
   b.position.set(px, y4 + 1.75, pz);
   piso4.add(b);
@@ -558,10 +575,9 @@ piso4.add(zDesc);
 const et4a = crearEtiqueta('PISO 4', 9, 'rgba(160,80,10,0.85)');
 et4a.position.set(0, y4 + 7, 0);
 piso4.add(et4a);
-textoPiso('CIRCULACIÓN CENTRAL', 12, 0, 0, '#8a2020');
+textoPiso('CIRCULACIÓN · 105,55 m²', 14, 2.3, 0, '#8a2020');
 const txtDesc = textoPiso('DESCARGUE MONTACARGAS', 8, CFG.malacateX, -CFG.fondo/2 + 2, '#7a2e00');
-textoSobre('ASC + ESC 1', 4.5, -21, 0, y4 + 2.62, Math.PI/2);
-textoSobre('ESC 2', 3, 21, 0, y4 + 2.62, Math.PI/2);
+textoSobre('ESCALAS Y ASCENSORES', 9, -22.4, 0, y4 + 2.62, Math.PI/2);
 
 /* ---- Montacargas móvil: se ancla al perímetro de la torre ---- */
 function ajustarMalacate(px, pz){
@@ -609,7 +625,7 @@ function cono(g, r, h, color, x, z){
 function textoLocal(g, texto, w, x, z, color){
   const c = document.createElement('canvas'); c.width = 512; c.height = 128;
   const ctx = c.getContext('2d');
-  ctx.font = 'bold 40px Arial';
+  ctx.font = '600 40px \"Titillium Web\", Arial';
   ctx.fillStyle = color || '#2c3342';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(texto, 256, 64);

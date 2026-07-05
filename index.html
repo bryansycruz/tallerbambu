@@ -6,26 +6,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/estilos.css">
 </head>
 <body>
 
-<!-- ============ BARRA DE HERRAMIENTAS ============ -->
+<!-- ============ BARRA DE HERRAMIENTAS (agrupada por temas) ============ -->
 <div id="ui">
   <button id="btnMenu"><span class="ic" data-ic="menu"></span>Menú</button>
-  <button id="btnPiso4"><span class="ic" data-ic="edificio"></span>Ver Piso 4</button>
-  <button id="btnFlujo"><span class="ic" data-ic="ruta"></span>Trazar flujo</button>
-  <button id="btnFin" style="display:none"><span class="ic" data-ic="check"></span>Finalizar ruta</button>
-  <button id="btnBorrar"><span class="ic" data-ic="basura"></span>Borrar rutas</button>
-  <button id="btnGuardar"><span class="ic" data-ic="guardar"></span>Guardar</button>
-  <button id="btnCargar"><span class="ic" data-ic="carpeta"></span>Cargar</button>
-  <button id="btnEtiquetas"><span class="ic" data-ic="etiqueta"></span>Etiquetas</button>
-  <button id="btnOrg"><span class="ic" data-ic="equipo"></span>Organigrama</button>
+  <div class="uiGrupo" data-nombre="Ver la obra">
+    <button id="btnPiso4" title="Corte del piso 4 con sus apartamentos"><span class="ic" data-ic="edificio"></span>Ver Piso 4</button>
+    <button id="btnEtiquetas" title="Mostrar u ocultar los nombres flotantes de las zonas"><span class="ic" data-ic="etiqueta"></span>Etiquetas</button>
+    <button id="btnOrg" title="Roles del equipo, funciones y zonas de riesgo"><span class="ic" data-ic="equipo"></span>Organigrama</button>
+  </div>
+  <div class="uiGrupo" data-nombre="Materiales y rutas">
+    <button id="btnFlujo" title="Dibuja rutas de materiales con clics sobre el terreno"><span class="ic" data-ic="ruta"></span>Trazar flujo</button>
+    <button id="btnFin" style="display:none"><span class="ic" data-ic="check"></span>Finalizar ruta</button>
+    <button id="btnBorrar" title="Elimina todas las rutas dibujadas"><span class="ic" data-ic="basura"></span>Borrar rutas</button>
+    <button id="btnCamiones" title="Programa la hora de entrada de los camiones de materiales"><span class="ic" data-ic="camion"></span>Camiones</button>
+  </div>
+  <div class="uiGrupo" data-nombre="Guardar y cargar">
+    <button id="btnGuardar" title="Guarda para el equipo y descarga un respaldo"><span class="ic" data-ic="guardar"></span>Guardar</button>
+    <button id="btnCargar" title="Carga un respaldo descargado"><span class="ic" data-ic="carpeta"></span>Cargar</button>
+  </div>
+  <div class="uiGrupo" data-nombre="Montacargas y reloj">
+    <label title="Nivel al que sube el montacargas">Montacargas <input type="range" id="rangoMalacate" min="0" max="9" step="0.05" value="0"> <span id="nivelTxt">P1</span></label>
+    <label title="El montacargas sube y baja solo"><input type="checkbox" id="chkAuto"> Auto</label>
+    <label id="relojObra" title="Hora simulada de la obra (1 segundo = 1 minuto)"><span class="ic" data-ic="reloj"></span><b id="horaObraTxt">06:00</b></label>
+  </div>
+  <div class="uiGrupo" data-nombre="Ubicar">
+    <select id="selElem" title="Lleva la cámara hasta la zona elegida"><option value="">— Ir a elemento —</option></select>
+    <label id="estadoSync" title="Estado de sincronización con el equipo"><span class="sDot" id="syncDot"></span><span id="syncTxt">Modo local</span></label>
+  </div>
   <input type="file" id="fileCarga" accept=".json" style="display:none">
-  <label>Montacargas <input type="range" id="rangoMalacate" min="0" max="9" step="0.05" value="0"> <span id="nivelTxt">P1</span></label>
-  <label><input type="checkbox" id="chkAuto"> Auto</label>
-  <select id="selElem"><option value="">— Ir a elemento —</option></select>
-  <label id="estadoSync" title="Estado de sincronización con el equipo"><span class="sDot" id="syncDot"></span><span id="syncTxt">Modo local</span></label>
 </div>
 
 <div id="modoAviso">Modo flujo: haz clic sobre el terreno para marcar el recorrido</div>
@@ -64,6 +79,17 @@
   </div>
 </div>
 <input type="file" id="planoArchivo" accept=".dwg,.dxf,.pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" style="display:none">
+
+<!-- ============ CAMIONES DE MATERIALES (horarios) ============ -->
+<div id="camOverlay">
+  <div id="camVentana">
+    <div id="camCabecera">
+      <h3 id="camTitulo">Camiones de materiales</h3>
+      <button id="camCerrar" title="Cerrar">✕</button>
+    </div>
+    <div id="camBody"></div>
+  </div>
+</div>
 
 <!-- ============ PANEL DE INFORMACIÓN ============ -->
 <div id="panel">
@@ -122,6 +148,7 @@
 <script src="js/estado.js"></script>
 <script src="js/organigrama.js"></script>
 <script src="js/planos.js"></script>
+<script src="js/camiones.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

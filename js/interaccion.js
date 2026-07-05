@@ -187,9 +187,11 @@ const pBody   = document.getElementById('pBody');
 
 function actualizarTinte(obj){
   if (!obj) return;
+  // provisionales: semáforo de estado — rojo = bloqueado, verde = libre
+  const esProv = obj.userData.esProvisional;
   const color = obj === seleccionado ? 0x554400
     : (rolPintado && esObjetivoRol(ORG[rolPintado], obj)) ? ORG[rolPintado].emissive
-    : (obj.userData.bloqueado ? 0x3a1414 : 0x000000);
+    : (obj.userData.bloqueado ? 0x8a1616 : (esProv ? 0x145020 : 0x000000));
   obj.traverse(n => {
     if (n.isMesh && n.material && n.material.emissive !== undefined){
       n.material.emissive = new THREE.Color(color);
@@ -221,15 +223,13 @@ function seleccionar(obj){
     '<tr><td>Altura</td><td>' + alt + '</td></tr>' +
     '<tr><td>Material</td><td>' + d.material + '</td></tr>' +
     '<tr><td>Cerramiento</td><td>' + d.cerramiento + '</td></tr>' +
-    '<tr><td>Ubicación</td><td id="pUbic">—</td></tr>' +
-    (esProvisional ? '<tr><td>Estado</td><td>' + (obj.userData.bloqueado ? 'Bloqueado' : 'Libre (se puede mover)') + '</td></tr>' : '') +
+    '<tr><td>Aforo máximo</td><td>' + (d.aforo || '—') + '</td></tr>' +
     '</table>' +
     '<div class="desc">' + d.descripcion + '</div>' +
     (esProvisional ? '<button onclick="toggleBloqueo()">' + icono(obj.userData.bloqueado ? 'candadoAbierto' : 'candado') + (obj.userData.bloqueado ? 'Desbloquear' : 'Bloquear en este lugar') + '</button>' : '') +
     '<button onclick="abrirPlanos(seleccionado.userData.info.nombre)">' + icono('plano') + 'Ficha técnica, planos y enlaces</button>' +
     (obj.userData.esEdificio ? '<button onclick="togglePiso4()">' + icono('edificio') + 'Ver Piso 4 en detalle</button>' +
       '<button onclick="abrirHojaPiso5()">' + icono('abrir') + 'Abrir hoja del Piso 5</button>' : '');
-  actualizarUbicacion(obj);
   // en móvil el panel es un cajón inferior: se abre al seleccionar un elemento
   document.getElementById('panel').classList.add('abierto');
   posicionarPad();

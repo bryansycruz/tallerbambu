@@ -35,6 +35,8 @@ const ICONOS = {
   abrir:         '<path d="M14 4h6v6M20 4l-9 9M20 13.5V20H4V4h6.5"/>',
   refrescar:     '<path d="M20 11a8 8 0 10.6 4.5M20 5v6h-6"/>',
   menu:          '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  camion:        '<path d="M2 16V7h11v9M13 10h4.5l3.5 3.5V16h-8"/><circle cx="7" cy="17.5" r="1.7"/><circle cx="16.5" cy="17.5" r="1.7"/>',
+  reloj:         '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
   flechaArriba:  '<path d="M12 19V5M6 11l6-6 6 6"/>',
   flechaAbajo:   '<path d="M12 5v14M6 13l6 6 6-6"/>',
   flechaIzq:     '<path d="M19 12H5M11 6l-6 6 6 6"/>',

@@ -1,6 +1,7 @@
 /* Arranque: botones de la UI, vista Piso 4, menú móvil y bucle de animación */
 
 aplicarIconos();
+repintarTodo();   // semáforo inicial: provisionales libres en verde, bloqueados en rojo
 
 /* ---- Menú móvil y panel plegable (solo visible en pantallas pequeñas) ---- */
 document.getElementById('btnMenu').onclick = () => {
@@ -43,14 +44,18 @@ function setFantasma(grupo, on){
 }
 function togglePiso4(){
   vistaPiso4 = !vistaPiso4;
-  for (let i=4; i<CFG.pisos; i++) setFantasma(pisosMesh[i], vistaPiso4); // piso 5
-  setFantasma(techoG, vistaPiso4);
+  // corte arquitectónico: se ocultan el cajón genérico del piso 4 (la planta
+  // detallada lo reemplaza) y todos los pisos superiores; atenuarlos no
+  // servía porque 6 pisos translúcidos acumulaban una neblina que tapaba todo
+  for (let i=3; i<CFG.pisos; i++) pisosMesh[i].visible = !vistaPiso4;
+  techoG.visible = !vistaPiso4;
+  setFantasma(retrocesosG, vistaPiso4);
   piso4.visible = vistaPiso4;
   document.getElementById('btnPiso4').innerHTML = icono('edificio') + (vistaPiso4 ? 'Ver torre completa' : 'Ver Piso 4');
   document.getElementById('btnPiso4').classList.toggle('activo', vistaPiso4);
   etiquetasTodas.forEach(s => { s.visible = vistaPiso4 ? false : etiquetasOn; });
   if (vistaPiso4){
-    irA(4, y4 + 1, -4, 48, 0.35, 1.25);
+    irA(2.3, y4 + 1, -1, 52, 0.3, 0.72);
     rangoMalacate.value = 3;
   } else {
     irA(0, 6, -8, 170, 0.5, 1.22);
@@ -197,6 +202,8 @@ function animar(){
       f.quaternion.setFromUnitVectors(ejeYTmp, tangenteTmp.normalize());
     });
   });
+
+  actualizarCamiones(dt);
 
   actualizarCamara();
   numFrame++;
