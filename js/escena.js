@@ -87,34 +87,35 @@ function lineaTerreno(puntos, color, offset, cerrar, punteada){
    hacia la autopista, en un solo trazado. El edificio queda al sur de la vía;
    alrededor, plataforma afirmada (gris) y pasto (verde). Límites: azul y rojo. */
 
-/* Plataforma de obra afirmada (gris claro) — forma orgánica que envuelve el edificio y la vía */
+/* Plataforma de obra afirmada (gris claro) — envuelve el edificio (a la izquierda)
+   y la vía, que se prolonga como una península hacia la derecha */
 poligonoPlano([
-  [-92,-8],[-94,6],[-84,17],[-58,23],[-20,25],[24,24],[46,21],[70,25],
-  [104,46],[116,42],[100,14],[70,-6],[36,-14],[-4,-15],[-46,-14],[-80,-13]
+  [-80,-8],[-82,6],[-70,16],[-38,22],[2,23],[42,20],[62,16],[166,50],[160,42],
+  [66,-2],[34,-13],[-6,-14],[-46,-13],[-72,-12]
 ], 0xa8a49a, 0.05);
 
 /* Andén del edificio (más claro), bajo las dos torres */
 poligonoPlano([[-27,-8],[52,-8],[52,8],[-27,8]], 0xb9bcc0, 0.12);
 
-/* Vía (gris oscuro) — UN SOLO trazado: corre al norte del edificio y gira al
-   noreste hacia la autopista (sin fragmentos superpuestos) */
+/* Vía (gris oscuro) — UN SOLO trazado: corre junto al edificio y sale como un
+   corredor diagonal largo hacia la derecha (así el edificio queda a la izquierda) */
 poligonoPlano([
-  [-92,9],[44,9],[120,40],[112,48],[36,20],[-92,20]
+  [-78,8],[52,8],[166,46],[159,55],[44,18],[-78,18]
 ], 0x55585e, 0.08);
-poligonoPlano([[-89,14.4],[36,14.4],[36,15.6],[-89,15.6]], 0xd8d8d0, 0.10); // línea central
+poligonoPlano([[-75,12.5],[44,12.5],[44,13.5],[-75,13.5]], 0xd8d8d0, 0.10); // línea central
 
-/* Marca de topografía (referencia del plano) en el noreste */
-lineaTerreno([[104,48],[118,56]], 0x2fbf5a, 0.6, false, false);
-lineaTerreno([[110,44],[114,60]], 0x2fbf5a, 0.6, false, false);
+/* Marca de topografía (referencia del plano) al final de la vía */
+lineaTerreno([[152,52],[166,60]], 0x2fbf5a, 0.6, false, false);
+lineaTerreno([[158,48],[162,64]], 0x2fbf5a, 0.6, false, false);
 
 /* ---- Límite de propiedad (AZUL, discontinuo) — contorno orgánico ---- */
 lineaTerreno([
-  [-98,-4],[-92,-14],[-58,-18],[-16,-19],[30,-18],[64,-14],[90,-2],[104,10],
-  [118,36],[104,50],[74,34],[46,36],[8,38],[-34,35],[-66,28],[-96,12]
+  [-86,-2],[-78,-12],[-44,-16],[-4,-17],[36,-16],[60,-12],[166,42],[164,58],
+  [56,26],[32,30],[-8,32],[-46,29],[-70,22],[-84,10]
 ], 0x2f7fff, 0.7, true, true);
 
 /* ---- Límite sur de la plataforma (ROJO) ---- */
-lineaTerreno([[-92,-14],[-40,-14.5],[8,-15],[50,-14.5]], 0xc9302e, 0.7, false, false);
+lineaTerreno([[-78,-12],[-28,-12.5],[16,-13],[54,-12.5]], 0xc9302e, 0.7, false, false);
 
 /* ---- Etiquetas flotantes (sprites); el botón Etiquetas las oculta/muestra ---- */
 const etiquetasTodas = [];
@@ -138,9 +139,9 @@ function etiquetaSuelo(texto, x, z, ancho, colorFondo){
   e.position.set(x, alturaTerreno(x, z) + 3.2, z);
   scene.add(e);
 }
-etiquetaSuelo('ACCESO — VÍA', -82, 14.5, 14, 'rgba(50,55,60,0.85)');
-etiquetaSuelo('SALIDA AUTOPISTA', 104, 46, 16, 'rgba(50,55,60,0.85)');
-etiquetaSuelo('VÍA FUTURA (no utilizable)', 40, 46, 17, 'rgba(120,110,20,0.85)');
+etiquetaSuelo('ACCESO — VÍA', -70, 13, 14, 'rgba(50,55,60,0.85)');
+etiquetaSuelo('SALIDA AUTOPISTA', 150, 50, 16, 'rgba(50,55,60,0.85)');
+etiquetaSuelo('VÍA FUTURA (no utilizable)', 60, 44, 17, 'rgba(120,110,20,0.85)');
 
 /* ---- Árboles (referencia de profundidad) — instanciados: 2 draw calls
    en total, en vez de 2 mallas por árbol ---- */
