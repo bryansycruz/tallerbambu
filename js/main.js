@@ -128,6 +128,15 @@ document.querySelectorAll('#pad button[data-mover]').forEach(btn => {
   ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, detener));
 });
 
+// esconder / mostrar el mando en el celular
+const padToggle = document.getElementById('padToggle');
+padToggle.addEventListener('click', () => {
+  const contraido = document.getElementById('pad').classList.toggle('contraido');
+  padToggle.innerHTML = icono(contraido ? 'mando' : 'menos');
+  padToggle.title = contraido ? 'Mostrar el mando' : 'Ocultar el mando';
+  posicionarPad();
+});
+
 const nivelTxt = document.getElementById('nivelTxt');
 const chkAuto = document.getElementById('chkAuto');
 let nivelMalacate = 0;

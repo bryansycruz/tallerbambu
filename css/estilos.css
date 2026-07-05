@@ -1,10 +1,10 @@
   /* ============ ESTILOS DE INTERFAZ ============ */
-  html, body { margin:0; padding:0; overflow:hidden; height:100%; background:#1a1e26; font-family:'Barlow', 'Segoe UI', Arial, sans-serif; }
+  html, body { margin:0; padding:0; overflow:hidden; height:100%; background:#1a1e26; font-family:'Inter', 'Segoe UI', Arial, sans-serif; }
   canvas { display:block; touch-action:none; }
-  /* títulos con tipografía condensada (estilo arquitectónico) */
+  /* títulos con tipografía Space Grotesk (distinta a la del texto) */
   h1, h2, h3, #panel h2, #pTitulo, #inicioMateria, .uiGrupo::before,
   #orgCabecera h3, #planosCabecera h3, #camCabecera h3, #aptoCabecera h3 {
-    font-family:'Oswald', 'Barlow', sans-serif; letter-spacing:.5px;
+    font-family:'Space Grotesk', 'Inter', sans-serif; letter-spacing:.5px;
   }
 
   /* ============ PANTALLA DE INICIO ============ */
@@ -26,8 +26,8 @@
   }
   #inicioLogo img { width:100%; height:100%; object-fit:contain; }
   #inicioUni { font-size:15px; letter-spacing:1.4px; color:#cfd6e0; text-transform:uppercase; font-weight:500; }
-  .inicioLinea { width:64px; height:3px; background:#c97b1e; margin:14px auto; border-radius:2px; }
-  #inicioMateria { font-size:52px; font-weight:700; color:#f0a340; line-height:1; text-transform:uppercase; letter-spacing:2px; }
+  .inicioLinea { width:64px; height:3px; background:#4f8f2c; margin:14px auto; border-radius:2px; }
+  #inicioMateria { font-size:52px; font-weight:700; color:#a0cf52; line-height:1; text-transform:uppercase; letter-spacing:2px; }
   #inicioProyecto { font-size:18px; color:#e8ecf2; margin-top:8px; }
   #inicioProyecto b { color:#8fb339; font-weight:700; }
   #inicioSub { font-size:13px; color:#9aa5b5; margin-top:4px; }
@@ -43,12 +43,12 @@
   #inicioEquipo span { font-size:15px; color:#e8ecf2; }
   #inicioBtn {
     display:inline-flex; align-items:center; gap:11px;
-    background:#c97b1e; color:#fff; border:none; border-radius:8px;
+    background:#4f8f2c; color:#fff; border:none; border-radius:8px;
     padding:14px 44px; font-size:17px; font-weight:600; cursor:pointer;
-    font-family:'Oswald','Barlow',sans-serif; letter-spacing:1px; text-transform:uppercase;
+    font-family:'Space Grotesk','Inter',sans-serif; letter-spacing:1px; text-transform:uppercase;
     transition:background .15s, transform .15s;
   }
-  #inicioBtn:hover { background:#e08c28; transform:translateY(-1px); }
+  #inicioBtn:hover { background:#5aa233; transform:translateY(-1px); }
   #inicioBtn .playIc {
     width:0; height:0; border-style:solid;
     border-width:8px 0 8px 13px; border-color:transparent transparent transparent #fff;
@@ -73,7 +73,7 @@
     padding:7px 12px; border-radius:6px; cursor:pointer; font-size:13px;
   }
   #ui button:hover { background:#3d4a62; }
-  #ui button.activo { background:#c97b1e; border-color:#f0a340; }
+  #ui button.activo { background:#4f8f2c; border-color:#a0cf52; }
   #ui label { color:#cfd6e0; font-size:13px; display:flex; align-items:center; gap:6px; }
   #ui input[type=range] { width:110px; }
 
@@ -82,12 +82,12 @@
     background:rgba(20,24,32,.92); border:1px solid #3a4150; border-radius:10px;
     padding:14px 16px; color:#e8ecf2; max-height:calc(100vh - 40px); overflow-y:auto;
   }
-  #panel h2 { margin:0 0 8px; font-size:16px; color:#f0a340; }
+  #panel h2 { margin:0 0 8px; font-size:16px; color:#a0cf52; }
   #panel table { width:100%; border-collapse:collapse; font-size:12.5px; }
   #panel td { padding:4px 2px; border-bottom:1px solid #2c3342; vertical-align:top; }
   #panel td:first-child { color:#9aa5b5; width:38%; }
   #panel .desc { font-size:12.5px; color:#c4ccd8; margin-top:8px; line-height:1.45; }
-  #panel button { margin-top:10px; width:100%; background:#c97b1e; color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer; font-size:13px; }
+  #panel button { margin-top:10px; width:100%; background:#4f8f2c; color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer; font-size:13px; }
 
   #ayuda {
     position:absolute; bottom:12px; left:12px; z-index:10;
@@ -98,7 +98,7 @@
   #modoAviso {
     pointer-events:none;
     position:absolute; top:70px; left:50%; transform:translateX(-50%); z-index:10;
-    background:#c97b1e; color:#fff; padding:6px 16px; border-radius:20px; font-size:13px; display:none;
+    background:#4f8f2c; color:#fff; padding:6px 16px; border-radius:20px; font-size:13px; display:none;
   }
   #avisoGuardado {
     position:absolute; bottom:12px; right:12px; z-index:10;
@@ -118,9 +118,9 @@
   #aptoCabecera {
     display:flex; justify-content:space-between; align-items:center;
     background:#242b38; padding:12px 18px; border-radius:12px 12px 0 0;
-    border-bottom:2px solid #c97b1e;
+    border-bottom:2px solid #4f8f2c;
   }
-  #aptoCabecera h3 { margin:0; font-size:17px; color:#f0a340; }
+  #aptoCabecera h3 { margin:0; font-size:17px; color:#a0cf52; }
   #aptoCerrar { background:none; border:none; color:#9aa5b5; font-size:22px; cursor:pointer; line-height:1; }
   #aptoCerrar:hover { color:#fff; }
   #aptoBody { padding:16px 18px; font-size:13px; line-height:1.5; }
@@ -149,9 +149,9 @@
   #orgCabecera {
     display:flex; justify-content:space-between; align-items:center;
     background:#242b38; padding:12px 18px; border-radius:12px 12px 0 0;
-    border-bottom:2px solid #c97b1e; position:sticky; top:0; z-index:1;
+    border-bottom:2px solid #4f8f2c; position:sticky; top:0; z-index:1;
   }
-  #orgCabecera h3 { margin:0; font-size:17px; color:#f0a340; }
+  #orgCabecera h3 { margin:0; font-size:17px; color:#a0cf52; }
   #orgCerrar { background:none; border:none; color:#9aa5b5; font-size:22px; cursor:pointer; line-height:1; }
   #orgCerrar:hover { color:#fff; }
   #orgBody { padding:16px 18px; font-size:13px; line-height:1.5; }
@@ -180,7 +180,7 @@
     padding:8px 12px; border-radius:6px; cursor:pointer; font-size:13px; margin:8px 6px 0 0;
   }
   .orgAccion:hover { background:#3d4a62; }
-  .orgAccion.primario { background:#c97b1e; border-color:#f0a340; color:#fff; }
+  .orgAccion.primario { background:#4f8f2c; border-color:#a0cf52; color:#fff; }
 
   /* ---- Iconos SVG ---- */
   .ic svg { width:14px; height:14px; vertical-align:-2px; margin-right:5px; }
@@ -209,9 +209,9 @@
   #planosCabecera {
     display:flex; justify-content:space-between; align-items:center;
     background:#242b38; padding:12px 18px; border-radius:12px 12px 0 0;
-    border-bottom:2px solid #c97b1e; position:sticky; top:0; z-index:1;
+    border-bottom:2px solid #4f8f2c; position:sticky; top:0; z-index:1;
   }
-  #planosCabecera h3 { margin:0; font-size:16px; color:#f0a340; }
+  #planosCabecera h3 { margin:0; font-size:16px; color:#a0cf52; }
   #planosCerrar { background:none; border:none; color:#9aa5b5; font-size:22px; cursor:pointer; line-height:1; }
   #planosCerrar:hover { color:#fff; }
   #planosBody { padding:14px 18px; font-size:13px; line-height:1.5; }
@@ -232,7 +232,7 @@
     background:#2e3646; border:1px solid #4a5468; color:#e8ecf2;
     border-radius:6px; padding:7px 10px; font-size:13px;
   }
-  #planosBody b { color:#f0a340; font-size:13px; }
+  #planosBody b { color:#a0cf52; font-size:13px; }
 
 /* ============ PAD DE NAVEGACIÓN (móvil) ============ */
 #pad {
@@ -256,9 +256,12 @@
   display:flex; align-items:center; justify-content:center;
   touch-action:none;
 }
-#pad button:active { background:#c97b1e; border-color:#f0a340; }
+#pad button:active { background:#4f8f2c; border-color:#a0cf52; }
 #pad button svg { width:20px; height:20px; margin:0; }
 #padEtiquetas.activo { background:#3d4a62; }
+/* botón para ocultar el mando; al contraer solo queda este botón */
+#padToggle { background:rgba(79,143,44,.9); border-color:#a0cf52; }
+#pad.contraido #padCruz, #pad.contraido #padZoom { display:none; }
 
 /* ============ GRUPOS DEL MENÚ ============ */
 .uiGrupo {
@@ -268,7 +271,7 @@
 #ui .uiGrupo:last-of-type { border-right:none; padding-right:0; }
 #relojObra {
   background:#242b38; border:1px solid #3a4150; border-radius:6px;
-  padding:5px 10px; color:#f0a340; font-size:13px;
+  padding:5px 10px; color:#a0cf52; font-size:13px;
 }
 #relojObra b { font-variant-numeric:tabular-nums; }
 
@@ -285,9 +288,9 @@
 #camCabecera {
   display:flex; justify-content:space-between; align-items:center;
   background:#242b38; padding:12px 18px; border-radius:12px 12px 0 0;
-  border-bottom:2px solid #c97b1e; position:sticky; top:0; z-index:1;
+  border-bottom:2px solid #4f8f2c; position:sticky; top:0; z-index:1;
 }
-#camCabecera h3 { margin:0; font-size:16px; color:#f0a340; }
+#camCabecera h3 { margin:0; font-size:16px; color:#a0cf52; }
 #camCerrar { background:none; border:none; color:#9aa5b5; font-size:22px; cursor:pointer; line-height:1; }
 #camCerrar:hover { color:#fff; }
 #camBody { padding:14px 18px; font-size:13px; line-height:1.5; }
@@ -296,7 +299,7 @@
   border-radius:6px; padding:7px 10px; font-size:13px;
 }
 #camBody input[type="time"] { color-scheme:dark; }
-#camBody b { color:#f0a340; font-size:13px; }
+#camBody b { color:#a0cf52; font-size:13px; }
 
 /* ============ RESPONSIVE (móvil y tablet) ============ */
 #btnMenu { display:none; }

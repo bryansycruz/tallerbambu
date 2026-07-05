@@ -45,52 +45,18 @@ function poligonoPlano(puntos, color, y){
   return m;
 }
 
-/* Relieve: el lote y la vía son una plataforma plana; alrededor el
-   terreno natural sube al norte y cae al sur y al occidente. */
-function alturaTerreno(x, z){
-  let h = 0;
-  const dSur = -42 - z;                        // talud bajo la vía de acceso
-  if (dSur > 0) h -= Math.min(dSur * 0.4, 16);
-  const dNorte = z - 30;                       // ladera que sube al norte
-  if (dNorte > 0) h += Math.min(dNorte * 0.28, 9);
-  const dOeste = -95 - x;                      // caída al occidente
-  if (dOeste > 0) h -= Math.min(dOeste * 0.32, 11);
-  if (dSur > 5 || dNorte > 5 || dOeste > 5)
-    h += Math.sin(x*0.05)*0.8 + Math.cos(z*0.07)*0.6;  // ondulación natural
-  return h;
-}
-/* Altura de apoyo de un objeto: el punto más alto bajo su base (esquinas +
-   centro) para que no se entierre por el lado cuesta arriba en pendientes. */
-function alturaApoyo(x, z, w, d){
-  const hw = (w || 2) / 2, hd = (d || 2) / 2;
-  let h = alturaTerreno(x, z);
-  for (const [dx, dz] of [[-hw,-hd],[hw,-hd],[-hw,hd],[hw,hd]])
-    h = Math.max(h, alturaTerreno(x + dx, z + dz));
-  return h;
-}
-const terrenoGeo = new THREE.PlaneGeometry(400, 240, 120, 80);
+/* Terreno totalmente plano (sin relieve): más rápido de renderizar y evita
+   que edificios o camiones se entierren. Todo está a la misma cota (y=0). */
+function alturaTerreno(x, z){ return 0; }
+function alturaApoyo(x, z, w, d){ return 0; }
+
+// base verde plana (2 triángulos); la plataforma gris del lote y la vía van
+// encima con polígonos, así que aquí solo se pinta el pasto de alrededor
+const terrenoGeo = new THREE.PlaneGeometry(420, 260);
 terrenoGeo.rotateX(-Math.PI/2);
 terrenoGeo.translate(10, 0, -5);
-{
-  const posT = terrenoGeo.attributes.position;
-  const arrCol = [];
-  const cPlano = new THREE.Color(0x94979b);   // plataforma del lote (afirmado)
-  const cTal1  = new THREE.Color(0x7d9a4e);   // talud verde (banda clara)
-  const cTal2  = new THREE.Color(0x64803c);   // talud verde (banda oscura = curva de nivel)
-  const cVerde = new THREE.Color(0x74884a);
-  for (let i=0; i<posT.count; i++){
-    const x = posT.getX(i), z = posT.getZ(i);
-    const h = alturaTerreno(x, z);
-    posT.setY(i, h - 0.18);
-    let c = cPlano;
-    if (h > 0.4) c = cVerde;                                          // ladera norte
-    else if (h < -0.4) c = (Math.floor(-h / 2) % 2 === 0) ? cTal1 : cTal2;
-    arrCol.push(c.r, c.g, c.b);
-  }
-  terrenoGeo.setAttribute('color', new THREE.Float32BufferAttribute(arrCol, 3));
-  terrenoGeo.computeVertexNormals();
-}
-const terreno = new THREE.Mesh(terrenoGeo, new THREE.MeshLambertMaterial({ vertexColors:true }));
+const terreno = new THREE.Mesh(terrenoGeo, new THREE.MeshLambertMaterial({ color:0x7d9a4e }));
+terreno.position.y = -0.05;
 terreno.receiveShadow = true;
 scene.add(terreno);
 
@@ -144,7 +110,7 @@ function crearEtiqueta(texto, ancho, colorFondo){
   const ctx = c.getContext('2d');
   ctx.fillStyle = colorFondo || 'rgba(15,20,30,0.78)';
   ctx.beginPath(); ctx.rect(0,16,512,96); ctx.fill();
-  ctx.font = '600 44px Barlow, Arial'; ctx.fillStyle = '#ffffff';
+  ctx.font = '600 44px Inter, Arial'; ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(texto, 256, 66);
   const tex = new THREE.CanvasTexture(c);
@@ -160,9 +126,7 @@ function etiquetaSuelo(texto, x, z, ancho, colorFondo){
 }
 etiquetaSuelo('ACCESO EXISTENTE', -40, -31, 16, 'rgba(50,55,60,0.85)');
 etiquetaSuelo('SALIDA AUTOPISTA', 107, -20, 16, 'rgba(50,55,60,0.85)');
-etiquetaSuelo('VÍA FUTURA (no utilizable)', 60, 30, 17, 'rgba(140,70,20,0.85)');
-etiquetaSuelo('LADERA NORTE', -30, 45, 14, 'rgba(50,90,35,0.8)');
-etiquetaSuelo('TALUD', -20, -55, 8, 'rgba(50,90,35,0.8)');
+etiquetaSuelo('VÍA FUTURA (no utilizable)', 60, 30, 17, 'rgba(120,110,20,0.85)');
 
 /* ---- Árboles (referencia de profundidad) — instanciados: 2 draw calls
    en total, en vez de 2 mallas por árbol ---- */
@@ -246,7 +210,7 @@ scene.add(cerramiento);
     new THREE.MeshLambertMaterial({ color:0xc9581e }));
   porton.position.set(66.8, 1.1, L.z0 - 0.25);
   cerramiento.add(porton);
-  const etCer = crearEtiqueta('PORTÓN + PUERTA PEATONAL', 14, 'rgba(140,70,20,0.85)');
+  const etCer = crearEtiqueta('PORTÓN + PUERTA PEATONAL', 14, 'rgba(70,120,45,0.9)');
   etCer.position.set(74, 5, L.z0 - 1);
   cerramiento.add(etCer);
 }
@@ -419,7 +383,7 @@ mallaCab.userData.op0 = 0.45;
 });
 cabina.position.y = 0.2;
 malacate.add(cabina);
-const etMal = crearEtiqueta('Montacargas 1.000 kg', 12, 'rgba(160,80,10,0.85)');
+const etMal = crearEtiqueta('Montacargas 1.000 kg', 12, 'rgba(70,120,45,0.9)');
 etMal.position.set(0, hTorre + 2, 0);
 malacate.add(etMal);
 
@@ -464,12 +428,12 @@ const SECTORES = [
 
 /* Texto pintado sobre la losa */
 function textoPiso(texto, w, x, z, color, rot){
-  const c = document.createElement('canvas'); c.width = 512; c.height = 128;
+  const c = document.createElement('canvas'); c.width = 640; c.height = 160;
   const ctx = c.getContext('2d');
-  ctx.font = '600 42px \"Titillium Web\", Arial';
+  ctx.font = '700 66px Inter, Arial';
   ctx.fillStyle = color || '#1a6e2e';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(texto, 256, 64);
+  ctx.fillText(texto, 320, 84);
   const tex = new THREE.CanvasTexture(c);
   const m = new THREE.Mesh(
     new THREE.PlaneGeometry(w, w/4),
@@ -499,8 +463,8 @@ SECTORES.forEach(a => {
   const mc = new THREE.Mesh(new THREE.BoxGeometry(ancho - 1.2, 2.3, 0.12), matMuro);
   mc.position.set(cx - 0.6, y4 + 1.25, a.lado * 1.2);
   piso4.add(mc);
-  textoPiso(a.nom, 5.5, cx, a.lado * 3.2, '#166e2a');
-  textoPiso(a.area, 3.6, cx, a.lado * 5.2, '#555049');
+  textoPiso(a.nom, 3.4, cx, a.lado * 3.0, '#1a6e2a');
+  textoPiso(a.area, 2.4, cx, a.lado * 4.6, '#5a6470');
   const zona = new THREE.Mesh(
     new THREE.BoxGeometry(ancho - 0.4, 2.2, 4.8),
     new THREE.MeshLambertMaterial({ color:0xffffff, transparent:true, opacity:0.04 })
@@ -524,7 +488,7 @@ function abrirApto(a){
     '<tr><td>Costado</td><td>' + (a.lado > 0 ? 'Norte' : 'Sur') + ' de la circulación central (105,55 m²), con balcón a fachada</td></tr>' +
     '<tr><td>Suministro</td><td>Materiales por montacargas (1.000 kg) + distribución interna en carretillas buggy</td></tr>' +
     '</table>' +
-    '<div><b style="color:#f0a340">Actividades típicas:</b><br>' +
+    '<div><b style="color:#6fb3c9">Actividades típicas:</b><br>' +
     ['Replanteo', 'Mampostería', 'Instalaciones embebidas', 'Pañete / estuco', 'Enchapes', 'Pintura', 'Carpintería', 'Aparatos y remates']
       .map(s => '<span class="chipEspacio">' + s + '</span>').join('') +
     '</div>' +
@@ -553,7 +517,7 @@ const matBalcon = new THREE.MeshLambertMaterial({ color:0xcfd6dc });
   const b = new THREE.Mesh(new THREE.BoxGeometry(44.6, 0.12, 1.0), matBalcon);
   b.position.set(2.3, y4 + 0.12, lado * (CFG.fondo/2 + 0.5));
   piso4.add(b);
-  textoPiso('BALCONES', 5, 2.3, lado * (CFG.fondo/2 + 0.5), '#4a5560');
+  textoPiso('BALCONES', 3.2, 2.3, lado * (CFG.fondo/2 + 0.5), '#4a5560');
 });
 
 // cerramiento provisional perimetral (baranda naranja de seguridad,
@@ -581,12 +545,12 @@ piso4.add(zDesc);
   piso4.add(p);
 });
 
-const et4a = crearEtiqueta('PISO 4', 9, 'rgba(160,80,10,0.85)');
+const et4a = crearEtiqueta('PISO 4', 9, 'rgba(70,120,45,0.9)');
 et4a.position.set(0, y4 + 7, 0);
 piso4.add(et4a);
-textoPiso('CIRCULACIÓN · 105,55 m²', 14, 2.3, 0, '#8a2020');
-const txtDesc = textoPiso('DESCARGUE MONTACARGAS', 8, CFG.malacateX, -CFG.fondo/2 + 2, '#7a2e00');
-textoSobre('ESCALAS Y ASCENSORES', 9, -22.4, 0, y4 + 2.62, Math.PI/2);
+textoPiso('CIRCULACIÓN · 105,55 m²', 8.5, 2.3, 0, '#7a5210');
+const txtDesc = textoPiso('DESCARGUE MONTACARGAS', 5.5, CFG.malacateX, -CFG.fondo/2 + 2, '#7a2e00');
+textoSobre('ESCALAS Y ASCENSORES', 6, -22.4, 0, y4 + 2.62, Math.PI/2);
 
 /* ---- Montacargas móvil: se ancla al perímetro de la torre ---- */
 function ajustarMalacate(px, pz){
@@ -632,12 +596,12 @@ function cono(g, r, h, color, x, z){
   m.position.set(x, h/2, z); m.castShadow = true; g.add(m); return m;
 }
 function textoLocal(g, texto, w, x, z, color){
-  const c = document.createElement('canvas'); c.width = 512; c.height = 128;
+  const c = document.createElement('canvas'); c.width = 640; c.height = 160;
   const ctx = c.getContext('2d');
-  ctx.font = '600 40px \"Titillium Web\", Arial';
+  ctx.font = '700 58px Inter, Arial';
   ctx.fillStyle = color || '#2c3342';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(texto, 256, 64);
+  ctx.fillText(texto, 320, 84);
   const m = new THREE.Mesh(
     new THREE.PlaneGeometry(w, w/4),
     new THREE.MeshBasicMaterial({ map:new THREE.CanvasTexture(c), transparent:true })
