@@ -60,14 +60,14 @@ function aplicarIconos(){
    10 pisos de 2.65 m (26.50 m) + cubierta · Sótanos -3.40/-6.20/-9.00
    Fase: Cerramientos y Acabados (estructura existente)
    Lote: 163.00 × 47.00 m · Fondo de torres: 12.50 m
-   Vía de acceso existente de 15.00 m · Cerramiento perimetral ~420 m
+   Vía de acceso existente de 15.00 m · Cerramiento perimetral ~490 m
    Malacate tipo cremallera (1.000 kg) al punto medio de la fachada.
    Estructura del código:
      1. CONFIG            8. PROVISIONALES (dimensiones reales del informe)
      2. ESCENA            9. PERSONAS
      3. TERRENO 3D       10. FLUJO DE MATERIALES
      4. TORRE            11. INTERACCIÓN
-     5. MONTACARGAS      12. GUARDAR / CARGAR
+     5. MALACATE         12. GUARDAR / CARGAR
      6. PISO 4           13. UI + LOOP
      7. HELPERS
    ===================================================================== */
@@ -83,7 +83,7 @@ const CFG = {
   hSotano: 3.0,         // niveles: S1 -3.40 · S2 -6.20 · S3 -9.00 m
   malacateX: 0,         // malacate al punto medio de la Torre 01
   lote: { x0:-81.5, x1:81.5, z0:-23.5, z1:23.5 },  // 163.00 × 47.00 m
-  limites: { xMin:-80, xMax:80, zMin:-37, zMax:22 }
+  limites: { xMin:-90, xMax:90, zMin:-38, zMax:30 }   // área de arrastre dentro de la cerca ampliada
 };
 CFG.alto = CFG.pisos * CFG.hPiso; // 26.50 m
 CFG.torre2.x0 = CFG.largo/2 + CFG.torre2.gap;            // arranque Torre 02

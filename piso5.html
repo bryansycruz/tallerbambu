@@ -8,44 +8,53 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  html, body { margin:0; padding:0; background:#1a1e26; font-family:'Inter', 'Segoe UI', Arial, sans-serif; color:#e8ecf2; }
-  .contenido { max-width:980px; margin:0 auto; padding:20px 18px 50px; }
+  /* Plancha técnica clara: papel, tinta oscura y el verde institucional del proyecto */
+  html, body { margin:0; padding:0; background:#edebe0; font-family:'Inter', 'Segoe UI', Arial, sans-serif; color:#262c34; }
+  .contenido { max-width:980px; margin:0 auto; padding:22px 18px 54px; }
   header {
     display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
-    border-bottom:2px solid #4f8f2c; padding-bottom:12px; margin-bottom:18px;
+    border-bottom:3px solid #4f8f2c; padding-bottom:12px; margin-bottom:18px;
   }
-  h1 { margin:0; font-size:24px; color:#a0cf52; font-family:'Space Grotesk','Inter',sans-serif; letter-spacing:.5px; }
-  header small { color:#9aa5b5; display:block; margin-top:3px; font-size:12.5px; }
+  h1 {
+    margin:0; font-size:23px; color:#2f5e14; font-family:'Space Grotesk','Inter',sans-serif;
+    letter-spacing:1px; text-transform:uppercase;
+  }
+  header small { color:#6d7566; display:block; margin-top:3px; font-size:12.5px; }
   .volver {
-    display:inline-flex; align-items:center; gap:6px; background:#2e3646; color:#e8ecf2;
-    border:1px solid #4a5468; padding:8px 14px; border-radius:6px; font-size:13px;
+    display:inline-flex; align-items:center; gap:6px; background:#4f8f2c; color:#fff;
+    border:none; padding:9px 16px; border-radius:6px; font-size:13px; font-weight:600;
     text-decoration:none; cursor:pointer;
   }
-  .volver:hover { background:#3d4a62; }
+  .volver:hover { background:#5aa233; }
   .volver svg { width:14px; height:14px; }
-  h2 { font-size:16px; color:#a0cf52; margin:26px 0 10px; display:flex; align-items:center; gap:7px; font-family:'Space Grotesk','Inter',sans-serif; letter-spacing:.5px; }
+  h2 {
+    font-size:15px; color:#2f5e14; margin:26px 0 10px; display:flex; align-items:center; gap:7px;
+    font-family:'Space Grotesk','Inter',sans-serif; letter-spacing:1px; text-transform:uppercase;
+  }
   h2 svg { width:15px; height:15px; }
   .tarjeta {
-    background:rgba(20,24,32,.85); border:1px solid #3a4150; border-radius:10px; padding:14px 16px;
+    background:#fff; border:1px solid #d9d5c6; border-radius:10px; padding:14px 16px;
+    box-shadow:0 2px 10px rgba(50,50,35,.07);
   }
   table { width:100%; border-collapse:collapse; font-size:12.5px; }
-  th { text-align:left; color:#9aa5b5; font-weight:600; padding:6px 8px; border-bottom:1px solid #3a4150; }
-  td { padding:6px 8px; border-bottom:1px solid #2c3342; }
-  td:first-child { color:#cfd6e0; }
+  th { text-align:left; color:#6d7566; font-weight:700; padding:6px 8px; border-bottom:2px solid #dcd8c9; font-size:11.5px; text-transform:uppercase; letter-spacing:.4px; }
+  td { padding:6px 8px; border-bottom:1px solid #eae7db; }
+  td:first-child { color:#3a424c; font-weight:600; }
   .num { text-align:right; font-variant-numeric:tabular-nums; }
-  tr.total td { color:#a0cf52; font-weight:bold; border-top:2px solid #3a4150; }
+  tr.total td { color:#2f5e14; font-weight:bold; border-top:2px solid #c9c4b1; background:#f4f7ec; }
   .fila2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   @media (max-width:700px){ .fila2 { grid-template-columns:1fr; } }
-  .dato { display:flex; justify-content:space-between; padding:5px 2px; border-bottom:1px solid #2c3342; font-size:13px; }
-  .dato span:first-child { color:#9aa5b5; }
+  .dato { display:flex; justify-content:space-between; padding:5px 2px; border-bottom:1px solid #eae7db; font-size:13px; }
+  .dato span:first-child { color:#6d7566; }
+  .dato span:last-child { font-weight:600; }
   .plano-svg { width:100%; height:auto; display:block; }
-  .leyenda { display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; font-size:12px; color:#9aa5b5; }
-  .leyenda i { display:inline-block; width:11px; height:11px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
+  .leyenda { display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; font-size:12px; color:#5a6252; }
+  .leyenda i { display:inline-block; width:11px; height:11px; border-radius:2px; margin-right:5px; vertical-align:-1px; border:1px solid rgba(0,0,0,.15); }
   .pendiente {
-    border:2px dashed #4a5468; border-radius:10px; padding:26px 14px;
-    text-align:center; color:#9aa5b5; font-size:13px; line-height:1.6;
+    border:2px dashed #c9c4b1; border-radius:10px; padding:26px 14px; background:#faf9f2;
+    text-align:center; color:#7a8172; font-size:13px; line-height:1.6;
   }
-  .nota { color:#9aa5b5; font-size:12px; margin-top:8px; line-height:1.5; }
+  .nota { color:#7a8172; font-size:12px; margin-top:8px; line-height:1.5; }
 </style>
 </head>
 <body>
@@ -146,9 +155,9 @@
     <text x="642" y="125" font-family="Inter, Segoe UI, Arial" font-size="9" fill="#6a2a66" text-anchor="middle">CIRC. 51,38 m²</text>
     <!-- malacate en fachada sur T1 -->
     <rect x="252" y="204" width="22" height="14" fill="#d9a521" stroke="#8a6a10"/>
-    <text x="263" y="232" font-family="Inter, Segoe UI, Arial" font-size="10" fill="#d9a521" text-anchor="middle">MONTACARGAS</text>
+    <text x="263" y="232" font-family="Inter, Segoe UI, Arial" font-size="10" fill="#8a6a10" text-anchor="middle" font-weight="600">MALACATE</text>
     <!-- cotas -->
-    <g font-family="Inter, Segoe UI, Arial" font-size="11" fill="#9aa5b5" text-anchor="middle">
+    <g font-family="Inter, Segoe UI, Arial" font-size="11" fill="#5f6a58" text-anchor="middle" font-weight="600">
       <text x="263" y="16">TORRE 01 — 49.73 m</text>
       <text x="642" y="46">TORRE 02 — 24.30 m</text>
       <text x="516" y="130" transform="rotate(90 516 130)">JUNTA</text>

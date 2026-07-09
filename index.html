@@ -62,11 +62,12 @@
   <button id="btnMenu"><span class="ic" data-ic="menu"></span>Menú</button>
   <div class="uiGrupo" data-nombre="Ver la obra">
     <button id="btnPiso4" title="Corte del piso 4 con sus apartamentos"><span class="ic" data-ic="edificio"></span>Ver Piso 4</button>
+    <button id="btnSotanos" title="Corte de los sótanos S1-S3 con parqueaderos y rampa"><span class="ic" data-ic="bajar"></span>Sótanos</button>
     <button id="btnEtiquetas" title="Mostrar u ocultar los nombres flotantes de las zonas"><span class="ic" data-ic="etiqueta"></span>Etiquetas</button>
     <button id="btnOrg" title="Roles del equipo, funciones y zonas de riesgo"><span class="ic" data-ic="equipo"></span>Organigrama</button>
   </div>
   <div class="uiGrupo" data-nombre="Materiales y rutas">
-    <button id="btnFlujo" title="Dibuja rutas de materiales con clics sobre el terreno"><span class="ic" data-ic="ruta"></span>Trazar flujo</button>
+    <button id="btnFlujo" title="Dibuja rutas de materiales con clics sobre el terreno"><span class="ic" data-ic="ruta"></span>Dibujar ruta</button>
     <button id="btnFin" style="display:none"><span class="ic" data-ic="check"></span>Finalizar ruta</button>
     <button id="btnBorrar" title="Elimina todas las rutas dibujadas"><span class="ic" data-ic="basura"></span>Borrar rutas</button>
     <button id="btnCamiones" title="Programa la hora de entrada de los camiones de materiales"><span class="ic" data-ic="camion"></span>Camiones</button>
@@ -87,8 +88,14 @@
   <input type="file" id="fileCarga" accept=".json" style="display:none">
 </div>
 
-<div id="modoAviso">Modo flujo: haz clic sobre el terreno para marcar el recorrido</div>
+<div id="modoAviso">Dibujando ruta: haz clic sobre el terreno para marcar el recorrido y termina con "Finalizar ruta"</div>
 <div id="avisoGuardado">Distribución guardada</div>
+
+<!-- Banner contextual: indica en qué vista de corte estás y cómo salir -->
+<div id="vistaBanner">
+  <span id="vistaBannerTxt"></span>
+  <button id="vistaBannerBtn">Volver a la obra</button>
+</div>
 
 <!-- ============ PESTAÑA DE DETALLE (SECTORES PISO 4) ============ -->
 <div id="aptoOverlay">
@@ -173,7 +180,7 @@
   <b>Malacate:</b> arrástralo alrededor de la torre; se ancla a la fachada más cercana<br>
   <b>Piso 4:</b> botón "Ver Piso 4" y clic sobre cada sector para su detalle<br>
   <b>Piso 5:</b> clic sobre el piso 5 de la torre = abre su hoja de detalle<br>
-  <b>Flujo:</b> "Trazar flujo" → clics en el terreno → "Finalizar ruta"<br>
+  <b>Rutas:</b> "Dibujar ruta" → clics en el terreno → "Finalizar ruta"<br>
   <b>Organigrama:</b> clic en cada rol: funciones, resaltar su área y zonas de riesgo<br>
   <b>Documentos:</b> selecciona una zona → ficha técnica, planos y enlaces de página
 </div>

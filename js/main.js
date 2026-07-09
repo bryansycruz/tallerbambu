@@ -56,6 +56,7 @@ function setFantasma(grupo, on){
 }
 function togglePiso4(){
   vistaPiso4 = !vistaPiso4;
+  if (vistaPiso4 && vistaSotanos) toggleSotanos();   // una vista de corte a la vez
   // corte arquitectónico: se ocultan el cajón genérico del piso 4 (la planta
   // detallada lo reemplaza) y todos los pisos superiores; atenuarlos no
   // servía porque 6 pisos translúcidos acumulaban una neblina que tapaba todo
@@ -72,8 +73,44 @@ function togglePiso4(){
   } else {
     irA(0, 6, -8, 170, 0.5, 1.22);
   }
+  actualizarBanner();
 }
 document.getElementById('btnPiso4').onclick = togglePiso4;
+
+/* ---- Banner contextual: dice en qué vista de corte estás y cómo volver ---- */
+function actualizarBanner(){
+  const banner = document.getElementById('vistaBanner');
+  const txt = document.getElementById('vistaBannerTxt');
+  let mensaje = '';
+  if (vistaPiso4) mensaje = 'Corte del Piso 4 — haz clic sobre un apartamento para ver su detalle';
+  else if (vistaSotanos) mensaje = 'Corte de sótanos S1-S3 — el terreno se ve translúcido';
+  txt.textContent = mensaje;
+  banner.style.display = mensaje ? 'inline-flex' : 'none';
+}
+document.getElementById('vistaBannerBtn').onclick = () => {
+  if (vistaPiso4) togglePiso4();
+  if (vistaSotanos) toggleSotanos();
+};
+
+/* ---- Vista de sótanos: muestra el corte S1-S3 y aclara el terreno ---- */
+let vistaSotanos = false;
+const btnSotanos = document.getElementById('btnSotanos');
+function toggleSotanos(){
+  vistaSotanos = !vistaSotanos;
+  if (vistaSotanos && vistaPiso4) togglePiso4();
+  sotanosG.visible = vistaSotanos;
+  superficiesTerreno.forEach(m => {
+    m.material.transparent = vistaSotanos;
+    m.material.opacity = vistaSotanos ? 0.18 : 1;
+    m.material.depthWrite = !vistaSotanos;
+  });
+  btnSotanos.innerHTML = icono('bajar') + (vistaSotanos ? 'Ocultar sótanos' : 'Sótanos');
+  btnSotanos.classList.toggle('activo', vistaSotanos);
+  if (vistaSotanos) irA(12, -5, 1, 92, 0.35, 1.38);
+  else irA(0, 6, -8, 170, 0.5, 1.22);
+  actualizarBanner();
+}
+btnSotanos.onclick = toggleSotanos;
 
 const btnFlujo = document.getElementById('btnFlujo');
 const btnFin   = document.getElementById('btnFin');

@@ -42,7 +42,7 @@ function posicionZona(nombre){
   if (nombre && /malacate/i.test(nombre)) return { x: malacate.position.x, z: malacate.position.z, w: 3, d: 3 };
   const alm = draggables.find(d => d.userData.info.nombre === 'Almacén central');
   return alm ? { x: alm.position.x, z: alm.position.z, w: alm.userData.info.w, d: alm.userData.info.d }
-             : { x: 38, z: 15, w: 38, d: 13.9 };
+             : { x: 38, z: 15, w: 37.5, d: 13.9 };
 }
 
 /* Construye una polilínea de puntos [x,z] en una curva suave, pegada al terreno */
@@ -67,7 +67,7 @@ function recorridoCamion(nombreZona){
   const pLav = lav ? [lav.position.x, lav.position.z] : [76, 4];
   const port = buscarProv('Portería');
   const pPort = port ? [port.position.x, port.position.z] : [84, -24];
-  const autop = [124, -40];   // ingreso desde la autopista
+  const autop = [118, 33];   // ingreso desde la autopista (final de la vía corta)
   // los camiones SIEMPRE entran y salen por la portería
   const ida = [autop, pPort, pPatio, aprox];
   const vuelta = [aprox, pLav, pPort, autop];

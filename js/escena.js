@@ -32,6 +32,9 @@ sol.shadow.camera.far = 500;
 scene.add(sol);
 
 /* ============ 3. TERRENO 3D ============ */
+// superficies del suelo (pasto, plataforma, vía…): la vista de sótanos las
+// vuelve translúcidas para poder mirar la estructura bajo tierra
+const superficiesTerreno = [];
 function poligonoPlano(puntos, color, y){
   const shape = new THREE.Shape();
   shape.moveTo(puntos[0][0], -puntos[0][1]);
@@ -42,6 +45,7 @@ function poligonoPlano(puntos, color, y){
   m.position.y = y;
   m.receiveShadow = true;
   scene.add(m);
+  superficiesTerreno.push(m);
   return m;
 }
 
@@ -59,6 +63,7 @@ const terreno = new THREE.Mesh(terrenoGeo, new THREE.MeshLambertMaterial({ color
 terreno.position.y = -0.05;
 terreno.receiveShadow = true;
 scene.add(terreno);
+superficiesTerreno.push(terreno);
 
 function lineaTerreno(puntos, color, offset, cerrar, punteada){
   const pts = [];
@@ -91,7 +96,7 @@ function lineaTerreno(puntos, color, offset, cerrar, punteada){
 /* Plataforma de obra afirmada (gris claro) — envuelve el edificio y la vía,
    que se prolonga como una península hacia la autopista (arriba a la derecha) */
 poligonoPlano([
-  [-80,-8],[-82,6],[-70,16],[-38,22],[2,23],[42,20],[62,16],[166,50],[160,42],
+  [-80,-8],[-82,6],[-70,16],[-38,22],[2,23],[42,20],[62,16],[114,40],[112,24],
   [66,-2],[34,-13],[-6,-14],[-46,-13],[-72,-12]
 ], 0xa8a49a, 0.05);
 
@@ -101,18 +106,20 @@ poligonoPlano([[-27,-8],[52,-8],[52,8],[-27,8]], 0xb9bcc0, 0.12);
 /* Vía (gris oscuro) — UN SOLO trazado: corre al NORTE del edificio (edificio al
    otro lado) y sale como un corredor diagonal largo hacia la derecha */
 poligonoPlano([
-  [-78,8],[52,8],[166,46],[159,55],[44,18],[-78,18]
+  [-78,8],[52,8],[109,27],[102,36],[44,18],[-78,18]
 ], 0x55585e, 0.08);
 poligonoPlano([[-75,12.5],[44,12.5],[44,13.5],[-75,13.5]], 0xd8d8d0, 0.10); // línea central
 
 /* Marca de topografía (referencia del plano) al final de la vía */
-lineaTerreno([[152,52],[166,60]], 0x2fbf5a, 0.6, false, false);
-lineaTerreno([[158,48],[162,64]], 0x2fbf5a, 0.6, false, false);
+lineaTerreno([[98,34],[112,42]], 0x2fbf5a, 0.6, false, false);
+lineaTerreno([[104,30],[108,46]], 0x2fbf5a, 0.6, false, false);
 
-/* ---- Límite de propiedad (AZUL, discontinuo) — contorno orgánico ---- */
+/* ---- Límite de propiedad (AZUL, discontinuo) — contorno orgánico.
+   Ampliado: abarca más terreno al sur, occidente y norte; la punta NE
+   (portón / salida a la autopista) se mantiene en su lugar. ---- */
 lineaTerreno([
-  [-86,4],[-80,-10],[-44,-15],[-4,-16],[36,-14],[62,-4],[166,42],[164,58],
-  [56,26],[30,30],[-8,31],[-46,28],[-70,20],[-84,8]
+  [-96,6],[-90,-28],[-52,-40],[-4,-42],[44,-38],[72,-18],[112,23],[104,39],
+  [58,30],[30,36],[-10,38],[-50,34],[-76,26],[-94,14]
 ], 0x2f7fff, 0.7, true, true);
 
 /* ---- Límite norte de la vía (ROJO) ---- */
@@ -145,7 +152,7 @@ function etiquetaSuelo(texto, x, z, ancho, colorFondo){
   scene.add(e);
 }
 etiquetaSuelo('ACCESO — VÍA', -70, 13, 14, 'rgba(50,55,60,0.85)');
-etiquetaSuelo('SALIDA AUTOPISTA', 150, 50, 16, 'rgba(50,55,60,0.85)');
+etiquetaSuelo('SALIDA AUTOPISTA', 116, 37, 16, 'rgba(50,55,60,0.85)');
 etiquetaSuelo('VÍA FUTURA (no utilizable)', 60, 44, 17, 'rgba(120,110,20,0.85)');
 
 /* ---- Árboles (referencia de profundidad) — instanciados: 2 draw calls
@@ -178,12 +185,12 @@ etiquetaSuelo('VÍA FUTURA (no utilizable)', 60, 44, 17, 'rgba(120,110,20,0.85)'
   scene.add(copas);
 }
 
-/* ---- Cerramiento provisional perimetral (sigue el lindero de propiedad, ~640 m) ---- */
+/* ---- Cerramiento provisional perimetral (sigue el lindero de propiedad, ~490 m) ---- */
 const cerramiento = new THREE.Group();
 cerramiento.userData.info = {
   nombre: 'Cerramiento provisional perimetral',
   aforo: 'No aplica (elemento perimetral)',
-  dimensiones: 'Sigue el lindero de propiedad (azul): abarca todo el lote y la península de acceso hasta la autopista (~640 m de perímetro)',
+  dimensiones: 'Sigue el lindero de propiedad (azul): abarca todo el lote, la franja verde perimetral y la península de acceso hasta la autopista (~490 m de perímetro)',
   altura: '2.40 m sobre nivel de andén',
   material: 'Lámina prepintada Zn-Alum calibre 26, acanalada, sobre postes tubulares Ø3" cada 3.00 m, en dados de concreto de 3.000 PSI (Ø0.30 × 0.50 m)',
   cerramiento: 'Franja inferior antisalpicadura + señalización de obra cada 20 m',
@@ -212,8 +219,8 @@ scene.add(cerramiento);
   // Perímetro = lindero de propiedad (mismo trazado del límite AZUL): abarca
   // todo el lote y la península de acceso, mucha más área que el lote base.
   const P = [
-    [-86,4],[-80,-10],[-44,-15],[-4,-16],[36,-14],[62,-4],[166,42],
-    [164,58],[56,26],[30,30],[-8,31],[-46,28],[-70,20],[-84,8]
+    [-96,6],[-90,-28],[-52,-40],[-4,-42],[44,-38],[72,-18],[112,23],
+    [104,39],[58,30],[30,36],[-10,38],[-50,34],[-76,26],[-94,14]
   ];
   // el tramo P[6]→P[7] (punta NE, hacia la autopista) lleva el acceso:
   // portón vehicular 6 m + puerta peatonal 1 m; el resto va cerrado.
@@ -300,7 +307,23 @@ const matTecho = new THREE.MeshLambertMaterial({ color:0x74777c });
 
 const pisosMesh = [];
 const T2 = CFG.torre2;
-const matLosaT = new THREE.MeshLambertMaterial({ color:0x8a8d92 });
+// losa clara: contrasta con la fachada oscura para que la división de cada piso se lea
+const matLosaT = new THREE.MeshLambertMaterial({ color:0xcfd3d8 });
+
+/* Placa con el número de piso, pegada a la fachada (P1…P10) */
+function nivelTag(texto){
+  const c = document.createElement('canvas'); c.width = 128; c.height = 64;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = 'rgba(16,22,30,0.88)'; ctx.fillRect(0,0,128,64);
+  ctx.strokeStyle = '#f2d21f'; ctx.lineWidth = 4; ctx.strokeRect(2,2,124,60);
+  ctx.font = '700 36px Inter, Arial'; ctx.fillStyle = '#ffd23e';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(texto, 64, 34);
+  return new THREE.Mesh(
+    new THREE.PlaneGeometry(2.4, 1.2),
+    new THREE.MeshBasicMaterial({ map:new THREE.CanvasTexture(c) })
+  );
+}
 for (let i=0; i<CFG.pisos; i++){
   const g = new THREE.Group();
   const y = i*CFG.hPiso;
@@ -328,6 +351,14 @@ for (let i=0; i<CFG.pisos; i++){
   const losa2 = new THREE.Mesh(new THREE.BoxGeometry(T2.largo+0.6, 0.22, T2.fondo+0.4), matLosaT.clone());
   losa2.position.set(T2.cx, (i+1)*CFG.hPiso, T2.dz);
   g.add(losa2);
+  // número de nivel en ambas fachadas (extremo occidental de la Torre 01)
+  const etNa = nivelTag('P' + (i+1));
+  etNa.position.set(-CFG.largo/2 + 1.9, y + CFG.hPiso/2, CFG.fondo/2 + 0.13);
+  g.add(etNa);
+  const etNb = nivelTag('P' + (i+1));
+  etNb.position.set(-CFG.largo/2 + 1.9, y + CFG.hPiso/2, -CFG.fondo/2 - 0.13);
+  etNb.rotation.y = Math.PI;
+  g.add(etNb);
   edificio.add(g);
   pisosMesh.push(g);
 }
@@ -361,19 +392,68 @@ const etT1 = crearEtiqueta('TORRES 01+02', 12, 'rgba(10,110,40,0.85)');
 etT1.position.set(6, CFG.alto + 4.5, 0);
 edificio.add(etT1);
 
-// Sótanos (S1 -3.40 · S2 -6.20 · S3 -9.00 — el malacate también los recorre)
+// Sótanos S1 -3.40 · S2 -6.20 · S3 -9.00: estructura detallada (losas, columnas,
+// parqueaderos, carros y rampa). Se muestra con el botón "Sótanos" de la barra:
+// el terreno se vuelve translúcido para poder ver el corte bajo tierra.
 const sotLargo = CFG.largo + T2.gap + T2.largo;
-const sotano = new THREE.Mesh(
-  new THREE.BoxGeometry(sotLargo+6, CFG.sotanos*CFG.hSotano, CFG.fondo+8),
-  new THREE.MeshLambertMaterial({ color:0x7a6748, transparent:true, opacity:0.35 })
-);
-sotano.position.set((T2.gap + T2.largo)/2, -(CFG.sotanos*CFG.hSotano)/2 - 0.1, 0.6);
-edificio.add(sotano);
-const etSot = crearEtiqueta('SÓTANOS 1-3', 10);
-etSot.position.set(-15, -1.5, CFG.fondo/2 + 5);
-edificio.add(etSot);
+const sotanosG = new THREE.Group();
+sotanosG.visible = false;
+edificio.add(sotanosG);
+{
+  const cxS = (T2.gap + T2.largo)/2, czS = 0.6;
+  const wS = sotLargo + 6, dS = CFG.fondo + 8;
+  const NIVELES_SOT = [-3.4, -6.2, -9.0];
+  const matColS = new THREE.MeshLambertMaterial({ color:0xa4a9af });
+  // muro pantalla perimetral, muy translúcido para mirar el interior
+  const pantalla = new THREE.Mesh(
+    new THREE.BoxGeometry(wS, 9.4, dS),
+    new THREE.MeshLambertMaterial({ color:0x7a6748, transparent:true, opacity:0.12, depthWrite:false })
+  );
+  pantalla.position.set(cxS, -4.75, czS);
+  sotanosG.add(pantalla);
+  NIVELES_SOT.forEach((yN, i) => {
+    const losaS = new THREE.Mesh(
+      new THREE.BoxGeometry(wS, 0.25, dS),
+      new THREE.MeshLambertMaterial({ color:0x93979c })
+    );
+    losaS.position.set(cxS, yN - 0.13, czS);
+    sotanosG.add(losaS);
+    // columnas del pórtico
+    for (let px = -wS/2 + 3; px <= wS/2 - 3; px += 8){
+      [-dS/2 + 1.2, 0, dS/2 - 1.2].forEach(pz => {
+        const col = new THREE.Mesh(new THREE.BoxGeometry(0.45, 2.6, 0.45), matColS);
+        col.position.set(cxS + px, yN + 1.3, czS + pz);
+        sotanosG.add(col);
+      });
+    }
+    // demarcación de parqueaderos a ambos costados
+    for (let px = -wS/2 + 5; px <= wS/2 - 7; px += 2.6){
+      [-1, 1].forEach(lado => {
+        const raya = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.05, 4.6),
+          new THREE.MeshBasicMaterial({ color:0xe8e6da }));
+        raya.position.set(cxS + px, yN + 0.05, czS + lado*(dS/2 - 2.6));
+        sotanosG.add(raya);
+      });
+    }
+    const etS = crearEtiqueta('SÓTANO ' + (i+1) + ' · ' + yN.toFixed(2) + ' m', 15, 'rgba(90,70,35,0.92)');
+    etS.position.set(cxS - wS/2 - 9, yN + 1.7, czS);
+    etiquetasTodas.splice(etiquetasTodas.indexOf(etS), 1);   // siempre visible en la vista de sótanos
+    sotanosG.add(etS);
+  });
+  // carros parqueados (referencia de uso) en S1 y S2
+  [[-24, -1, 0xb8371f, -3.4], [-18, -1, 0x2e6db8, -3.4], [6, 1, 0x5fae4a, -3.4],
+   [18, 1, 0x8a8f96, -6.2], [-10, 1, 0xd9a521, -6.2]].forEach(([px, lado, colC, yN]) => {
+    caja(sotanosG, 1.7, 1.15, 4.2, colC, cxS + px, yN + 0.7, czS + lado*(dS/2 - 2.6));
+  });
+  // rampa vehicular: baja de la superficie al Sótano 1 por el costado oriental
+  const rampa = new THREE.Mesh(new THREE.BoxGeometry(12.4, 0.22, 3.4),
+    new THREE.MeshLambertMaterial({ color:0x777c82 }));
+  rampa.position.set(cxS + wS/2 - 6.2, -1.7, czS - dS/2 + 2.6);
+  rampa.rotation.z = Math.atan2(3.4, 12);
+  sotanosG.add(rampa);
+}
 
-/* ============ 5. MONTACARGAS DE OBRA (cremallera) ============ */
+/* ============ 5. MALACATE DE OBRA (cremallera) ============ */
 const malacate = new THREE.Group();
 malacate.position.set(CFG.malacateX, 0, -(CFG.fondo/2) - 2.2); // punto medio, fachada hacia patio/almacén
 malacate.userData.info = {
@@ -586,7 +666,7 @@ const et4a = crearEtiqueta('PISO 4', 9, 'rgba(70,120,45,0.9)');
 et4a.position.set(0, y4 + 7, 0);
 piso4.add(et4a);
 textoPiso('CIRCULACIÓN · 105,55 m²', 8.5, 2.3, 0, '#7a5210');
-const txtDesc = textoPiso('DESCARGUE MONTACARGAS', 5.5, CFG.malacateX, -CFG.fondo/2 + 2, '#7a2e00');
+const txtDesc = textoPiso('DESCARGUE MALACATE', 5.5, CFG.malacateX, -CFG.fondo/2 + 2, '#7a2e00');
 textoSobre('ESCALAS Y ASCENSORES', 6, -22.4, 0, y4 + 2.62, Math.PI/2);
 
 /* ---- Malacate móvil: se ancla al perímetro de la torre ---- */

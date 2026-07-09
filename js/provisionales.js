@@ -35,25 +35,25 @@ function crearProvisional(def){
   return g;
 }
 
-/* ---- Campamento de oficinas 20×17.8 (Lupa 1: programa completo) ---- */
+/* ---- Campamento de oficinas 19.8×17.6 (Lupa 1: programa completo) ---- */
 function detalleCampamento(g, def){
-  const cm = def.color, h = 2.3;
-  // perímetro con puerta en Circulación/Acceso (frente +z)
-  caja(g, 20, h, 0.12, cm, 0, h/2, -9, 0.92);
-  caja(g, 0.12, h, 18, cm, -10, h/2, 0, 0.92);
-  caja(g, 0.12, h, 18, cm, 10, h/2, 0, 0.92);
-  caja(g, 17.4, h, 0.12, cm, -1.3, h/2, 9, 0.92);
-  caja(g, 1.4, h, 0.12, cm, 9.3, h/2, 9, 0.92);
+  const cm = def.color, h = 2.3, W = def.w, D = def.d;
+  // perímetro con puerta en Circulación/Acceso (frente +z); se adapta a w×d
+  caja(g, W, h, 0.12, cm, 0, h/2, -D/2, 0.92);
+  caja(g, 0.12, h, D, cm, -W/2, h/2, 0, 0.92);
+  caja(g, 0.12, h, D, cm, W/2, h/2, 0, 0.92);
+  caja(g, 7.4 + W/2, h, 0.12, cm, (7.4 - W/2)/2, h/2, D/2, 0.92);
+  caja(g, W/2 - 8.6, h, 0.12, cm, (8.6 + W/2)/2, h/2, D/2, 0.92);
   // divisiones interiores (según Lupa 1)
-  caja(g, 20, 2.2, 0.1, cm, 0, 1.1, -3, 0.95);
-  caja(g, 20, 2.2, 0.1, cm, 0, 1.1, 4, 0.95);
+  caja(g, W, 2.2, 0.1, cm, 0, 1.1, -3, 0.95);
+  caja(g, W, 2.2, 0.1, cm, 0, 1.1, 4, 0.95);
   caja(g, 0.1, 2.2, 6, cm, -5, 1.1, -6, 0.95);
   caja(g, 0.1, 2.2, 6, cm, 0, 1.1, -6, 0.95);
   caja(g, 0.1, 2.2, 6, cm, 6, 1.1, -6, 0.95);
   caja(g, 0.1, 2.2, 7, cm, 4, 1.1, 0.5, 0.95);
   caja(g, 0.1, 2.2, 7, cm, 7, 1.1, 0.5, 0.95);
-  caja(g, 0.1, 2.2, 5, cm, 0, 1.1, 6.5, 0.95);
-  caja(g, 0.1, 2.2, 5, cm, 6, 1.1, 6.5, 0.95);
+  caja(g, 0.1, 2.2, D/2 - 4, cm, 0, 1.1, (4 + D/2)/2, 0.95);
+  caja(g, 0.1, 2.2, D/2 - 4, cm, 6, 1.1, (4 + D/2)/2, 0.95);
   // nombres pintados en piso
   textoLocal(g, 'DIRECCIÓN 5×6', 4.4, -7.5, -6);
   textoLocal(g, 'COORDINACIÓN 5×6', 4.6, -2.5, -6);
@@ -82,7 +82,7 @@ function detalleCampamento(g, def){
   estanteriaFig(g, 2, 8.2, 3, 0);
   estanteriaFig(g, 4.5, 5.2, 3, Math.PI/2);
 }
-/* ---- Almacén central de acabados 38×13.9 ---- */
+/* ---- Almacén central de acabados 37.5×13.9 ---- */
 function detalleAlmacen(g, def){
   estanteriaFig(g, -12, -def.d/2 + 0.5, 8, 0);
   estanteriaFig(g, 0,   -def.d/2 + 0.5, 8, 0);
@@ -98,7 +98,7 @@ function detalleAlmacen(g, def){
   caja(g, 2.4, 0.95, 0.6, 0x9a7a48, 15, 0.48, def.d/2 - 1.2);            // mostrador almacenista
   textoLocal(g, 'CERÁMICA · ENCHAPES · PINTURA · GRIFERÍA · SANITARIOS', 20, 0, 5.5, '#5a5245');
 }
-/* ---- Acopio de materiales (antes "Paletizado") 21.8×16 ---- */
+/* ---- Acopio de materiales (antes "Paletizado") 21.4×16 ---- */
 function detallePaletizado(g, def){
   for (let fx=0; fx<5; fx++) for (let fz=0; fz<3; fz++){
     const x = -8.8 + fx*4.4, z = -5 + fz*5;
@@ -108,25 +108,66 @@ function detallePaletizado(g, def){
   }
   textoLocal(g, 'RECEPCIÓN Y ORGANIZACIÓN DE ESTIBAS', 13, 0, 7, '#5a5245');
 }
-/* ---- Patio de maniobra y descargue 14.8×18 ---- */
+/* ---- Patio de maniobra y descargue 14.8×17.5 ---- */
 function detalleManiobra(g, def){
+  const W = def.w, D = def.d;
+  // franjas amarillas/negras del borde
   for (let i=0; i<6; i++){
-    caja(g, 0.5, 0.05, 1.4, i%2 ? 0x2e3236 : 0xe0c040, -def.w/2 + 0.5, 0.16, -def.d/2 + 1.5 + i*2.8);
-    caja(g, 0.5, 0.05, 1.4, i%2 ? 0x2e3236 : 0xe0c040,  def.w/2 - 0.5, 0.16, -def.d/2 + 1.5 + i*2.8);
+    caja(g, 0.5, 0.05, 1.4, i%2 ? 0x2e3236 : 0xe0c040, -W/2 + 0.5, 0.16, -D/2 + 1.5 + i*2.8);
+    caja(g, 0.5, 0.05, 1.4, i%2 ? 0x2e3236 : 0xe0c040,  W/2 - 0.5, 0.16, -D/2 + 1.5 + i*2.8);
   }
-  [[-5,-6],[5,-6],[-5,6],[5,6]].forEach(([x,z]) => cono(g, 0.28, 0.65, 0xe06a1e, x, z));
-  // camión en maniobra
+  // radio de giro pintado en el piso (elipse discontinua)
+  for (let i=0; i<28; i += 2){
+    const a = (i/28) * Math.PI * 2;
+    const seg = caja(g, 1.0, 0.04, 0.2, 0xeceadf, Math.cos(a)*5.7, 0.17, Math.sin(a)*4.9);
+    seg.rotation.y = Math.atan2(-4.9*Math.cos(a), -5.7*Math.sin(a));
+    seg.castShadow = false;
+  }
+  // flechas de circulación pintadas (entrada → giro → salida)
+  const geoFlecha = new THREE.CircleGeometry(0.6, 3);
+  geoFlecha.rotateX(-Math.PI/2);
+  [[0, D/2 - 1.4, Math.PI/2], [-4.6, 3.2, Math.PI*0.8], [-4.6, -3.2, -Math.PI*0.8], [0, -D/2 + 1.6, -Math.PI/2]]
+    .forEach(([x, z, rot]) => {
+      const f = new THREE.Mesh(geoFlecha.clone(), new THREE.MeshBasicMaterial({ color:0xf2d21f }));
+      f.rotation.y = rot;
+      f.position.set(x, 0.18, z);
+      g.add(f);
+    });
+  // cebra de la zona de descargue
+  for (let i=0; i<5; i++){
+    const c = caja(g, 0.2, 0.04, 3.2, 0xe8e6da, 3.2 + (i - 2)*1.3, 0.165, -D/2 + 2.6);
+    c.rotation.y = 0.5;
+    c.castShadow = false;
+  }
+  textoLocal(g, 'DESCARGUE', 4, 3.2, -D/2 + 5.1, '#7a2e00');
+  // conos de señalización alrededor del giro
+  [[-5,-6],[5,-6],[-5,6],[5,6],[-6.3,0],[6.3,0],[0,7.2],[0,-7.2]].forEach(([x,z]) => cono(g, 0.28, 0.65, 0xe06a1e, x, z));
+  // señal de PARE a la salida
+  cilindro(g, 0.06, 2.2, 0x8a8f96, W/2 - 1, 1.1, D/2 - 1);
+  const pare = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.06, 8),
+    new THREE.MeshLambertMaterial({ color:0xc9302e }));
+  pare.rotation.x = Math.PI/2;
+  pare.position.set(W/2 - 1, 2.3, D/2 - 1);
+  g.add(pare);
+  // camión en maniobra (cabina + parabrisas + faros + furgón con franja + ruedas con rin)
   const cam = new THREE.Group();
-  caja(cam, 2.1, 1.7, 2, 0xb8371f, 0, 0.95, 2.6);                        // cabina
-  caja(cam, 2.2, 2.2, 5, 0xd8dde2, 0, 1.2, -1);                          // furgón
-  [[-0.9,2.6],[0.9,2.6],[-0.9,-2.4],[0.9,-2.4],[-0.9,0.2],[0.9,0.2]].forEach(([x,z]) =>
-    cilindro(cam, 0.42, 0.3, 0x22262b, x, 0.42, z).rotation.z = Math.PI/2);
+  caja(cam, 2.3, 0.5, 8.4, 0x2b2f36, 0, 0.72, 0);                        // chasis
+  caja(cam, 2.35, 2.1, 2.1, 0x2e6db8, 0, 1.95, 2.85);                    // cabina
+  caja(cam, 2.2, 0.9, 0.06, 0x9fc4e8, 0, 2.5, 3.93);                     // parabrisas
+  caja(cam, 0.4, 0.18, 0.1, 0xf2d21f, -0.8, 1.05, 3.92);                 // faros
+  caja(cam, 0.4, 0.18, 0.1, 0xf2d21f, 0.8, 1.05, 3.92);
+  caja(cam, 2.45, 2.3, 5.2, 0xe6e2d8, 0, 2.1, -1.35);                    // furgón
+  caja(cam, 2.47, 0.34, 5.22, 0xc9581e, 0, 1.2, -1.35);                  // franja del furgón
+  [[-1.05,2.85],[1.05,2.85],[-1.05,-0.6],[1.05,-0.6],[-1.05,-3.0],[1.05,-3.0]].forEach(([x,z]) => {
+    cilindro(cam, 0.5, 0.34, 0x15181c, x, 0.5, z).rotation.z = Math.PI/2;   // llanta
+    cilindro(cam, 0.2, 0.36, 0x9aa0a6, x, 0.5, z).rotation.z = Math.PI/2;   // rin
+  });
   cam.rotation.y = 0.5;
-  cam.position.set(1, 0.1, 0);
+  cam.position.set(0.6, 0.1, 0.4);
   g.add(cam);
   textoLocal(g, 'RADIO DE GIRO CAMIÓN SENCILLO / TURBO', 11, 0, -8, '#5a5245');
 }
-/* ---- Lavado de llantas 12×15.7 (Lupa 3) ---- */
+/* ---- Lavado de llantas 11.6×15.7 (Lupa 3) ---- */
 function detalleLavadoInforme(g, def){
   // rampa reductora (entrada, +z) → rejilla + cepillos → poceta → escurrido (−z, hacia portería)
   for (let i=0; i<3; i++) caja(g, 8, 0.18, 0.6, 0x8a8f96, 0, 0.2, 6 - i*1.1);
@@ -152,7 +193,7 @@ function detallePorteria(g, def){
   // barrera roja/blanca que cruza toda la vía (del ancho de la vía)
   caja(g, w - 3.5, 0.16, 0.16, 0xc9302e, ((-w/2 + 3) + (w/2 - 0.5)) / 2, 1.7, 0);
 }
-/* ---- Comedor + cocineta trabajadores (84 m²) ---- */
+/* ---- Comedor + cocineta trabajadores (77 m²) ---- */
 function detalleComedor(g, def){
   [[-4,-1.4],[-4,1.4],[0,-1.4],[0,1.4],[4,-1.4],[4,1.4]].forEach(([x,z]) => {
     mesaFig(g, x, z, 2.6, 0.9);
@@ -163,7 +204,7 @@ function detalleComedor(g, def){
   caja(g, 0.6, 0.08, 0.5, 0x2e3236, -4.8, 0.94, -def.d/2 + 0.5);         // estufa
   for (let i=0; i<3; i++) lavamanosFig(g, def.w/2 - 0.55, -1 + i);
 }
-/* ---- Casilleros trabajadores 16×13.8 ---- */
+/* ---- Casilleros trabajadores 15.5×13.8 ---- */
 function detalleCasilleros(g, def){
   [-4.5,-1.5,1.5,4.5].forEach(z => {
     caja(g, 12, 1.8, 0.5, 0x5a6a7a, 0, 1.02, z);
@@ -202,40 +243,40 @@ function detalleAcomAgua(g, def){
 
 /* Catálogo — dimensiones reales del informe (m). w=x, d=z, h=altura. */
 const PROVISIONALES = [
-  { aforo:'25 personas (oficinas, técnica y sala de reuniones)', nombre:'Campamento', w:20, d:17.8, h:2.5, color:0x3f7fbf, techo:true, pos:[-68,-8], detalle:detalleCampamento,
-    material:'Contenedores / casetas prefabricadas — área total 356 m² (20×17.8)',
+  { aforo:'25 personas (oficinas, técnica y sala de reuniones)', nombre:'Campamento', w:19.8, d:17.6, h:2.5, color:0x3f7fbf, techo:true, pos:[-68,-8], detalle:detalleCampamento,
+    material:'Contenedores / casetas prefabricadas — área total 348 m² (19.8×17.6)',
     cerramiento:'Panel metálico con ventanería; Interventoría con acceso independiente',
     descripcion:'Programa según organigrama: Dirección 5×6 (30 m²), Coordinación 5×6 (30 m²), Interventoría 6×6 (36 m², acceso independiente), Cocineta 4×6 (24 m²), Oficina técnica 14×7 (98 m², 10 puestos: Residentes Administrativo, Cerramientos, Acabados, Ambiental + SST y auxiliares), Baño H 3×7, WC M 3×7, Sala de reuniones 10×5 (50 m²), Archivo/planoteca 6×5 y Circulación 4×5. En el extremo opuesto al ingreso, lejos del polvo y ruido.' },
-  { aforo:'8 personas (almacenista y ayudantes)', nombre:'Almacén central', w:38, d:13.9, h:4, color:0xd9a521, muros:true, techo:true, pos:[38,-15], detalle:detalleAlmacen,
-    material:'Estructura metálica, cubierto y ventilado — 528 m²',
+  { aforo:'8 personas (almacenista y ayudantes)', nombre:'Almacén central', w:37.5, d:13.9, h:4, color:0xd9a521, muros:true, techo:true, pos:[38,-15], detalle:detalleAlmacen,
+    material:'Estructura metálica, cubierto y ventilado — 521 m²',
     cerramiento:'Cerrado con control de humedad (materiales delicados)',
-    descripcion:'Almacén de 38×13.9 ≈ 528 m² junto a la torre para minimizar la manipulación de cerámica, enchapes, pintura, grifería y aparatos sanitarios. Desde aquí el material va en carretillas buggy al pie del malacate (≈15-25 m).' },
-  { aforo:'6 personas en labores de acopio', nombre:'Acopio de materiales', w:21.8, d:16, h:1.6, color:0xb08f5a, pos:[38,14], detalle:detallePaletizado,
-    material:'Superficie afirmada con estibas — 349 m²',
+    descripcion:'Almacén de 37.5×13.9 ≈ 521 m² junto a la torre para minimizar la manipulación de cerámica, enchapes, pintura, grifería y aparatos sanitarios. Desde aquí el material va en carretillas buggy al pie del malacate (≈15-25 m).' },
+  { aforo:'6 personas en labores de acopio', nombre:'Acopio de materiales', w:21.4, d:16, h:1.6, color:0xb08f5a, pos:[38,14], detalle:detallePaletizado,
+    material:'Superficie afirmada con estibas — 342 m²',
     cerramiento:'Demarcada, a cielo abierto',
-    descripcion:'Recepción y organización de estibas (21.8×16 ≈ 349 m²) antes de su ingreso al almacén o directamente al pie del malacate.' },
-  { aforo:'4 personas (conductor y señaleros)', nombre:'Patio de maniobra', w:14.8, d:18, h:2.4, color:0xe0c040, pos:[62,12], detalle:detalleManiobra,
-    material:'Placa afirmada señalizada — 266 m²',
+    descripcion:'Recepción y organización de estibas (21.4×16 ≈ 342 m²) antes de su ingreso al almacén o directamente al pie del malacate.' },
+  { aforo:'4 personas (conductor y señaleros)', nombre:'Patio de maniobra', w:14.8, d:17.5, h:2.4, color:0xe0c040, pos:[62,12], detalle:detalleManiobra,
+    material:'Placa afirmada señalizada — 259 m²',
     cerramiento:'Demarcación con franjas y conos',
-    descripcion:'Patio de 14.8×18 ≈ 266 m² con radio de giro suficiente para camión sencillo/turbo. El camión ingresa por portería → maniobra → descargue en la zona de acopio → salida por lavado de llantas.' },
-  { aforo:'2 operarios', nombre:'Lavado de llantas', w:12, d:15.7, h:1, color:0x4a9ec9, pos:[76,-4], detalle:detalleLavadoInforme,
-    material:'Rejilla metálica + cepillos giratorios y aspersores — 188 m²',
+    descripcion:'Patio de 14.8×17.5 ≈ 259 m² con radio de giro suficiente para camión sencillo/turbo. El camión ingresa por portería → maniobra → descargue en la zona de acopio → salida por lavado de llantas.' },
+  { aforo:'2 operarios', nombre:'Lavado de llantas', w:11.6, d:15.7, h:1, color:0x4a9ec9, pos:[76,-4], detalle:detalleLavadoInforme,
+    material:'Rejilla metálica + cepillos giratorios y aspersores — 182 m²',
     cerramiento:'Poceta de sedimentación + trampa de grasas antes de descarga',
-    descripcion:'1 unidad de 12×15.7 ≈ 188 m², inmediatamente antes de la portería: todo vehículo que sale pasa obligatoriamente por el lavado antes de incorporarse a la vía de acceso / autopista. Capacidad ~3-4 min/vehículo, con recirculación de agua y purga de lodos a disposición autorizada.' },
-  { aforo:'2 vigilantes', nombre:'Portería', w:11, d:4, h:2.5, color:0xb8371f, muros:false, techo:false, pos:[84,24], detalle:detallePorteria,
-    material:'Caseta de vigilancia + portón del ancho de la vía (~11 m)',
+    descripcion:'1 unidad de 11.6×15.7 ≈ 182 m², inmediatamente antes de la portería: todo vehículo que sale pasa obligatoriamente por el lavado antes de incorporarse a la vía de acceso / autopista. Capacidad ~3-4 min/vehículo, con recirculación de agua y purga de lodos a disposición autorizada.' },
+  { aforo:'2 vigilantes', nombre:'Portería', w:10, d:4, h:2.5, color:0xb8371f, muros:false, techo:false, pos:[84,24], detalle:detallePorteria,
+    material:'Caseta de vigilancia + portón del ancho de la vía (~10 m)',
     cerramiento:'Portón vehicular en toda la vía + puerta peatonal',
     descripcion:'Único acceso vehicular y peatonal del lote, en el extremo donde la vía de 15.00 m conecta con la salida de la autopista. Concentra el control de ingreso; requiere señalización para evitar cruces de flujo.' },
-  { aforo:'64 personas por turno', nombre:'Comedor', w:12, d:7, h:2.7, color:0x5fae4a, muros:true, techo:true, pos:[-45,-18], detalle:detalleComedor,
-    material:'Estructura metálica con cubierta — 84 m² (≈1.3 m²/comensal por turno)',
+  { aforo:'64 personas por turno', nombre:'Comedor', w:12, d:6.4, h:2.7, color:0x5fae4a, muros:true, techo:true, pos:[-45,-18], detalle:detalleComedor,
+    material:'Estructura metálica con cubierta — 77 m² (≈1.2 m²/comensal por turno)',
     cerramiento:'Semi-abierto con malla',
     descripcion:'Comedor y cocineta del personal en la zona de bienestar (extremo opuesto al ingreso), lejos del polvo y del tránsito de camiones.' },
-  { aforo:'40 personas', nombre:'Casilleros', w:16, d:13.8, h:2.5, color:0x8a6a3a, muros:true, techo:true, pos:[-68,13], detalle:detalleCasilleros,
-    material:'Módulos de casilleros metálicos — 221 m²',
+  { aforo:'40 personas', nombre:'Casilleros', w:15.5, d:13.8, h:2.5, color:0x8a6a3a, muros:true, techo:true, pos:[-68,13], detalle:detalleCasilleros,
+    material:'Módulos de casilleros metálicos — 214 m²',
     cerramiento:'Caseta cerrada con panel metálico',
-    descripcion:'Guardarropa del personal de obra (16×13.8 ≈ 221 m²) junto a baños y vestidores, en la zona de bienestar.' },
-  { aforo:'45 personas', nombre:'Baños y vestidores', w:15.8, d:18, h:2.5, color:0x4f66c9, muros:true, techo:true, pos:[-42,10], detalle:detalleBanosVest,
-    material:'Módulos sanitarios prefabricados — 284 m²',
+    descripcion:'Guardarropa del personal de obra (15.5×13.8 ≈ 214 m²) junto a baños y vestidores, en la zona de bienestar.' },
+  { aforo:'45 personas', nombre:'Baños y vestidores', w:15.8, d:17.5, h:2.5, color:0x4f66c9, muros:true, techo:true, pos:[-42,10], detalle:detalleBanosVest,
+    material:'Módulos sanitarios prefabricados — 277 m²',
     cerramiento:'Panel metálico, conectado a acometidas provisionales',
     descripcion:'Batería de baños, duchas y vestidores para el personal (pico 305 trabajadores): 3 módulos en total según el informe (2 de obra + 1 administrativo dentro del campamento).' },
   { aforo:'1 técnico autorizado', nombre:'Acometida eléctrica', w:2, d:2, h:2, color:0xd9a521, pos:[78,14], detalle:detalleAcomElec,
