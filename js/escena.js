@@ -19,6 +19,9 @@ renderer.shadowMap.type = ES_MOVIL ? THREE.BasicShadowMap : THREE.PCFShadowMap;
 renderer.shadowMap.autoUpdate = false;
 renderer.shadowMap.needsUpdate = true;
 document.body.appendChild(renderer.domElement);
+// filtrado anisotrópico para los textos pintados en el piso y las fachadas:
+// evita que se vean borrosos en ángulo, con costo despreciable en GPU
+const ANISO = Math.min(ES_MOVIL ? 2 : 8, renderer.capabilities.getMaxAnisotropy());
 
 const hemi = new THREE.HemisphereLight(0xbfd4ff, 0x3a3428, 0.75);
 scene.add(hemi);
@@ -129,8 +132,12 @@ lineaTerreno([[-78,18],[-28,18.5],[16,19],[54,18.5]], 0xc9302e, 0.7, false, fals
 const etiquetasTodas = [];
 function crearEtiqueta(texto, ancho, colorFondo){
   ancho = ancho || 14;
-  const c = document.createElement('canvas'); c.width = 512; c.height = 128;
+  // en escritorio el lienzo va al doble de resolución: letra nítida sin costo
+  // por cuadro (solo algo más de memoria de textura, se genera una vez)
+  const res = ES_MOVIL ? 1 : 2;
+  const c = document.createElement('canvas'); c.width = 512*res; c.height = 128*res;
   const ctx = c.getContext('2d');
+  ctx.scale(res, res);
   ctx.fillStyle = colorFondo || 'rgba(15,20,30,0.78)';
   ctx.beginPath(); ctx.rect(0,16,512,96); ctx.fill();
   ctx.font = '600 44px Inter, Arial';
@@ -141,6 +148,7 @@ function crearEtiqueta(texto, ancho, colorFondo){
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(texto, 256, 66);
   const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = ANISO;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map:tex, depthTest:false, transparent:true }));
   sp.scale.set(ancho, ancho/4, 1);
   etiquetasTodas.push(sp);
@@ -275,8 +283,11 @@ scene.add(edificio);
 
 // Fachada: estructura con vanos — módulos con cerramiento terminado, en ladrillo y vanos abiertos
 function texturaFachada(){
-  const c = document.createElement('canvas'); c.width = 1024; c.height = 96;
+  // alto 128 (potencia de 2): WebGL ya no reescala la textura y la fachada
+  // se ve nítida; el dibujo original de 96 px se escala al nuevo alto
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 128;
   const ctx = c.getContext('2d');
+  ctx.scale(1, 128/96);
   ctx.fillStyle = '#55575b'; ctx.fillRect(0,0,1024,96);
   for (let m=0; m<8; m++){
     const x = m*128;
@@ -298,6 +309,7 @@ function texturaFachada(){
   ctx.fillStyle = '#7d8085'; ctx.fillRect(0,88,1024,8);
   const t = new THREE.CanvasTexture(c);
   t.wrapS = THREE.RepeatWrapping;
+  t.anisotropy = ANISO;
   return t;
 }
 const texFach = texturaFachada();
@@ -312,16 +324,19 @@ const matLosaT = new THREE.MeshLambertMaterial({ color:0xcfd3d8 });
 
 /* Placa con el número de piso, pegada a la fachada (P1…P10) */
 function nivelTag(texto){
-  const c = document.createElement('canvas'); c.width = 128; c.height = 64;
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128;
   const ctx = c.getContext('2d');
+  ctx.scale(2, 2);
   ctx.fillStyle = 'rgba(16,22,30,0.88)'; ctx.fillRect(0,0,128,64);
   ctx.strokeStyle = '#f2d21f'; ctx.lineWidth = 4; ctx.strokeRect(2,2,124,60);
   ctx.font = '700 36px Inter, Arial'; ctx.fillStyle = '#ffd23e';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(texto, 64, 34);
+  const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = ANISO;
   return new THREE.Mesh(
     new THREE.PlaneGeometry(2.4, 1.2),
-    new THREE.MeshBasicMaterial({ map:new THREE.CanvasTexture(c) })
+    new THREE.MeshBasicMaterial({ map:tex })
   );
 }
 for (let i=0; i<CFG.pisos; i++){
@@ -543,15 +558,19 @@ const SECTORES = [
   { nom:'Apto D', area:'72,30 m²', tipo:'3 alcobas',           act:'Ventanería y vidrios',                  x0:13.45, x1:24.6,  lado:-1 }
 ];
 
-/* Texto pintado sobre la losa */
+/* Texto pintado sobre la losa — lienzo en potencia de 2 (WebGL no lo
+   reescala) y filtrado anisotrópico: legible incluso mirado en ángulo */
 function textoPiso(texto, w, x, z, color, rot){
-  const c = document.createElement('canvas'); c.width = 640; c.height = 160;
+  const c = document.createElement('canvas');
+  c.width = ES_MOVIL ? 512 : 1024; c.height = ES_MOVIL ? 128 : 256;
   const ctx = c.getContext('2d');
+  ctx.scale(c.width/640, c.height/160);
   ctx.font = '700 66px Inter, Arial';
   ctx.fillStyle = color || '#1a6e2e';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(texto, 320, 84);
   const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = ANISO;
   const m = new THREE.Mesh(
     new THREE.PlaneGeometry(w, w/4),
     new THREE.MeshBasicMaterial({ map:tex, transparent:true })
@@ -570,21 +589,27 @@ function textoSobre(texto, w, x, z, altura, rot){
 
 const matMuro = new THREE.MeshLambertMaterial({ color:0xb8b2a4 });
 const aptosClick = [];
+// muros divisorios: uno por posición. (Antes cada apto creaba sus dos muros
+// laterales y los vecinos quedaban duplicados en el mismo sitio, titilando
+// por z-fighting: eran los "cuadros" defectuosos dentro de los aptos.)
+const xsMuros = [...new Set(SECTORES.flatMap(a => [a.x0, a.x1]))];
+[1, -1].forEach(lado => xsMuros.forEach(x => {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.3, 4.9), matMuro);
+  m.position.set(x, y4 + 1.25, lado * 3.65);
+  piso4.add(m);
+}));
 SECTORES.forEach(a => {
   const cx = (a.x0 + a.x1) / 2, ancho = a.x1 - a.x0;
-  [a.x0, a.x1].forEach(x => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.3, 4.9), matMuro);
-    m.position.set(x, y4 + 1.25, a.lado * 3.65);
-    piso4.add(m);
-  });
   const mc = new THREE.Mesh(new THREE.BoxGeometry(ancho - 1.2, 2.3, 0.12), matMuro);
   mc.position.set(cx - 0.6, y4 + 1.25, a.lado * 1.2);
   piso4.add(mc);
   textoPiso(a.nom, 3.4, cx, a.lado * 3.0, '#1a6e2a');
   textoPiso(a.area, 2.4, cx, a.lado * 4.6, '#5a6470');
+  // zona de clic totalmente invisible (opacidad 0): sigue respondiendo al
+  // raycast pero ya no se ve como una caja blanca dentro del apartamento
   const zona = new THREE.Mesh(
     new THREE.BoxGeometry(ancho - 0.4, 2.2, 4.8),
-    new THREE.MeshLambertMaterial({ color:0xffffff, transparent:true, opacity:0.04 })
+    new THREE.MeshBasicMaterial({ transparent:true, opacity:0, depthWrite:false })
   );
   zona.position.set(cx, y4 + 1.2, a.lado * 3.7);
   zona.userData.apto = a;
@@ -655,12 +680,6 @@ const zDesc = new THREE.Mesh(
 );
 zDesc.position.set(CFG.malacateX, y4 + 0.2, -CFG.fondo/2 + 2);
 piso4.add(zDesc);
-[[CFG.malacateX-5, 1.1],[CFG.malacateX+4.5, 0.9],[-13, 0.8]].forEach(([x,h]) => {
-  const p = new THREE.Mesh(new THREE.BoxGeometry(2.2, h, 1.5), new THREE.MeshLambertMaterial({ color:0x9a6a3a }));
-  p.position.set(x, y4 + h/2 + 0.15, -3.4);
-  p.castShadow = true;
-  piso4.add(p);
-});
 
 const et4a = crearEtiqueta('PISO 4', 9, 'rgba(70,120,45,0.9)');
 et4a.position.set(0, y4 + 7, 0);
@@ -713,15 +732,19 @@ function cono(g, r, h, color, x, z){
   m.position.set(x, h/2, z); m.castShadow = true; g.add(m); return m;
 }
 function textoLocal(g, texto, w, x, z, color){
-  const c = document.createElement('canvas'); c.width = 640; c.height = 160;
+  const c = document.createElement('canvas');
+  c.width = ES_MOVIL ? 512 : 1024; c.height = ES_MOVIL ? 128 : 256;
   const ctx = c.getContext('2d');
+  ctx.scale(c.width/640, c.height/160);
   ctx.font = '700 58px Inter, Arial';
   ctx.fillStyle = color || '#2c3342';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(texto, 320, 84);
+  const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = ANISO;
   const m = new THREE.Mesh(
     new THREE.PlaneGeometry(w, w/4),
-    new THREE.MeshBasicMaterial({ map:new THREE.CanvasTexture(c), transparent:true })
+    new THREE.MeshBasicMaterial({ map:tex, transparent:true })
   );
   m.rotation.x = -Math.PI/2;
   m.position.set(x, 0.17, z);
