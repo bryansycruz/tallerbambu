@@ -13,48 +13,37 @@
 </head>
 <body>
 
-<!-- ============ PANTALLA DE INICIO (estilo ficha de producto) ============ -->
+<!-- ============ PANTALLA DE INICIO ============ -->
 <div id="inicio">
-  <header id="inicioTop">
-    <div class="topContenido">
+  <div id="inicioCard">
+    <div id="inicioLogo">
       <img src="logo/Logotipo_de_la_Universidad_Nacional_de_Colombia.svg.webp" alt="Universidad Nacional de Colombia">
-      <div class="topTexto">
-        <b>Universidad Nacional de Colombia</b>
-        <span>Taller II · Obras provisionales</span>
-      </div>
     </div>
-  </header>
+    <div id="inicioUni">Universidad Nacional de Colombia</div>
+    <div class="inicioLinea"></div>
+    <div id="inicioMateria">Taller II</div>
+    <div id="inicioProyecto">Proyecto <b>Bambú</b> · Marinilla, Antioquia</div>
+    <div id="inicioSub">Plano 3D de obra — Obras provisionales (cerramientos y acabados)</div>
 
-  <div id="inicioCuerpo">
-    <nav id="inicioMigas">Antioquia&ensp;›&ensp;Marinilla&ensp;›&ensp;Vivienda multifamiliar&ensp;›&ensp;Torres Bambú</nav>
-    <div id="inicioCard">
-      <div id="inicioGrid">
-        <div id="inicioFoto">
-          <img src="Captura.JPG" alt="Vista del plano 3D de la obra">
-        </div>
-        <div id="inicioDatos">
-          <span class="chipEstado">Obra en ejecución · Cerramientos y acabados</span>
-          <h1>Proyecto Bambú — Plano 3D de obra</h1>
-          <p class="inicioSub">Obras provisionales de las Torres 01 y 02 · Marinilla, Antioquia</p>
-          <ul id="inicioLista">
-            <li><span>Torres</span><b>2 en línea · 120 aptos (tipos A–L)</b></li>
-            <li><span>Niveles</span><b>10 pisos + cubierta · 3 sótanos</b></li>
-            <li><span>Altura</span><b>26,50 m (entrepiso 2,65 m)</b></li>
-            <li><span>Lote</span><b>163,00 × 47,00 m</b></li>
-            <li><span>Personal en pico</span><b>305 trabajadores</b></li>
-          </ul>
-          <button id="inicioBtn">Ver la obra en 3D</button>
-          <a id="inicioBtnSec" href="piso5.html">Piso 5</a>
-          <div class="inicioGarantia">Los cambios se guardan y los ve todo el equipo</div>
-        </div>
-      </div>
-      <div id="inicioEquipo">
-        <span class="eqTitulo">Equipo</span>
-        <span class="eqNombre">Bryan Yamá Cruz</span>
-        <span class="eqNombre">Manuela Gómez</span>
-        <span class="eqNombre">Carlos Holguín</span>
-      </div>
+    <div id="inicioInfo">
+      <div class="infoItem"><span>Ubicación</span><b>Marinilla, Antioquia</b></div>
+      <div class="infoItem"><span>Torres</span><b>2 (01 y 02), en línea</b></div>
+      <div class="infoItem"><span>Apartamentos</span><b>120 (80 + 40) · tipos A–L</b></div>
+      <div class="infoItem"><span>Niveles</span><b>10 pisos + cubierta · 3 sótanos</b></div>
+      <div class="infoItem"><span>Altura</span><b>26,50 m (entrepiso 2,65 m)</b></div>
+      <div class="infoItem"><span>Lote</span><b>163,00 × 47,00 m</b></div>
+      <div class="infoItem"><span>Fase actual</span><b>Cerramientos y acabados</b></div>
+      <div class="infoItem"><span>Personal en pico</span><b>305 trabajadores</b></div>
     </div>
+
+    <div id="inicioEquipo">
+      <span class="eqTitulo">Integrantes</span>
+      <span>Bryan Yamá Cruz</span>
+      <span>Manuela Gómez</span>
+      <span>Carlos Holguín</span>
+    </div>
+    <button id="inicioBtn"><span class="playIc"></span>Ver la obra</button>
+    <a id="inicioPiso5" href="piso5.html">Piso 5</a>
   </div>
 </div>
 <script>
