@@ -42,7 +42,7 @@ function posicionZona(nombre){
   if (nombre && /malacate/i.test(nombre)) return { x: malacate.position.x, z: malacate.position.z, w: 3, d: 3 };
   const alm = draggables.find(d => d.userData.info.nombre === 'Almacén central');
   return alm ? { x: alm.position.x, z: alm.position.z, w: alm.userData.info.w, d: alm.userData.info.d }
-             : { x: 38, z: 15, w: 38, d: 14 };
+             : { x: 38, z: 15, w: 38, d: 13.9 };
 }
 
 /* Construye una polilínea de puntos [x,z] en una curva suave, pegada al terreno */

@@ -199,6 +199,19 @@ function actualizarTinte(obj){
     }
   });
 }
+/* Gira la zona seleccionada sobre su propio eje (45° por toque).
+   Solo aplica a los provisionales: el edificio y el cerramiento no giran. */
+function girarSeleccionado(dir){
+  if (!seleccionado || !draggables.includes(seleccionado)) return;
+  if (seleccionado.userData.bloqueado){
+    avisoGuardado('Zona bloqueada: desbloquéala para girarla');
+    return;
+  }
+  seleccionado.rotation.y += dir * Math.PI / 4;
+  const grados = Math.round(((seleccionado.rotation.y * 180 / Math.PI) % 360 + 360) % 360);
+  guardarCompartido();
+  avisoGuardado(seleccionado.userData.info.nombre + ' girado (' + grados + '°)');
+}
 function toggleBloqueo(){
   if (!seleccionado) return;
   seleccionado.userData.bloqueado = !seleccionado.userData.bloqueado;
@@ -228,6 +241,7 @@ function seleccionar(obj){
     '</table>' +
     '<div class="desc">' + d.descripcion + '</div>' +
     (esProvisional ? '<button class="btnBloqueo ' + (obj.userData.bloqueado ? 'bloqueado' : 'libre') + '" onclick="toggleBloqueo()">' + icono(obj.userData.bloqueado ? 'candadoAbierto' : 'candado') + (obj.userData.bloqueado ? 'Bloqueado — toca para desbloquear' : 'Libre — toca para bloquear') + '</button>' : '') +
+    (esProvisional ? '<div style="display:flex; gap:6px"><button style="flex:1" onclick="girarSeleccionado(-1)">' + icono('girarIzq') + 'Girar 45°</button><button style="flex:1" onclick="girarSeleccionado(1)">' + icono('girarDer') + 'Girar 45°</button></div>' : '') +
     (esProvisional ? '<button onclick="programarCamionZona(seleccionado.userData.info.nombre)">' + icono('camion') + 'Programar camión a esta zona</button>' : '') +
     '<button onclick="abrirPlanos(seleccionado.userData.info.nombre)">' + icono('plano') + 'Ficha técnica, planos y enlaces</button>' +
     (obj.userData.esEdificio ? '<button onclick="togglePiso4()">' + icono('edificio') + 'Ver Piso 4 en detalle</button>' +

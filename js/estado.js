@@ -9,6 +9,7 @@ function estadoActual(){
     elementos[g.userData.info.nombre] = {
       x: Math.round(g.position.x * 100) / 100,
       z: Math.round(g.position.z * 100) / 100,
+      rot: Math.round((g.rotation.y || 0) * 180 / Math.PI),
       bloqueado: !!g.userData.bloqueado
     };
   });
@@ -31,15 +32,21 @@ function guardarLocal(){
 function aplicarEstado(d){
   if (!d) return;
   if (d.elementos){
+    // migración: la zona "Paletizado" pasó a llamarse "Acopio de materiales"
+    if (d.elementos['Paletizado'] && !d.elementos['Acopio de materiales']){
+      d.elementos['Acopio de materiales'] = d.elementos['Paletizado'];
+    }
     draggables.forEach(g => {
       const p = d.elementos[g.userData.info.nombre];
       if (!p) return;
       const inf = g.userData.info;
       if (Array.isArray(p)){
         g.position.set(p[0], alturaApoyo(p[0], p[1], inf.w, inf.d), p[1]);
+        g.rotation.y = 0;
         g.userData.bloqueado = false;
       } else {
         g.position.set(p.x, alturaApoyo(p.x, p.z, inf.w, inf.d), p.z);
+        g.rotation.y = (typeof p.rot === 'number' && isFinite(p.rot)) ? p.rot * Math.PI / 180 : 0;
         g.userData.bloqueado = !!p.bloqueado;
       }
       actualizarTinte(g);
@@ -63,9 +70,13 @@ function aplicarEstado(d){
   }
   if (d.enlaces && typeof d.enlaces === 'object' && !Array.isArray(d.enlaces)){
     enlaces = d.enlaces;
+    if (enlaces['paletizado'] && !enlaces['acopio-de-materiales']){
+      enlaces['acopio-de-materiales'] = enlaces['paletizado'];   // nombre antiguo de la zona
+    }
   }
   if (Array.isArray(d.camiones)){
-    camiones = d.camiones;
+    camiones = d.camiones.map(c => (c && c.zona === 'Paletizado')
+      ? Object.assign({}, c, { zona: 'Acopio de materiales' }) : c);
   }
 }
 

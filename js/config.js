@@ -34,6 +34,8 @@ const ICONOS = {
   candadoAbierto:'<rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V7.5A4 4 0 0115.4 5.4"/>',
   abrir:         '<path d="M14 4h6v6M20 4l-9 9M20 13.5V20H4V4h6.5"/>',
   refrescar:     '<path d="M20 11a8 8 0 10.6 4.5M20 5v6h-6"/>',
+  girarDer:      '<path d="M20 11a8 8 0 10.6 4.5M20 5v6h-6"/>',
+  girarIzq:      '<path d="M4 11a8 8 0 11-.6 4.5M4 5v6h6"/>',
   menu:          '<path d="M4 6h16M4 12h16M4 18h16"/>',
   camion:        '<path d="M2 16V7h11v9M13 10h4.5l3.5 3.5V16h-8"/><circle cx="7" cy="17.5" r="1.7"/><circle cx="16.5" cy="17.5" r="1.7"/>',
   reloj:         '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',

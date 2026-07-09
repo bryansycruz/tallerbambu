@@ -14,7 +14,7 @@ const ORG = {
     ]
   },
   interventor: {
-    titulo:'Interventor', nombre:'Jorge Pineda', color:'#16a085', emissive:0x0b4d40, pinta:'todo', punteado:true,
+    titulo:'Interventor', nombre:'Jorge Pineda', color:'#16a085', emissive:0x14907a, pinta:'todo', punteado:true,
     resumen:'Revisa todo el proyecto en términos de ejecución: verifica que lo construido cumpla lo contratado.',
     funciones:[
       'Verifica que la ejecución cumpla planos y especificaciones',
@@ -25,7 +25,7 @@ const ORG = {
     ]
   },
   director: {
-    titulo:'Director de Obra', nombre:'Carlos Holguin', color:'#f0a340', emissive:0x664411, pinta:'todo',
+    titulo:'Director de Obra', nombre:'Carlos Holguin', color:'#f0a340', emissive:0xa8722d, pinta:'todo',
     resumen:'Encargado de todo lo que se hace en obra.',
     funciones:[
       'Dirige toda la ejecución en obra: programación semanal y frentes de trabajo',
@@ -36,7 +36,7 @@ const ORG = {
     ]
   },
   resAdmin: {
-    titulo:'Residente Administrativo', nombre:'Bryan Yama', auxiliar:'Sofía Delgado', color:'#4da3ff', emissive:0x123a66, pinta:'costos',
+    titulo:'Residente Administrativo', nombre:'Bryan Yama', auxiliar:'Sofía Delgado', color:'#4da3ff', emissive:0x2f6bb3, pinta:'costos',
     resumen:'Encargado de todo lo que genera dinero o aumenta los gastos de la obra.',
     funciones:[
       'Controla costos, presupuesto y flujo de caja de la obra',
@@ -47,7 +47,7 @@ const ORG = {
     ]
   },
   resEstructura: {
-    titulo:'Residente de Estructura', nombre:'Bryan Yama', auxiliar:'Julián Mora', color:'#9fb6c9', emissive:0x2c3f52, pinta:'estructura',
+    titulo:'Residente de Estructura', nombre:'Bryan Yama', auxiliar:'Julián Mora', color:'#9fb6c9', emissive:0x5c7891, pinta:'estructura',
     resumen:'Encargado de toda la estructura.',
     funciones:[
       'Supervisa armado de acero, formaleta y vaciados de concreto',
@@ -58,7 +58,7 @@ const ORG = {
     ]
   },
   resCerramiento: {
-    titulo:'Residente de Cerramiento y Acabados', nombre:'Laura Cardona', auxiliar:'Esteban Ruiz', color:'#58b368', emissive:0x1d5b2a, pinta:'acabados',
+    titulo:'Residente de Cerramiento y Acabados', nombre:'Laura Cardona', auxiliar:'Esteban Ruiz', color:'#58b368', emissive:0x3f8a4e, pinta:'acabados',
     resumen:'Encargada de los acabados y de las cuadrillas de mamposteros.',
     funciones:[
       'Dirige mampostería, pañetes y cerramientos de fachada',
@@ -157,7 +157,7 @@ function esObjetivoRol(rol, obj){
   if (!rol || !rol.pinta) return false;
   if (rol.pinta === 'todo') return true;
   const nom = (obj.userData.info && obj.userData.info.nombre) || '';
-  if (rol.pinta === 'costos') return /Almacén|paletizado|Portería|Campamento|Acometida/i.test(nom);
+  if (rol.pinta === 'costos') return /Almacén|Acopio|Portería|Campamento|Acometida/i.test(nom);
   if (rol.pinta === 'estructura') return obj === edificio || obj === malacate;
   if (rol.pinta === 'acabados') return obj === edificio || /Almacén central/i.test(nom);
   return false;
@@ -165,8 +165,57 @@ function esObjetivoRol(rol, obj){
 function repintarTodo(){
   [...draggables, edificio, cerramiento, malacate].forEach(actualizarTinte);
 }
+
+/* Además del brillo (emissive), el rol resaltado dibuja sobre cada una de sus
+   zonas una caja translúcida de su color y una etiqueta con su cargo, para que
+   se vea claramente QUIÉN es responsable de QUÉ. */
+let zonasRol = null;
+function rgbaRol(hex, alfa){
+  const c = new THREE.Color(hex).multiplyScalar(0.55);
+  return 'rgba(' + Math.round(c.r*255) + ',' + Math.round(c.g*255) + ',' + Math.round(c.b*255) + ',' + (alfa || 0.92) + ')';
+}
+function marcarZonaRol(x, z, w, d, yEtiqueta, rot, r){
+  const caja = new THREE.Mesh(
+    new THREE.BoxGeometry(w, 2.6, d),
+    new THREE.MeshLambertMaterial({ color: new THREE.Color(r.color).getHex(), transparent:true, opacity:0.28, depthWrite:false })
+  );
+  caja.position.set(x, 1.3, z);
+  caja.rotation.y = rot || 0;
+  zonasRol.add(caja);
+  const et = crearEtiqueta('Responsable: ' + r.titulo, 26, rgbaRol(r.color));
+  et.position.set(x, yEtiqueta, z);
+  // fuera de la lista de etiquetas ocultables: el responsable debe verse siempre
+  etiquetasTodas.splice(etiquetasTodas.indexOf(et), 1);
+  zonasRol.add(et);
+}
 function pintarRol(id){
   rolPintado = (rolPintado === id) ? null : id;
+  if (zonasRol){ scene.remove(zonasRol); zonasRol = null; }
+  if (rolPintado){
+    const r = ORG[id];
+    zonasRol = new THREE.Group();
+    if (r.pinta === 'todo'){
+      // rol que supervisa toda la obra: una sola etiqueta grande sobre las torres
+      const et = crearEtiqueta(r.titulo + ' — responsable de toda la obra', 52, rgbaRol(r.color));
+      et.position.set(12, CFG.alto + 12, 0);
+      etiquetasTodas.splice(etiquetasTodas.indexOf(et), 1);
+      zonasRol.add(et);
+    } else {
+      draggables.forEach(o => {
+        if (!esObjetivoRol(r, o)) return;
+        const inf = o.userData.info;
+        marcarZonaRol(o.position.x, o.position.z, inf.w + 2.5, inf.d + 2.5, inf.h + 5, o.rotation.y, r);
+      });
+      if (esObjetivoRol(r, edificio)){
+        const wE = CFG.largo + CFG.torre2.gap + CFG.torre2.largo + 4;
+        marcarZonaRol((CFG.torre2.gap + CFG.torre2.largo)/2, 0.5, wE, CFG.fondo + 6, CFG.alto + 8, 0, r);
+      }
+      if (esObjetivoRol(r, malacate)){
+        marcarZonaRol(malacate.position.x, malacate.position.z, 6, 6, CFG.alto + 8, 0, r);
+      }
+    }
+    scene.add(zonasRol);
+  }
   repintarTodo();
   document.getElementById('orgOverlay').style.display = 'none';
   avisoGuardado(rolPintado ? 'Resaltado: área de ' + ORG[id].titulo : 'Resaltado quitado');
@@ -176,12 +225,13 @@ function pintarRol(id){
 function buscarProv(sub){
   return draggables.find(g => g.userData.info.nombre.toLowerCase().includes(sub.toLowerCase()));
 }
-function crearZonaRiesgo(x, z, w, d, color, rgba, texto){
+function crearZonaRiesgo(x, z, w, d, color, rgba, texto, rot){
   const caja = new THREE.Mesh(
     new THREE.BoxGeometry(w, 2.4, d),
     new THREE.MeshLambertMaterial({ color, transparent:true, opacity:0.25, depthWrite:false })
   );
   caja.position.set(x, 1.2, z);
+  caja.rotation.y = rot || 0;
   zonasRiesgo.add(caja);
   const et = crearEtiqueta(texto, 22, rgba);
   et.position.set(x, 4.6, z);
@@ -189,7 +239,7 @@ function crearZonaRiesgo(x, z, w, d, color, rgba, texto){
 }
 function zonaProv(sub, color, rgba, texto){
   const p = buscarProv(sub);
-  if (p) crearZonaRiesgo(p.position.x, p.position.z, p.userData.info.w + 3, p.userData.info.d + 3, color, rgba, texto);
+  if (p) crearZonaRiesgo(p.position.x, p.position.z, p.userData.info.w + 3, p.userData.info.d + 3, color, rgba, texto, p.rotation.y);
 }
 function toggleRiesgos(){
   if (zonasRiesgo){
@@ -209,7 +259,7 @@ function toggleRiesgos(){
   zonaProv('maniobra', ROJO, cR, 'ALTO · Maquinaria y volquetas en movimiento');
   // MEDIO
   zonaProv('Almacén central', AMAR, cA, 'MEDIO · Manipulación y acopio de cargas');
-  zonaProv('paletizado', AMAR, cA, 'MEDIO · Acopio de materiales');
+  zonaProv('Acopio', AMAR, cA, 'MEDIO · Acopio de materiales');
   zonaProv('Acometida eléctrica', AMAR, cA, 'MEDIO · Riesgo eléctrico');
   zonaProv('Lavado', AMAR, cA, 'MEDIO · Piso húmedo');
   // BAJO

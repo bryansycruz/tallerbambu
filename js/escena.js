@@ -126,7 +126,11 @@ function crearEtiqueta(texto, ancho, colorFondo){
   const ctx = c.getContext('2d');
   ctx.fillStyle = colorFondo || 'rgba(15,20,30,0.78)';
   ctx.beginPath(); ctx.rect(0,16,512,96); ctx.fill();
-  ctx.font = '600 44px Inter, Arial'; ctx.fillStyle = '#ffffff';
+  ctx.font = '600 44px Inter, Arial';
+  // si el texto no cabe en el lienzo, se reduce la fuente para no recortarlo
+  const anchoTexto = ctx.measureText(texto).width;
+  if (anchoTexto > 492) ctx.font = '600 ' + Math.max(16, Math.floor(44 * 492 / anchoTexto)) + 'px Inter, Arial';
+  ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(texto, 256, 66);
   const tex = new THREE.CanvasTexture(c);
@@ -257,7 +261,7 @@ edificio.userData.info = {
   altura: '26.50 m (10 pisos de 2.65 m) + cubierta · Sótanos: S1 -3.40 · S2 -6.20 · S3 -9.00 m',
   material: 'Estructura existente en concreto, completamente construida (la fase actual es solo cerramientos y acabados)',
   cerramiento: 'En ejecución: mampostería de fachada, ventanería y acabados interiores · 80 + 40 apartamentos (tipos A-L)',
-  descripcion: 'Proyecto Bambú (Marinilla, Antioquia). Edificio en posición intermedia del lote de 163.00 m: Torre 01 y Torre 02 en línea con junta entre ambas y retrocesos de fachada según planta. El flujo es de un solo sentido: ingreso → zona operativa (portería, maniobra, paletizado, almacén) → torre → zona administrativa y de bienestar, con salida por el mismo portón pasando por el lavado de llantas. Usa "Ver Piso 4" y haz clic en cada sector para el detalle de los frentes de trabajo.'
+  descripcion: 'Proyecto Bambú (Marinilla, Antioquia). Edificio en posición intermedia del lote de 163.00 m: Torre 01 y Torre 02 en línea con junta entre ambas y retrocesos de fachada según planta. El flujo es de un solo sentido: ingreso → zona operativa (portería, maniobra, acopio, almacén) → torre → zona administrativa y de bienestar, con salida por el mismo portón pasando por el lavado de llantas. Usa "Ver Piso 4" y haz clic en cada sector para el detalle de los frentes de trabajo.'
 };
 edificio.userData.esEdificio = true;
 scene.add(edificio);
