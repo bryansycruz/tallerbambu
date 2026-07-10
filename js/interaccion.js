@@ -89,9 +89,9 @@ renderer.domElement.addEventListener('pointerdown', e => {
     if (p){ if (!rutaActual) iniciarRuta(); agregarPunto(p); }
     return;
   }
-  const hitsM = raycaster.intersectObject(malacate, true);
+  const hitsM = raycaster.intersectObjects(malacates, true);
   if (hitsM.length){
-    arrastrando = malacate;
+    arrastrando = buscarRaiz(hitsM[0].object) || malacate;
     return;
   }
   const hits = raycaster.intersectObjects(draggables, true);
@@ -129,7 +129,7 @@ renderer.domElement.addEventListener('pointermove', e => {
       if (arrastrando.userData.esMalacate){
         const s = ajustarMalacate(p.x, p.z);
         arrastrando.position.set(s.x, 0, s.z);
-        actualizarDescargue();
+        if (arrastrando === malacate) actualizarDescargue();
       } else {
         const nx = Math.min(CFG.limites.xMax, Math.max(CFG.limites.xMin, p.x));
         const nz = Math.min(CFG.limites.zMax, Math.max(CFG.limites.zMin, p.z));
@@ -166,7 +166,7 @@ renderer.domElement.addEventListener('pointerup', e => {
       const hitsA = raycaster.intersectObjects(aptosClick);
       if (hitsA.length){ abrirApto(hitsA[0].object.userData.apto); return; }
     }
-    const todo = [...draggables, edificio, malacate, cerramiento];
+    const todo = [...draggables, edificio, ...malacates, cerramiento];
     const hits = raycaster.intersectObjects(todo, true);
     if (hits.length){
       if (!vistaPiso4 && esPiso5(hits[0].object)){ abrirHojaPiso5(); return; }
@@ -244,6 +244,10 @@ function seleccionar(obj){
     (esProvisional ? '<div style="display:flex; gap:6px"><button style="flex:1" onclick="girarSeleccionado(-1)">' + icono('girarIzq') + 'Girar 45°</button><button style="flex:1" onclick="girarSeleccionado(1)">' + icono('girarDer') + 'Girar 45°</button></div>' : '') +
     (esProvisional ? '<button onclick="programarCamionZona(seleccionado.userData.info.nombre)">' + icono('camion') + 'Programar camión a esta zona</button>' : '') +
     (obj.userData.personalizado ? '<button class="btnEliminar" onclick="eliminarPersonalizado(seleccionado.userData.info.nombre)">' + icono('basura') + 'Eliminar de la obra</button>' : '') +
+    (obj.userData.esMalacate ? '<div style="display:flex; gap:6px">' +
+      '<button style="flex:1" onclick="agregarMalacate()">' + icono('mas') + 'Agregar otro malacate</button>' +
+      (malacates.length > 1 ? '<button style="flex:1" class="btnEliminar" onclick="eliminarMalacate(seleccionado.userData.info.nombre)">' + icono('basura') + 'Eliminar este</button>' : '') +
+      '</div>' : '') +
     '<button onclick="abrirPlanos(seleccionado.userData.info.nombre)">' + icono('plano') + 'Ficha técnica, planos y enlaces</button>' +
     (obj.userData.esEdificio ? '<button onclick="togglePiso4()">' + icono('edificio') + 'Ver Piso 4 en detalle</button>' +
       '<button onclick="abrirHojaPiso5()">' + icono('abrir') + 'Abrir hoja del Piso 5</button>' : '');

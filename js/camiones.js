@@ -4,10 +4,10 @@
    de llantas. Escala 1:1 y altura pegada al terreno (no se hunde en pendientes). */
 
 /* ============ 12d. CAMIONES DE MATERIALES ============ */
-let camiones = [];            // [{ hora:'08:00', material:'Cerámica', zona:'Almacén central' }]
+let camiones = [];            // [{ fecha:'2026-07-10', hora:'08:00', material:'Cerámica', zona:'Almacén central' }]
 let horaObra = 6 * 60;        // minutos desde medianoche (la obra arranca a las 06:00)
 let relojCorriendo = true;
-const VEL_RELOJ = 1;          // 1 segundo real = 1 minuto de obra
+let VEL_RELOJ = 12;           // minutos de obra por segundo real (ajustable: ver selector de velocidad)
 const camionesActivos = [];   // camiones circulando en la escena
 let zonaCamionSel = 'Almacén central';  // destino preseleccionado en la ventana
 
@@ -19,6 +19,18 @@ function horaAMinutos(h){
   const p = String(h || '').split(':');
   return ((parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0)) % 1440;
 }
+/* ---- fecha simulada de la obra (calendario, no solo hora del día) ---- */
+function fechaISO(d){
+  d = d || new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function sumarDiaISO(iso){
+  const p = String(iso || '').split('-').map(Number);
+  const d = new Date(p[0] || 1970, (p[1] || 1) - 1, p[2] || 1);
+  d.setDate(d.getDate() + 1);
+  return fechaISO(d);
+}
+let fechaObra = fechaISO();   // día simulado de la obra (avanza con el reloj acelerado)
 
 /* ---- camión de materiales a escala 1:1 (~9 m largo · 2,6 m ancho · 3,6 m alto) ---- */
 function crearCamion3D(){
@@ -39,7 +51,11 @@ function posicionZona(nombre){
   const g = draggables.find(d => d.userData.info.nombre === nombre);
   if (g) return { x: g.position.x, z: g.position.z, w: g.userData.info.w, d: g.userData.info.d };
   if (nombre && /torre|piso|edificio/i.test(nombre)) return { x: 0, z: 0, w: CFG.largo, d: CFG.fondo };
-  if (nombre && /malacate/i.test(nombre)) return { x: malacate.position.x, z: malacate.position.z, w: 3, d: 3 };
+  if (nombre){
+    const m = malacates.find(mm => mm.userData.info.nombre === nombre);
+    if (m) return { x: m.position.x, z: m.position.z, w: 3, d: 3 };
+    if (/malacate/i.test(nombre)) return { x: malacate.position.x, z: malacate.position.z, w: 3, d: 3 };
+  }
   const alm = draggables.find(d => d.userData.info.nombre === 'Almacén central');
   return alm ? { x: alm.position.x, z: alm.position.z, w: alm.userData.info.w, d: alm.userData.info.d }
              : { x: 38, z: 15, w: 37.5, d: 13.9 };
@@ -137,22 +153,37 @@ function moverCamion(a, dt){
   a.grupo.rotation.y = Math.atan2(camTmpT.x, camTmpT.z);
 }
 
-/* ---- avance del reloj + disparo de camiones programados (desde animar) ---- */
+/* ---- avance del reloj + disparo de camiones programados (desde animar) ----
+   El reloj avanza rápido (VEL_RELOJ minutos de obra por segundo real) para que
+   se note cómo entran los camiones a medida que pasan los días programados;
+   al pasar medianoche, fechaObra avanza un día y el camión del día siguiente
+   queda disponible para dispararse. */
 function actualizarCamiones(dt){
   if (relojCorriendo && dt > 0){
-    const antes = horaObra;
-    horaObra = (horaObra + dt * VEL_RELOJ) % 1440;
-    camiones.forEach(c => {
-      const m = horaAMinutos(c.hora);
-      const disparado = antes <= horaObra ? (m > antes && m <= horaObra) : (m > antes || m <= horaObra);
-      if (disparado) lanzarCamion(c);
-    });
+    // se avanza de a lo sumo un día por vuelta: así, aunque la velocidad sea muy
+    // alta y dt cubra varios días de una vez, ningún día intermedio se salta
+    // sin revisar sus camiones programados.
+    let restante = dt * VEL_RELOJ;
+    while (restante > 0){
+      const antes = horaObra;
+      const paso = Math.min(restante, 1440 - antes);
+      horaObra = antes + paso;
+      camiones.forEach(c => {
+        const m = horaAMinutos(c.hora);
+        if (c.fecha === fechaObra && m > antes && m <= horaObra) lanzarCamion(c);
+      });
+      restante -= paso;
+      if (horaObra >= 1440){ horaObra -= 1440; fechaObra = sumarDiaISO(fechaObra); }
+    }
     const hh = minutosAHora(horaObra);
     const txt = document.getElementById('horaObraTxt');
     if (txt && txt.textContent !== hh){
       txt.textContent = hh;
+      txt.parentElement.title = fechaObra;
       const enOverlay = document.getElementById('camHoraActual');
       if (enOverlay) enOverlay.textContent = hh;
+      const fechaOverlay = document.getElementById('camFechaActual');
+      if (fechaOverlay) fechaOverlay.textContent = fechaObra;
     }
   }
   for (let i = camionesActivos.length - 1; i >= 0; i--){
@@ -168,13 +199,36 @@ function opcionesZonas(sel){
     return '<option value="' + esc(n) + '"' + (n === sel ? ' selected' : '') + '>' + esc(n) + '</option>';
   }).join('');
 }
+const VELOCIDADES = [4, 12, 30, 60, 120];
+function opcionesVelocidad(){
+  return VELOCIDADES.map(v => '<option value="' + v + '"' + (v === VEL_RELOJ ? ' selected' : '') + '>' +
+    v + ' min/s' + '</option>').join('');
+}
+/* resumen de todos los pedidos programados: total, por día y por zona */
+function resumenCamiones(){
+  if (!camiones.length) return '';
+  const porFecha = {}, porZona = {};
+  camiones.forEach(c => {
+    const f = c.fecha || fechaObra, z = c.zona || 'Almacén central';
+    porFecha[f] = (porFecha[f] || 0) + 1;
+    porZona[z] = (porZona[z] || 0) + 1;
+  });
+  const chips = (obj) => Object.entries(obj).sort((a, b) => a[0] < b[0] ? -1 : 1)
+    .map(([k, n]) => '<span class="chipEspacio">' + esc(k) + ' · ' + n + '</span>').join('');
+  return '<div class="desc" style="margin:6px 0 12px">' +
+    '<b style="color:#a0cf52">Resumen:</b> ' + camiones.length + ' ' + (camiones.length === 1 ? 'camión' : 'camiones') + ' programado' + (camiones.length === 1 ? '' : 's') + '.<br>' +
+    '<div style="margin-top:5px; display:flex; flex-wrap:wrap; gap:5px">' + chips(porFecha) + '</div>' +
+    '<div style="margin-top:5px; display:flex; flex-wrap:wrap; gap:5px">' + chips(porZona) + '</div>' +
+  '</div>';
+}
 function renderCamiones(){
-  const lista = [...camiones].sort((a, b) => horaAMinutos(a.hora) - horaAMinutos(b.hora));
+  const lista = [...camiones].sort((a, b) =>
+    (a.fecha || '') !== (b.fecha || '') ? ((a.fecha || '') < (b.fecha || '') ? -1 : 1) : horaAMinutos(a.hora) - horaAMinutos(b.hora));
   const filas = lista.length
     ? lista.map(c => {
         const i = camiones.indexOf(c);
         return '<div class="planoFila">' +
-          '<span class="planoNom">' + icono('camion') + ' <b style="color:#e8ecf2">' + esc(c.hora) + '</b> · ' +
+          '<span class="planoNom">' + icono('camion') + ' <b style="color:#e8ecf2">' + esc(c.fecha || fechaObra) + ' ' + esc(c.hora) + '</b> · ' +
             esc(c.material) + ' <small>→ ' + esc(c.zona || 'Almacén central') + '</small></span>' +
           '<span>' +
             '<button class="planoBtn" title="Enviar el camión ahora mismo" onclick="lanzarCamion(camiones[' + i + '])">' + icono('ruta') + '</button> ' +
@@ -183,15 +237,23 @@ function renderCamiones(){
       }).join('')
     : '<div class="desc">Aún no hay camiones programados.</div>';
   document.getElementById('camBody').innerHTML =
-    '<div class="desc">Programa a qué hora entra cada camión y a qué zona lleva el material. Al llegar la hora ' +
-      'en el reloj de la obra, el camión entra por la vía, recorre la obra hasta esa zona (se dibuja su recorrido), ' +
-      'descarga y sale por el lavado de llantas. Reloj acelerado: 1 segundo real = 1 minuto de obra.</div>' +
+    '<div class="desc">Programa el día y la hora en que entra cada camión y a qué zona lleva el material. ' +
+      'Al llegar ese momento en el reloj de la obra, el camión entra por la vía, recorre la obra hasta esa zona ' +
+      '(se dibuja su recorrido), descarga y sale por el lavado de llantas. El reloj corre acelerado y avanza de ' +
+      'día para que se note la entrada de camiones programados a futuro.</div>' +
     '<div style="display:flex; align-items:center; gap:8px; margin:12px 0; flex-wrap:wrap">' +
-      '<b>Reloj de obra:</b> <span id="camHoraActual" style="font-variant-numeric:tabular-nums">' + minutosAHora(horaObra) + '</span>' +
+      '<b>Reloj de obra:</b> <span id="camFechaActual" style="color:#9aa5b5">' + fechaObra + '</span>' +
+      '<span id="camHoraActual" style="font-variant-numeric:tabular-nums">' + minutosAHora(horaObra) + '</span>' +
       '<button class="orgAccion" style="margin:0" onclick="toggleReloj()">' + (relojCorriendo ? 'Pausar' : 'Reanudar') + '</button>' +
-      '<input type="time" id="camHoraSet" value="' + minutosAHora(horaObra) + '">' +
-      '<button class="orgAccion" style="margin:0" onclick="fijarHoraObra()">Fijar hora</button>' +
+      '<label style="color:#9aa5b5; font-size:12.5px">Velocidad ' +
+        '<select id="camVelocidad" onchange="cambiarVelocidad()">' + opcionesVelocidad() + '</select></label>' +
     '</div>' +
+    '<div style="display:flex; align-items:center; gap:6px; margin:0 0 14px; flex-wrap:wrap">' +
+      '<input type="date" id="camFechaSet" value="' + fechaObra + '">' +
+      '<input type="time" id="camHoraSet" value="' + minutosAHora(horaObra) + '">' +
+      '<button class="orgAccion" style="margin:0" onclick="fijarHoraObra()">Fijar día y hora</button>' +
+    '</div>' +
+    resumenCamiones() +
     '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap">' +
       '<b>Camiones programados</b>' +
       '<button class="orgAccion" style="margin:0" title="Descarga los pedidos en un archivo que abre Excel" onclick="descargarCamiones()">' +
@@ -199,6 +261,7 @@ function renderCamiones(){
     '</div>' + filas +
     '<div style="margin-top:12px; display:flex; flex-direction:column; gap:6px">' +
       '<div style="display:flex; gap:6px; flex-wrap:wrap">' +
+        '<input type="date" id="camFecha" value="' + fechaObra + '">' +
         '<input type="time" id="camHora" value="08:00">' +
         '<input id="camMaterial" maxlength="60" placeholder="Material (ej: Cerámica)" style="flex:1; min-width:140px">' +
       '</div>' +
@@ -209,16 +272,21 @@ function renderCamiones(){
       '</div>' +
     '</div>';
 }
+function cambiarVelocidad(){
+  VEL_RELOJ = parseFloat(document.getElementById('camVelocidad').value) || 12;
+  guardarCompartido();
+}
 function agregarCamion(){
+  const fecha = document.getElementById('camFecha').value || fechaObra;
   const hora = document.getElementById('camHora').value;
   const material = (document.getElementById('camMaterial').value || '').trim().slice(0, 60) || 'Materiales';
   const zona = document.getElementById('camZona').value || 'Almacén central';
   if (!hora){ avisoGuardado('Elige la hora del camión'); return; }
-  camiones.push({ hora, material, zona });
+  camiones.push({ fecha, hora, material, zona });
   zonaCamionSel = zona;
   guardarCompartido();
   renderCamiones();
-  avisoGuardado('Camión programado: ' + material + ' a las ' + hora + ' → ' + zona);
+  avisoGuardado('Camión programado: ' + material + ' el ' + fecha + ' ' + hora + ' → ' + zona);
 }
 function quitarCamion(i){
   camiones.splice(i, 1);
@@ -228,7 +296,8 @@ function quitarCamion(i){
 /* ---- descarga de los pedidos programados en CSV (abre directo en Excel) ---- */
 function descargarCamiones(){
   if (!camiones.length){ avisoGuardado('No hay camiones programados para descargar'); return; }
-  const lista = [...camiones].sort((a, b) => horaAMinutos(a.hora) - horaAMinutos(b.hora));
+  const lista = [...camiones].sort((a, b) =>
+    (a.fecha || '') !== (b.fecha || '') ? ((a.fecha || '') < (b.fecha || '') ? -1 : 1) : horaAMinutos(a.hora) - horaAMinutos(b.hora));
   const celda = v => {
     v = String(v == null ? '' : v);
     return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
@@ -237,8 +306,8 @@ function descargarCamiones(){
     ['Pedidos de camiones de materiales — Proyecto Bambú · Marinilla'],
     ['Generado', new Date().toLocaleString()],
     [],
-    ['#', 'Hora de entrada', 'Material', 'Zona de destino'],
-    ...lista.map((c, i) => [i + 1, c.hora, c.material, c.zona || 'Almacén central'])
+    ['#', 'Fecha', 'Hora de entrada', 'Material', 'Zona de destino'],
+    ...lista.map((c, i) => [i + 1, c.fecha || fechaObra, c.hora, c.material, c.zona || 'Almacén central'])
   ];
   // BOM UTF-8 + separador ";": Excel en español lo abre con tildes y columnas correctas
   const csv = String.fromCharCode(0xFEFF) + filas.map(f => f.map(celda).join(';')).join('\r\n');
@@ -255,11 +324,15 @@ function descargarCamiones(){
 function toggleReloj(){ relojCorriendo = !relojCorriendo; renderCamiones(); }
 function fijarHoraObra(){
   const v = document.getElementById('camHoraSet').value;
+  const f = document.getElementById('camFechaSet').value;
   if (!v) return;
   horaObra = horaAMinutos(v);
+  if (f) fechaObra = f;
   document.getElementById('horaObraTxt').textContent = minutosAHora(horaObra);
+  document.getElementById('horaObraTxt').parentElement.title = fechaObra;
+  guardarCompartido();
   renderCamiones();
-  avisoGuardado('Reloj de obra fijado en ' + v);
+  avisoGuardado('Reloj de obra fijado en ' + fechaObra + ' ' + v);
 }
 
 function abrirCamiones(){

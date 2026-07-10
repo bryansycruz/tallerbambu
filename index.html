@@ -44,6 +44,7 @@
     </div>
     <button id="inicioBtn"><span class="playIc"></span>Ver la obra</button>
     <a id="inicioPiso5" href="piso5.html">Piso 5</a>
+    <a id="inicioLibre" href="taller-libre.html" title="Arma tu propia obra desde cero: espacios, edificios, malacates y torres grúa">Crear proyecto libre</a>
   </div>
 </div>
 <script>
@@ -190,15 +191,18 @@
 </div>
 
 <div id="ayuda">
-  <b>Controles:</b> Arrastrar (clic izq. en vacío) = rotar · Clic derecho = mover cámara · Rueda = zoom<br>
-  <b>Provisionales:</b> clic y arrastrar para mover · clic corto = ficha<br>
-  <b>Malacate:</b> arrástralo alrededor de la torre; se ancla a la fachada más cercana<br>
-  <b>Piso 4:</b> botón "Ver Piso 4" y clic sobre cada sector para su detalle<br>
-  <b>Piso 5:</b> clic sobre el piso 5 de la torre = abre su hoja de detalle<br>
-  <b>Rutas:</b> "Dibujar ruta" → clics en el terreno → "Finalizar ruta"<br>
-  <b>Organigrama:</b> clic en cada rol: funciones, resaltar su área y zonas de riesgo<br>
-  <b>Documentos:</b> selecciona una zona → ficha técnica, planos y enlaces de página<br>
-  <b>Espacios propios:</b> botón "Espacios" → crea espacios o edificios con sus medidas y elimínalos cuando quieras
+  <button id="ayudaToggle" title="Ocultar esta ayuda">✕</button>
+  <div id="ayudaContenido">
+    <b>Controles:</b> Arrastrar (clic izq. en vacío) = rotar · Clic derecho = mover cámara · Rueda = zoom<br>
+    <b>Provisionales:</b> clic y arrastrar para mover · clic corto = ficha<br>
+    <b>Malacate:</b> arrástralo alrededor de la torre; se ancla a la fachada más cercana · puedes agregar más desde su ficha<br>
+    <b>Piso 4:</b> botón "Ver Piso 4" y clic sobre cada sector para su detalle<br>
+    <b>Piso 5:</b> clic sobre el piso 5 de la torre = abre su hoja de detalle<br>
+    <b>Rutas:</b> "Dibujar ruta" → clics en el terreno → "Finalizar ruta"<br>
+    <b>Organigrama:</b> clic en cada rol: funciones, resaltar su área y zonas de riesgo<br>
+    <b>Documentos:</b> selecciona una zona → ficha técnica, planos y enlaces de página<br>
+    <b>Espacios propios:</b> botón "Espacios" → crea espacios o edificios con sus medidas y elimínalos cuando quieras
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Proyecto libre — Taller II · Constructor de obra 3D</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilos.css">
+<style>
+  /* ====== Estilos propios del constructor libre (aislados, prefijo "libre") ====== */
+  #libreUI {
+    position:absolute; top:12px; left:12px; z-index:10;
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+    background:rgba(20,24,32,.88); padding:10px 14px; border-radius:10px;
+    border:1px solid #3a4150; max-width:calc(100vw - 340px);
+  }
+  #libreUI .marca { font-family:'Space Grotesk','Inter',sans-serif; color:#a0cf52; font-weight:700; letter-spacing:.5px; margin-right:4px; }
+  #libreUI button, #libreUI a.btn {
+    background:#2e3646; color:#e8ecf2; border:1px solid #4a5468;
+    padding:7px 12px; border-radius:6px; cursor:pointer; font-size:13px;
+    text-decoration:none; display:inline-flex; align-items:center; gap:6px;
+  }
+  #libreUI button:hover, #libreUI a.btn:hover { background:#3d4a62; }
+  #libreUI button.primario { background:#4f8f2c; border-color:#a0cf52; color:#fff; }
+  #libreUI button.primario:hover { background:#5aa233; }
+  #libreUI svg { width:15px; height:15px; }
+
+  #librePanel {
+    position:absolute; top:12px; right:12px; z-index:10; width:300px;
+    background:rgba(20,24,32,.92); border:1px solid #3a4150; border-radius:10px;
+    padding:14px 16px; color:#e8ecf2; max-height:calc(100vh - 40px); overflow-y:auto;
+  }
+  #librePanel h2 { margin:0 0 8px; font-size:16px; color:#a0cf52; font-family:'Space Grotesk','Inter',sans-serif; }
+  #librePanel table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  #librePanel td { padding:4px 2px; border-bottom:1px solid #2c3342; vertical-align:top; }
+  #librePanel td:first-child { color:#9aa5b5; width:40%; }
+  #librePanel .desc { font-size:12.5px; color:#c4ccd8; margin-top:8px; line-height:1.45; }
+  #librePanel button {
+    margin-top:10px; width:100%; background:#2e3646; color:#e8ecf2;
+    border:1px solid #4a5468; padding:8px; border-radius:6px; cursor:pointer; font-size:13px;
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  }
+  #librePanel button:hover { background:#3d4a62; }
+  #librePanel button svg { width:14px; height:14px; }
+  #librePanel button.btnEliminar { background:#8e2f22; border-color:#a04030; color:#fff; }
+  #librePanel button.btnEliminar:hover { background:#a63a2a; }
+
+  #libreAyuda {
+    position:absolute; bottom:12px; left:12px; z-index:10;
+    background:rgba(20,24,32,.8); border:1px solid #3a4150; border-radius:8px;
+    padding:8px 12px; color:#9aa5b5; font-size:11.5px; line-height:1.6; max-width:340px;
+  }
+  #libreAyuda b { color:#cfd6e0; }
+
+  #libreOverlay {
+    position:fixed; inset:0; z-index:33; display:none;
+    align-items:center; justify-content:center; background:rgba(5,8,14,.65);
+  }
+  #libreVentana {
+    width:min(600px, 94vw); max-height:86vh; overflow-y:auto;
+    background:#1c212b; border:1px solid #4a5468; border-radius:12px;
+    color:#e8ecf2; box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  #libreCabecera {
+    display:flex; justify-content:space-between; align-items:center;
+    background:#242b38; padding:12px 18px; border-radius:12px 12px 0 0;
+    border-bottom:2px solid #4f8f2c; position:sticky; top:0; z-index:1;
+  }
+  #libreCabecera h3 { margin:0; font-size:16px; color:#a0cf52; font-family:'Space Grotesk','Inter',sans-serif; }
+  #libreCerrar { background:none; border:none; color:#9aa5b5; font-size:22px; cursor:pointer; line-height:1; }
+  #libreCerrar:hover { color:#fff; }
+  #libreBody { padding:14px 18px; font-size:13px; line-height:1.5; }
+  #libreBody input, #libreBody select, #libreBody textarea {
+    background:#2e3646; border:1px solid #4a5468; color:#e8ecf2;
+    border-radius:6px; padding:7px 10px; font-size:13px;
+  }
+  #libreBody input[type="color"] { padding:2px 3px; width:42px; height:31px; cursor:pointer; }
+  #libreBody input[type="checkbox"] { width:auto; accent-color:#4f8f2c; }
+  #libreBody textarea { width:100%; resize:vertical; font-family:inherit; }
+  #libreBody label { color:#9aa5b5; font-size:12.5px; display:inline-flex; align-items:center; gap:5px; }
+  #libreBody b { color:#a0cf52; font-size:13px; }
+
+  /* pantalla de bienvenida breve */
+  #libreInicio {
+    position:fixed; inset:0; z-index:100; display:flex; overflow-y:auto;
+    background:radial-gradient(circle at 50% 28%, #26303f, #12151c 72%);
+    transition:opacity .4s ease;
+  }
+  #libreInicio.oculto { opacity:0; pointer-events:none; }
+  #libreInicioCard { margin:auto; text-align:center; padding:32px 24px; max-width:520px; }
+  #libreInicioCard h1 { font-family:'Space Grotesk','Inter',sans-serif; color:#a0cf52; font-size:40px; margin:0 0 6px; text-transform:uppercase; letter-spacing:2px; }
+  #libreInicioCard p { color:#c4ccd8; font-size:15px; line-height:1.6; }
+  #libreInicioCard .chips { margin:16px 0 22px; }
+  #libreComenzar {
+    display:inline-flex; align-items:center; gap:11px; background:#4f8f2c; color:#fff; border:none; border-radius:8px;
+    padding:14px 40px; font-size:16px; font-weight:600; cursor:pointer;
+    font-family:'Space Grotesk','Inter',sans-serif; letter-spacing:1px; text-transform:uppercase;
+  }
+  #libreComenzar:hover { background:#5aa233; }
+  #libreInicioCard a.volver { display:block; margin-top:16px; color:#9aa5b5; font-size:13px; text-decoration:none; }
+  #libreInicioCard a.volver:hover { color:#a0cf52; }
+
+  @media (max-width:820px){
+    #libreUI { top:8px; left:8px; right:8px; max-width:none; }
+    #librePanel { width:auto; left:8px; right:8px; top:auto; bottom:8px; max-height:40vh; }
+    #libreAyuda { display:none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Bienvenida breve -->
+<div id="libreInicio">
+  <div id="libreInicioCard">
+    <h1>Proyecto libre</h1>
+    <p>Arma tu propia obra <b style="color:#a0cf52">desde cero</b>. Agrega los elementos que quieras,
+       ubícalos, gíralos y elimínalos. Tu trabajo se guarda aparte y <b>no afecta</b> el proyecto Bambú.</p>
+    <div class="chips">
+      <span class="chipEspacio">Espacios</span>
+      <span class="chipEspacio">Edificios</span>
+      <span class="chipEspacio">Malacates</span>
+      <span class="chipEspacio">Torre grúa</span>
+      <span class="chipEspacio">Grúa pluma</span>
+    </div>
+    <button id="libreComenzar">Comenzar a construir</button>
+    <a class="volver" href="index.html">← Volver al proyecto Bambú</a>
+  </div>
+</div>
+
+<!-- Barra de herramientas -->
+<div id="libreUI">
+  <span class="marca">Proyecto libre</span>
+  <button id="libreBtnAgregar" class="primario"></button>
+  <button id="libreBtnGuardar"></button>
+  <button id="libreBtnCargar"></button>
+  <button id="libreBtnVaciar"></button>
+  <a class="btn" href="index.html" title="Volver al proyecto Bambú"></a>
+  <input type="file" id="libreArchivo" accept=".json" style="display:none">
+</div>
+
+<!-- Panel de selección -->
+<div id="librePanel">
+  <h2 id="librePTitulo">Constructor de obra</h2>
+  <div id="librePBody" class="desc">
+    Pulsa <b style="color:#a0cf52">Agregar</b> para crear tu primer elemento: espacio, edificio,
+    malacate, torre grúa o grúa pluma. Luego haz clic sobre él para ver su ficha, arrástralo para
+    ubicarlo, gíralo o elimínalo.
+  </div>
+</div>
+
+<div id="libreAyuda">
+  <b>Controles:</b> Arrastrar (clic izq. en vacío) = rotar · Clic derecho = mover cámara · Rueda = zoom<br>
+  <b>Elementos:</b> clic y arrastrar para mover · clic corto = ficha<br>
+  <b>Torre grúa / pluma:</b> define el largo del brazo y el radio de giro; el brazo gira solo
+</div>
+
+<!-- Ventana de creación / lista -->
+<div id="libreOverlay">
+  <div id="libreVentana">
+    <div id="libreCabecera">
+      <h3>Agregar elemento a la obra</h3>
+      <button id="libreCerrar" title="Cerrar">✕</button>
+    </div>
+    <div id="libreBody"></div>
+  </div>
+</div>
+
+<div id="libreAvisoGuardado" style="position:fixed; bottom:22px; left:50%; transform:translateX(-50%); z-index:40; background:#2c7a3f; color:#fff; padding:6px 14px; border-radius:20px; font-size:12px; display:none;"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+        integrity="sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ=="
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
+<script src="js/libre.js"></script>
+</body>
+</html>

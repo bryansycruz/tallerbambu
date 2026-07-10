@@ -46,7 +46,8 @@ function construirEspacio(def){
     material: 'Espacio creado por el equipo — ' + def.w + ' × ' + def.d + ' m ≈ ' + area + ' m²',
     cerramiento: def.muros ? ('Con muros' + (def.techo ? ' y techo' : ', sin techo'))
       : (def.techo ? 'Cubierta sobre área abierta' : 'Área demarcada a cielo abierto'),
-    descripcion: 'Espacio creado desde el botón "Espacios". Arrástralo para ubicarlo, gíralo de a 45°, ' +
+    descripcion: (def.descripcion ? esc(def.descripcion).replace(/\n/g, '<br>') + '<br><br>' : '') +
+      'Espacio creado desde el botón "Espacios". Arrástralo para ubicarlo, gíralo de a 45°, ' +
       'bloquéalo en su lugar o elimínalo cuando ya no se necesite en la obra. ' +
       'También aparece como destino en la programación de camiones.'
   });
@@ -81,7 +82,8 @@ function construirEdificio(def){
     altura: (Math.round(alto * 100) / 100) + ' m (' + def.pisos + ' × ' + hP + ' m de entrepiso)',
     material: 'Edificio creado por el equipo desde el botón "Espacios"',
     cerramiento: 'Volumen de referencia con la fachada tipo del proyecto',
-    descripcion: 'Edificio de ' + def.pisos + (def.pisos === 1 ? ' piso' : ' pisos') +
+    descripcion: (def.descripcion ? esc(def.descripcion).replace(/\n/g, '<br>') + '<br><br>' : '') +
+      'Edificio de ' + def.pisos + (def.pisos === 1 ? ' piso' : ' pisos') +
       ' creado por el equipo. Arrástralo para ubicarlo, gíralo de a 45°, bloquéalo ' +
       'o elimínalo cuando ya no lo necesites en la obra.'
   };
@@ -158,7 +160,8 @@ function aplicarPersonalizados(lista){
       w: numLim(def.w, 10, 2, 80),
       d: numLim(def.d, 8, 2, 60),
       pos: Array.isArray(def.pos) ? [numLim(def.pos[0], 0, CFG.limites.xMin, CFG.limites.xMax),
-                                     numLim(def.pos[1], -28, CFG.limites.zMin, CFG.limites.zMax)] : posicionLibre()
+                                     numLim(def.pos[1], -28, CFG.limites.zMin, CFG.limites.zMax)] : posicionLibre(),
+      descripcion: String(def.descripcion || '').slice(0, 400)
     };
     if (d2.clase === 'edificio'){
       d2.pisos = Math.round(numLim(def.pisos, 5, 1, 30));
@@ -207,6 +210,7 @@ function renderEspacios(){
         '</select>' +
         '<input id="espNombre" maxlength="40" placeholder="Nombre (ej: Taller de hierro)" style="flex:1; min-width:150px">' +
       '</div>' +
+      '<textarea id="espDescripcion" maxlength="400" rows="2" placeholder="Descripción (opcional): para qué se usa, quién la maneja, notas…" style="width:100%; resize:vertical; font-family:inherit"></textarea>' +
       '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">' +
         '<label>Ancho (m) <input type="number" id="espAncho" value="10" min="2" max="80" step="0.1" style="width:68px"></label>' +
         '<label>Fondo (m) <input type="number" id="espFondo" value="8" min="2" max="60" step="0.1" style="width:68px"></label>' +
@@ -241,7 +245,8 @@ function cambiarTipoEspacio(){
 function agregarPersonalizado(){
   const clase = document.getElementById('espTipo').value === 'edificio' ? 'edificio' : 'espacio';
   const nombre = nombreDisponible(document.getElementById('espNombre').value || (clase === 'edificio' ? 'Edificio' : 'Espacio'));
-  const def = { clase, nombre, pos: posicionLibre() };
+  const descripcion = (document.getElementById('espDescripcion').value || '').trim().slice(0, 400);
+  const def = { clase, nombre, descripcion, pos: posicionLibre() };
   if (clase === 'edificio'){
     def.w = numLim(document.getElementById('espAncho').value, 20, 2, 80);
     def.d = numLim(document.getElementById('espFondo').value, 12, 2, 60);

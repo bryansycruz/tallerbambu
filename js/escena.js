@@ -468,56 +468,103 @@ edificio.add(sotanosG);
   sotanosG.add(rampa);
 }
 
-/* ============ 5. MALACATE DE OBRA (cremallera) ============ */
-const malacate = new THREE.Group();
-malacate.position.set(CFG.malacateX, 0, -(CFG.fondo/2) - 2.2); // punto medio, fachada hacia patio/almacén
-malacate.userData.info = {
-  nombre: 'Malacate de obra tipo cremallera',
-  aforo: '8-10 personas o 1.000 kg por viaje',
-  dimensiones: 'Cabina 1.50 × 1.50 × 2.10 m aprox.',
-  altura: 'Recorrido requerido ≈ 35.5 m (sótano 3 a -9.00 m + 10 pisos de 2.65 m + cubierta)',
-  material: 'Elevador mixto (personas + material) · 1.000 kg / 8-10 personas · 30-40 m/min · alimentación trifásica 220/440 V con tablero propio y parada de emergencia',
-  cerramiento: 'Cabina con malla + puertas por nivel · arriostrado a la estructura cada 2 niveles (máx. 6 m) · Resolución 1409 de 2012',
-  descripcion: 'Ubicado en la fachada que da hacia el patio y el almacén, en el punto medio de los 49.73 m de la Torre 01 para repartir de forma equilibrada el recorrido horizontal hacia ambos extremos del edificio. Complemento horizontal: 4-6 carretillas tipo buggy (80-100 kg c/u), recorrido almacén → pie del malacate ≈15-25 m. ARRÁSTRALO alrededor de la torre: se ancla a la fachada más cercana.'
-};
-malacate.userData.esMalacate = true;
-scene.add(malacate);
-
+/* ============ 5. MALACATES DE OBRA (cremallera) ============
+   Puede haber más de uno (botón "Agregar otro malacate" en su ficha): todos
+   se anclan a la fachada más cercana —no pueden quedar sueltos, igual que
+   antes— y suben/bajan juntos con el mismo control de altura de la barra
+   superior. Se puede eliminar cualquiera menos el último que quede. */
+const malacates = [];   // THREE.Group por malacate; cada uno guarda su cabina en userData.cabina
 const matTorreM = new THREE.MeshLambertMaterial({ color:0xd9a521 });
 const hTorre = CFG.alto + 3;
-[[-1.0,-1.0],[1.0,-1.0],[-1.0,1.0],[1.0,1.0]].forEach(([px,pz]) => {
-  const p = new THREE.Mesh(new THREE.BoxGeometry(0.22, hTorre, 0.22), matTorreM);
-  p.position.set(px, hTorre/2, pz); p.castShadow = true;
-  malacate.add(p);
-});
-for (let i=0; i<=CFG.pisos+1; i++){
-  const y = i*CFG.hPiso + 1.2;
-  if (y > hTorre) break;
-  [[0,-1.0],[0,1.0]].forEach(([px,pz]) => {
-    const t = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.16, 0.16), matTorreM);
-    t.position.set(px, y, pz); malacate.add(t);
-  });
-  [[-1.0,0],[1.0,0]].forEach(([px,pz]) => {
-    const t = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 2.0), matTorreM);
-    t.position.set(px, y, pz); malacate.add(t);
-  });
+
+function nombreMalacateDisponible(){
+  let n = 1;
+  while (malacates.some(m => m.userData.info.nombre === (n === 1 ? 'Malacate de obra tipo cremallera' : 'Malacate ' + n))) n++;
+  return n === 1 ? 'Malacate de obra tipo cremallera' : 'Malacate ' + n;
 }
-const cabina = new THREE.Group();
-const pisoCab = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.12, 1.5), new THREE.MeshLambertMaterial({ color:0xc9581e }));
-pisoCab.castShadow = true;
-cabina.add(pisoCab);
-const mallaCab = new THREE.MeshLambertMaterial({ color:0xc9581e, transparent:true, opacity:0.45 });
-mallaCab.userData.op0 = 0.45;
-[[0,-0.72,1.5,0.08],[0,0.72,1.5,0.08],[-0.72,0,0.08,1.4],[0.72,0,0.08,1.4]].forEach(([px,pz,w,d]) => {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, 2.1, d), mallaCab.clone());
-  m.position.set(px, 1.1, pz);
-  cabina.add(m);
-});
-cabina.position.y = 0.2;
-malacate.add(cabina);
-const etMal = crearEtiqueta('Malacate 1.000 kg', 12, 'rgba(70,120,45,0.9)');
-etMal.position.set(0, hTorre + 2, 0);
-malacate.add(etMal);
+function crearMalacate(nombre, x, z){
+  const grupo = new THREE.Group();
+  grupo.position.set(x, 0, z);
+  grupo.userData.info = {
+    nombre: nombre,
+    aforo: '8-10 personas o 1.000 kg por viaje',
+    dimensiones: 'Cabina 1.50 × 1.50 × 2.10 m aprox.',
+    altura: 'Recorrido requerido ≈ 35.5 m (sótano 3 a -9.00 m + 10 pisos de 2.65 m + cubierta)',
+    material: 'Elevador mixto (personas + material) · 1.000 kg / 8-10 personas · 30-40 m/min · alimentación trifásica 220/440 V con tablero propio y parada de emergencia',
+    cerramiento: 'Cabina con malla + puertas por nivel · arriostrado a la estructura cada 2 niveles (máx. 6 m) · Resolución 1409 de 2012',
+    descripcion: 'Arrástralo alrededor de la torre: se ancla a la fachada más cercana (no puede quedar suelto). Todos los malacates de la obra suben y bajan juntos con el mismo control de altura de la barra superior.'
+  };
+  grupo.userData.esMalacate = true;
+  scene.add(grupo);
+
+  [[-1.0,-1.0],[1.0,-1.0],[-1.0,1.0],[1.0,1.0]].forEach(([px,pz]) => {
+    const p = new THREE.Mesh(new THREE.BoxGeometry(0.22, hTorre, 0.22), matTorreM);
+    p.position.set(px, hTorre/2, pz); p.castShadow = true;
+    grupo.add(p);
+  });
+  for (let i=0; i<=CFG.pisos+1; i++){
+    const y = i*CFG.hPiso + 1.2;
+    if (y > hTorre) break;
+    [[0,-1.0],[0,1.0]].forEach(([px,pz]) => {
+      const t = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.16, 0.16), matTorreM);
+      t.position.set(px, y, pz); grupo.add(t);
+    });
+    [[-1.0,0],[1.0,0]].forEach(([px,pz]) => {
+      const t = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 2.0), matTorreM);
+      t.position.set(px, y, pz); grupo.add(t);
+    });
+  }
+  const cabina = new THREE.Group();
+  const pisoCab = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.12, 1.5), new THREE.MeshLambertMaterial({ color:0xc9581e }));
+  pisoCab.castShadow = true;
+  cabina.add(pisoCab);
+  const mallaCab = new THREE.MeshLambertMaterial({ color:0xc9581e, transparent:true, opacity:0.45 });
+  mallaCab.userData.op0 = 0.45;
+  [[0,-0.72,1.5,0.08],[0,0.72,1.5,0.08],[-0.72,0,0.08,1.4],[0.72,0,0.08,1.4]].forEach(([px,pz,w,d]) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, 2.1, d), mallaCab.clone());
+    m.position.set(px, 1.1, pz);
+    cabina.add(m);
+  });
+  // arranca a la altura actual de los demás malacates (si se agrega uno a mitad de faena)
+  cabina.position.y = 0.2 + ((typeof nivelMalacate === 'number' ? nivelMalacate : 0) * CFG.hPiso);
+  grupo.add(cabina);
+  const etMal = crearEtiqueta(nombre === 'Malacate de obra tipo cremallera' ? 'Malacate 1.000 kg' : nombre, 12, 'rgba(70,120,45,0.9)');
+  etMal.position.set(0, hTorre + 2, 0);
+  grupo.add(etMal);
+
+  grupo.userData.cabina = cabina;
+  malacates.push(grupo);
+  return grupo;
+}
+/* agregar/eliminar desde la ficha del malacate (interaccion.js) */
+function agregarMalacate(){
+  const base = malacates[malacates.length - 1];
+  const s = ajustarMalacate((base ? base.position.x : CFG.malacateX) + 6, base ? base.position.z : -(CFG.fondo/2) - 2.2);
+  const g = crearMalacate(nombreMalacateDisponible(), s.x, s.z);
+  if (typeof ajustarEtiquetaNueva === 'function') ajustarEtiquetaNueva(g);
+  guardarCompartido();
+  seleccionar(g);
+  irA(g.position.x, 2, g.position.z, 55, camCtrl.theta, 1.1);
+  avisoGuardado('"' + g.userData.info.nombre + '" agregado — arrástralo para ubicarlo');
+}
+function eliminarMalacate(nombre){
+  if (malacates.length <= 1){ avisoGuardado('Debe quedar al menos un malacate en la obra'); return; }
+  const i = malacates.findIndex(m => m.userData.info.nombre === nombre);
+  if (i < 0) return;
+  const g = malacates[i];
+  if (seleccionado === g){
+    seleccionado = null;
+    pTitulo.textContent = 'Panel de obra';
+    pBody.innerHTML = '<b>' + esc(nombre) + '</b> se eliminó de la obra. Haz clic sobre cualquier elemento para ver su ficha.';
+  }
+  quitarGrupoEscena(g);
+  malacates.splice(i, 1);
+  guardarCompartido();
+  avisoGuardado('"' + nombre + '" eliminado de la obra');
+}
+const malacate = crearMalacate('Malacate de obra tipo cremallera', CFG.malacateX, -(CFG.fondo/2) - 2.2);
+// "malacate" (el primero) sigue siendo el que fija el descargue del piso 4
+// y las zonas de riesgo del organigrama; los adicionales solo se anclan y mueven.
 
 /* ============ 6. PISO 4 — SECTORES / FRENTES DE TRABAJO ============ */
 const piso4 = new THREE.Group();

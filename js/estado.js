@@ -21,10 +21,16 @@ function estadoActual(){
     personalizados: (typeof personalizados !== 'undefined') ? personalizados : [],
     rutas: rutas.map(r => r.puntos.map(p => [Math.round(p.x*100)/100, Math.round(p.z*100)/100])),
     malacate: parseFloat(rangoMalacate.value),
-    malacatePos: [Math.round(malacate.position.x*100)/100, Math.round(malacate.position.z*100)/100],
+    malacates: malacates.map(m => ({
+      nombre: m.userData.info.nombre,
+      x: Math.round(m.position.x*100)/100,
+      z: Math.round(m.position.z*100)/100
+    })),
     organigrama: funcionesExtra,
     enlaces: enlaces,
-    camiones: camiones
+    camiones: camiones,
+    fechaObra: fechaObra,
+    velReloj: VEL_RELOJ
   };
 }
 function guardarLocal(){
@@ -66,7 +72,19 @@ function aplicarEstado(d){
     finalizarRuta();
   });
   if (d.malacate !== undefined) rangoMalacate.value = d.malacate;
-  if (d.malacatePos){
+  if (Array.isArray(d.malacates) && d.malacates.length){
+    d.malacates.forEach((info, i) => {
+      if (!malacates[i]) crearMalacate(info.nombre || nombreMalacateDisponible(), info.x || 0, info.z || 0);
+      const s = ajustarMalacate(info.x, info.z);
+      malacates[i].position.set(s.x, 0, s.z);
+    });
+    while (malacates.length > d.malacates.length){
+      quitarGrupoEscena(malacates[malacates.length - 1]);
+      malacates.pop();
+    }
+    actualizarDescargue();
+  } else if (d.malacatePos){
+    // compatibilidad con respaldos antiguos (un solo malacate, sin lista)
     const s = ajustarMalacate(d.malacatePos[0], d.malacatePos[1]);
     malacate.position.set(s.x, 0, s.z);
     actualizarDescargue();
@@ -80,9 +98,15 @@ function aplicarEstado(d){
       enlaces['acopio-de-materiales'] = enlaces['paletizado'];   // nombre antiguo de la zona
     }
   }
+  if (d.fechaObra) fechaObra = d.fechaObra;
+  if (d.velReloj) VEL_RELOJ = d.velReloj;
   if (Array.isArray(d.camiones)){
-    camiones = d.camiones.map(c => (c && c.zona === 'Paletizado')
-      ? Object.assign({}, c, { zona: 'Acopio de materiales' }) : c);
+    camiones = d.camiones.map(c => {
+      if (!c) return c;
+      const c2 = (c.zona === 'Paletizado') ? Object.assign({}, c, { zona: 'Acopio de materiales' }) : c;
+      // migración: pedidos guardados antes de tener fecha quedan en el día simulado actual
+      return c2.fecha ? c2 : Object.assign({}, c2, { fecha: d.fechaObra || fechaObra });
+    });
   }
 }
 

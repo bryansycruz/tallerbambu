@@ -60,14 +60,14 @@
     border-width:8px 0 8px 13px; border-color:transparent transparent transparent #fff;
   }
   /* botón secundario discreto hacia la hoja del Piso 5 */
-  #inicioPiso5 {
+  #inicioPiso5, #inicioLibre {
     display:inline-flex; align-items:center; margin-left:10px; vertical-align:middle;
     padding:14px 26px; border:1px solid #4a5468; border-radius:8px;
     color:#a0cf52; font-size:14px; font-weight:600; text-decoration:none;
     font-family:'Space Grotesk','Inter',sans-serif; letter-spacing:1px; text-transform:uppercase;
     transition:background .15s, border-color .15s;
   }
-  #inicioPiso5:hover { background:#242b38; border-color:#a0cf52; }
+  #inicioPiso5:hover, #inicioLibre:hover { background:#242b38; border-color:#a0cf52; }
   @media (max-width:600px){
     #inicioLogo { width:118px; height:118px; }
     #inicioUni { font-size:12px; }
@@ -75,7 +75,7 @@
     #inicioProyecto { font-size:16px; }
     #inicioInfo { grid-template-columns:1fr; gap:6px; max-width:300px; }
     #inicioEquipo span { font-size:14px; }
-    #inicioPiso5 { margin:10px 0 0; }
+    #inicioPiso5, #inicioLibre { margin:10px 0 0; }
   }
 
   #ui {
@@ -122,9 +122,19 @@
   #ayuda {
     position:absolute; bottom:12px; left:12px; z-index:10;
     background:rgba(20,24,32,.8); border:1px solid #3a4150; border-radius:8px;
-    padding:8px 12px; color:#9aa5b5; font-size:11.5px; line-height:1.6; max-width:360px;
+    padding:8px 34px 8px 12px; color:#9aa5b5; font-size:11.5px; line-height:1.6; max-width:360px;
   }
   #ayuda b { color:#cfd6e0; }
+  #ayudaToggle {
+    position:absolute; top:6px; right:6px; width:20px; height:20px; line-height:18px;
+    background:#2e3646; color:#9aa5b5; border:1px solid #4a5468; border-radius:50%;
+    cursor:pointer; font-size:11px; padding:0;
+  }
+  #ayudaToggle:hover { background:#3d4a62; color:#fff; }
+  /* colapsada: solo queda el botón redondo para volver a abrirla */
+  #ayuda.colapsada { padding:3px; background:transparent; border:none; }
+  #ayuda.colapsada #ayudaContenido { display:none; }
+  #ayuda.colapsada #ayudaToggle { position:static; background:rgba(20,24,32,.85); border-color:#3a4150; }
   #modoAviso {
     pointer-events:none;
     position:absolute; top:70px; left:50%; transform:translateX(-50%); z-index:10;
@@ -355,6 +365,12 @@
   background:#2e3646; border:1px solid #4a5468; color:#e8ecf2;
   border-radius:6px; padding:7px 10px; font-size:13px;
 }
+#camBody input[type="date"] { color-scheme:dark; }
+/* iconos más pequeños en esta ventana: la fila de cada camión es angosta y
+   los iconos a tamaño normal (13-14px) se veían desproporcionados */
+#camBody .planoBtn { padding:4px 7px; }
+#camBody .planoBtn svg { width:10px; height:10px; }
+#camBody .orgAccion svg { width:12px; height:12px; margin-right:4px; }
 
 /* ============ CREAR ESPACIOS Y EDIFICIOS ============ */
 #espOverlay {
@@ -375,7 +391,7 @@
 #espCerrar { background:none; border:none; color:#9aa5b5; font-size:22px; cursor:pointer; line-height:1; }
 #espCerrar:hover { color:#fff; }
 #espBody { padding:14px 18px; font-size:13px; line-height:1.5; }
-#espBody input, #espBody select {
+#espBody input, #espBody select, #espBody textarea {
   background:#2e3646; border:1px solid #4a5468; color:#e8ecf2;
   border-radius:6px; padding:7px 10px; font-size:13px;
 }

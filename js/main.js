@@ -77,7 +77,20 @@ function togglePiso4(){
 }
 document.getElementById('btnPiso4').onclick = togglePiso4;
 
-/* ---- Banner contextual: dice en qué vista de corte estás y cómo volver ---- */
+/* ---- Banner contextual: dice en qué vista de corte estás y cómo volver ----
+   Se ubica DEBAJO de la barra de herramientas real (no a una altura fija):
+   como la barra puede ocupar una o dos filas según cuántos grupos de
+   botones tenga, un top fijo terminaba tapando la segunda fila en
+   pantallas angostas o con varios grupos. En móvil manda el CSS (top fijo
+   bajo el botón "Menú" plegado), así que ahí no se toca el estilo. */
+function posicionarBanner(){
+  const banner = document.getElementById('vistaBanner');
+  const ui = document.getElementById('ui');
+  if (!banner || !ui) return;
+  if (innerWidth <= 820){ banner.style.top = ''; return; }
+  banner.style.top = Math.round(ui.getBoundingClientRect().bottom + 10) + 'px';
+}
+addEventListener('resize', posicionarBanner);
 function actualizarBanner(){
   const banner = document.getElementById('vistaBanner');
   const txt = document.getElementById('vistaBannerTxt');
@@ -86,6 +99,7 @@ function actualizarBanner(){
   else if (vistaSotanos) mensaje = 'Corte de sótanos S1-S3 — el terreno se ve translúcido';
   txt.textContent = mensaje;
   banner.style.display = mensaje ? 'inline-flex' : 'none';
+  if (mensaje) posicionarBanner();
 }
 document.getElementById('vistaBannerBtn').onclick = () => {
   if (vistaPiso4) togglePiso4();
@@ -123,6 +137,24 @@ btnFlujo.onclick = () => {
 };
 btnFin.onclick = () => { finalizarRuta(); };
 document.getElementById('btnBorrar').onclick = borrarRutas;
+
+/* ---- ayuda de controles: se puede ocultar (queda solo el botón redondo) ---- */
+(function(){
+  const ayuda = document.getElementById('ayuda');
+  const toggle = document.getElementById('ayudaToggle');
+  if (!ayuda || !toggle) return;
+  let oculta = false;
+  try { oculta = localStorage.getItem('planoObra3D_ayudaOculta') === '1'; } catch (e) {}
+  function set(v){
+    oculta = v;
+    ayuda.classList.toggle('colapsada', oculta);
+    toggle.textContent = oculta ? '?' : '✕';
+    toggle.title = oculta ? 'Mostrar la ayuda de controles' : 'Ocultar esta ayuda';
+    try { localStorage.setItem('planoObra3D_ayudaOculta', oculta ? '1' : '0'); } catch (e) {}
+  }
+  toggle.onclick = () => set(!oculta);
+  set(oculta);
+})();
 
 let etiquetasOn = true;
 function setEtiquetas(on){
@@ -232,7 +264,8 @@ function animar(){
     rangoMalacate.value = objetivo;
   }
   nivelMalacate += (objetivo - nivelMalacate) * 0.06;
-  cabina.position.y = 0.2 + nivelMalacate * CFG.hPiso;
+  const yCabina = 0.2 + nivelMalacate * CFG.hPiso;
+  malacates.forEach(m => { m.userData.cabina.position.y = yCabina; });
   // escribir en el DOM solo cuando el nivel cambia (60 escrituras/s → ~1)
   const nivelEtiqueta = 'P' + (Math.round(nivelMalacate) + 1);
   if (nivelTxt.textContent !== nivelEtiqueta) nivelTxt.textContent = nivelEtiqueta;
