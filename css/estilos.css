@@ -82,7 +82,11 @@
     position:absolute; top:12px; left:12px; z-index:10;
     display:flex; flex-wrap:wrap; gap:8px; align-items:center;
     background:rgba(20,24,32,.85); padding:10px 14px; border-radius:10px;
-    border:1px solid #3a4150; max-width:calc(100vw - 360px);
+    border:1px solid #3a4150;
+    /* box-sizing border-box: el max-width incluye padding y borde, así el
+       borde derecho de la barra nunca invade el panel de la derecha (que
+       ocupa ~346px con su padding). Reserva 384px = panel + separación. */
+    box-sizing:border-box; max-width:calc(100vw - 384px);
   }
   #ui button, #ui select {
     background:#2e3646; color:#e8ecf2; border:1px solid #4a5468;
@@ -102,7 +106,7 @@
   }
 
   #panel {
-    position:absolute; top:12px; right:12px; z-index:10; width:300px;
+    position:absolute; top:12px; right:12px; z-index:11; width:300px;
     background:rgba(20,24,32,.92); border:1px solid #3a4150; border-radius:10px;
     padding:14px 16px; color:#e8ecf2; max-height:calc(100vh - 40px); overflow-y:auto;
   }

@@ -142,24 +142,84 @@ function construirEspacio(def){
   return g;
 }
 
+/* Sistemas estructurales del edificio: nombre + descripción + dibujo distinto */
+const SISTEMAS = {
+  aporticado: { nombre:'Aporticado (pórticos)',
+    desc:'Sistema Aporticado: red de vigas y columnas de concreto armado o acero conectadas rígidamente. Es flexible, ideal para distribución libre de espacios.' },
+  muros: { nombre:'Muros estructurales / Mampostería',
+    desc:'Sistema de Muros Estructurales (o Mampostería): muros o placas de concreto o ladrillo que soportan el peso y resisten fuerzas laterales. Alta rigidez, pero limita las modificaciones espaciales.' },
+  dual: { nombre:'Dual / Combinado',
+    desc:'Sistema Dual / Combinado: mezcla ambos. Las columnas soportan la gravedad y los muros de concreto absorben las fuerzas de sismos o vientos. Muy común en edificios de mediana y gran altura.' },
+  acero: { nombre:'Acero',
+    desc:'Sistema de Acero: usa perfiles metálicos. Más ligero y rápido de construir; frecuente en naves industriales y rascacielos.' },
+  madera: { nombre:'Madera',
+    desc:'Sistema de Madera: ecológico y flexible; usado sobre todo en construcciones de baja altura y viviendas residenciales.' }
+};
+function opcionesSistema(sel){
+  return Object.keys(SISTEMAS).map(k =>
+    '<option value="' + k + '"' + (k === sel ? ' selected' : '') + '>' + esc(SISTEMAS[k].nombre) + '</option>').join('');
+}
+/* dibuja UN piso del edificio según el sistema estructural */
+function pisoSistema(g, sis, w, d, hP, y){
+  const t = 0.12;
+  const grid = len => { const step = 6.5, n = Math.max(1, Math.round(len / step)), a = []; for (let i = 0; i <= n; i++) a.push(-len/2 + i*len/n); return a; };
+  if (sis === 'muros'){
+    const cm = 0xb0a99c, vent = 0x23262b;
+    caja(g, w, hP, t, cm, 0, y + hP/2, -d/2, 0.99);
+    caja(g, w, hP, t, cm, 0, y + hP/2,  d/2, 0.99);
+    caja(g, t, hP, d, cm, -w/2, y + hP/2, 0, 0.99);
+    caja(g, t, hP, d, cm,  w/2, y + hP/2, 0, 0.99);
+    const nx = Math.max(2, Math.round(w / 4.5));
+    for (let k = 0; k < nx; k++){ const x = -w/2 + (k + 0.5) * (w/nx);
+      caja(g, Math.min(1.1, w/nx*0.45), hP*0.4, 0.06, vent, x, y + hP*0.58,  d/2 + 0.02, 0.9);
+      caja(g, Math.min(1.1, w/nx*0.45), hP*0.4, 0.06, vent, x, y + hP*0.58, -d/2 - 0.02, 0.9);
+    }
+    const nz = Math.max(1, Math.round(d / 4.5));
+    for (let k = 0; k < nz; k++){ const z = -d/2 + (k + 0.5) * (d/nz);
+      caja(g, 0.06, hP*0.4, Math.min(1.1, d/nz*0.45), vent,  w/2 + 0.02, y + hP*0.58, z, 0.9);
+      caja(g, 0.06, hP*0.4, Math.min(1.1, d/nz*0.45), vent, -w/2 - 0.02, y + hP*0.58, z, 0.9);
+    }
+    return;
+  }
+  let colC, vidC, vidO, cw;
+  if (sis === 'acero'){ colC = 0x7f8c9a; vidC = 0x9fc4e8; vidO = 0.42; cw = 0.18; }
+  else if (sis === 'madera'){ colC = 0xa97a4d; vidC = 0xd8c8a8; vidO = 0.9; cw = 0.26; }
+  else { colC = 0x9a9d9c; vidC = 0xbdd6e2; vidO = 0.5; cw = 0.32; }
+  const xs = grid(w);
+  xs.forEach(x => [-d/2, d/2].forEach(z => caja(g, cw, hP, cw, colC, x, y + hP/2, z)));
+  grid(d).filter(z => Math.abs(z) < d/2 - 0.01).forEach(z => [-w/2, w/2].forEach(x => caja(g, cw, hP, cw, colC, x, y + hP/2, z)));
+  caja(g, w - cw, hP*0.86, 0.05, vidC, 0, y + hP*0.52,  d/2, vidO);
+  caja(g, w - cw, hP*0.86, 0.05, vidC, 0, y + hP*0.52, -d/2, vidO);
+  caja(g, 0.05, hP*0.86, d - cw, vidC,  w/2, y + hP*0.52, 0, vidO);
+  caja(g, 0.05, hP*0.86, d - cw, vidC, -w/2, y + hP*0.52, 0, vidO);
+  if (sis === 'dual'){
+    const cm = 0xb6b2a8;
+    caja(g, t, hP, d*0.86, cm, -w/2 + 0.06, y + hP/2, 0, 0.99);
+    caja(g, t, hP, d*0.86, cm,  w/2 - 0.06, y + hP/2, 0, 0.99);
+  }
+  if (sis === 'acero'){
+    [-w/2, w/2].forEach(x => {
+      const len = Math.hypot(d, hP);
+      const a = caja(g, 0.09, 0.09, len, colC, x, y + hP/2, 0); a.rotation.x = Math.atan2(hP, d); a.castShadow = false;
+      const b = caja(g, 0.09, 0.09, len, colC, x, y + hP/2, 0); b.rotation.x = -Math.atan2(hP, d); b.castShadow = false;
+    });
+  }
+}
 function construirEdificio(def){
   const g = new THREE.Group();
   const hP = def.hPiso, alto = def.pisos * hP;
-  const colFach = 0x55575b, colVano = 0xb9d2de, colLosa = 0xcfd3d8;
-  for (let i=0; i<def.pisos; i++){
-    const y = i*hP;
-    caja(g, def.w, hP, def.d, colFach, 0, y + hP/2, 0);                 // volumen del piso
-    // franjas de ventana en las 4 caras
-    caja(g, def.w*0.92, hP*0.5, 0.06, colVano, 0, y + hP*0.55, def.d/2 + 0.03, 0.85);
-    caja(g, def.w*0.92, hP*0.5, 0.06, colVano, 0, y + hP*0.55, -def.d/2 - 0.03, 0.85);
-    caja(g, 0.06, hP*0.5, def.d*0.9, colVano, def.w/2 + 0.03, y + hP*0.55, 0, 0.85);
-    caja(g, 0.06, hP*0.5, def.d*0.9, colVano, -def.w/2 - 0.03, y + hP*0.55, 0, 0.85);
-    caja(g, def.w + 0.4, 0.2, def.d + 0.3, colLosa, 0, (i+1)*hP, 0);    // losa
+  const sis = SISTEMAS[def.sistema] ? def.sistema : 'aporticado';
+  const S = SISTEMAS[sis];
+  const colLosa = (sis === 'madera') ? 0xcaa06a : (sis === 'acero') ? 0xbfc6cd : 0xcfd3d8;
+  for (let i = 0; i < def.pisos; i++){
+    const y = i * hP;
+    pisoSistema(g, sis, def.w, def.d, hP, y);
+    caja(g, def.w + 0.4, 0.2, def.d + 0.3, colLosa, 0, (i + 1) * hP, 0);   // losa
   }
   g.userData.info = {
     dimensiones: def.w + ' × ' + def.d + ' m',
     altura: (Math.round(alto*100)/100) + ' m (' + def.pisos + (def.pisos === 1 ? ' piso' : ' pisos') + ' de ' + hP + ' m)',
-    detalle: 'Edificio de ' + def.pisos + (def.pisos === 1 ? ' piso' : ' pisos')
+    detalle: S.nombre + ' — ' + S.desc
   };
   return g;
 }
@@ -326,7 +386,8 @@ function normalizarDef(raw){
     descripcion: String(raw.descripcion || '').slice(0, 400),
     x: numLim(raw.x, 0, -260, 260),
     z: numLim(raw.z, 0, -180, 180),
-    rot: numLim(raw.rot, 0, -Math.PI*4, Math.PI*4)
+    rot: numLim(raw.rot, 0, -Math.PI*4, Math.PI*4),
+    bloqueado: !!raw.bloqueado
   };
   if (tipo === 'espacio'){
     d.w = numLim(raw.w, 10, 2, 90); d.d = numLim(raw.d, 8, 2, 70); d.h = numLim(raw.h, 2.5, 1, 14);
@@ -335,6 +396,7 @@ function normalizarDef(raw){
   } else if (tipo === 'edificio'){
     d.w = numLim(raw.w, 20, 3, 90); d.d = numLim(raw.d, 12, 3, 70);
     d.pisos = Math.round(numLim(raw.pisos, 5, 1, 40)); d.hPiso = numLim(raw.hPiso, 2.65, 2, 5);
+    d.sistema = SISTEMAS[raw.sistema] ? raw.sistema : 'aporticado';
   } else if (tipo === 'malacate'){
     d.mastil = numLim(raw.mastil, 30, 6, 80);
   } else if (tipo === 'gruaTorre'){
@@ -596,7 +658,8 @@ function cambiarTipo(){
       '<label><input type="checkbox" id="libTecho" checked> Techo</label>';
   } else if (t === 'edificio'){
     html = num('libAncho','Ancho (m)',20,3,90,0.1) + num('libFondo','Fondo (m)',12,3,70,0.1) +
-      num('libPisos','Pisos',5,1,40,1) + num('libHPiso','Entrepiso (m)',2.65,2,5,0.05);
+      num('libPisos','Pisos',5,1,40,1) + num('libHPiso','Entrepiso (m)',2.65,2,5,0.05) +
+      '<label style="width:100%">Sistema estructural <select id="libSistema" style="flex:1">' + opcionesSistema('aporticado') + '</select></label>';
   } else if (t === 'malacate'){
     html = num('libMastil','Altura (m)',30,6,80,0.5);
   } else if (t === 'gruaTorre'){
@@ -624,6 +687,7 @@ function agregarElemento(){
     raw.color = valNum('libColor'); raw.muros = document.getElementById('libMuros').checked; raw.techo = document.getElementById('libTecho').checked;
   } else if (tipo === 'edificio'){
     raw.w = valNum('libAncho'); raw.d = valNum('libFondo'); raw.pisos = valNum('libPisos'); raw.hPiso = valNum('libHPiso');
+    raw.sistema = (document.getElementById('libSistema') || {}).value;
   } else if (tipo === 'malacate'){
     raw.mastil = valNum('libMastil');
   } else if (tipo === 'gruaTorre'){
@@ -667,7 +731,8 @@ function renderEditorLibre(d){
       '<label><input type="checkbox" id="edTecho"' + (d.techo ? ' checked' : '') + '> Techo</label>';
   } else if (d.tipo === 'edificio'){
     campos = num('edAncho','Ancho (m)',d.w,3,90,0.1) + num('edFondo','Fondo (m)',d.d,3,70,0.1) +
-      num('edPisos','Pisos',d.pisos,1,40,1) + num('edHPiso','Entrepiso (m)',d.hPiso,2,5,0.05);
+      num('edPisos','Pisos',d.pisos,1,40,1) + num('edHPiso','Entrepiso (m)',d.hPiso,2,5,0.05) +
+      '<label style="width:100%">Sistema estructural <select id="edSistema" style="flex:1">' + opcionesSistema(d.sistema || 'aporticado') + '</select></label>';
   } else if (d.tipo === 'malacate'){
     campos = num('edMastil','Altura (m)',d.mastil,6,80,0.5);
   } else if (d.tipo === 'gruaTorre'){
@@ -703,6 +768,7 @@ function guardarEdicionLibre(){
     raw.color = valNum('edColor'); raw.muros = document.getElementById('edMuros').checked; raw.techo = document.getElementById('edTecho').checked;
   } else if (d.tipo === 'edificio'){
     raw.w = valNum('edAncho'); raw.d = valNum('edFondo'); raw.pisos = valNum('edPisos'); raw.hPiso = valNum('edHPiso');
+    raw.sistema = (document.getElementById('edSistema') || {}).value;
   } else if (d.tipo === 'malacate'){
     raw.mastil = valNum('edMastil');
   } else if (d.tipo === 'gruaTorre'){

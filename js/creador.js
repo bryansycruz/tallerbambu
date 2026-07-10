@@ -34,6 +34,74 @@ function ajustarEtiquetaNueva(g){
   if (ocultas) g.traverse(n => { if (n.isSprite) n.visible = false; });
 }
 
+/* ---- Sistemas estructurales del edificio: nombre + descripción + dibujo ----
+   Cada edificio se puede armar con uno de estos sistemas; el volumen se dibuja
+   distinto según el sistema para que se reconozca a simple vista. */
+const SISTEMAS_EDIF = {
+  aporticado: { nombre:'Aporticado (pórticos)',
+    desc:'Sistema Aporticado: red de vigas y columnas de concreto armado o acero conectadas rígidamente. Es flexible, ideal para distribución libre de espacios.' },
+  muros: { nombre:'Muros estructurales / Mampostería',
+    desc:'Sistema de Muros Estructurales (o Mampostería): muros o placas de concreto o ladrillo que soportan el peso y resisten fuerzas laterales. Alta rigidez, pero limita las modificaciones espaciales.' },
+  dual: { nombre:'Dual / Combinado',
+    desc:'Sistema Dual / Combinado: mezcla ambos. Las columnas soportan la gravedad y los muros de concreto absorben las fuerzas de sismos o vientos. Muy común en edificios de mediana y gran altura.' },
+  acero: { nombre:'Acero',
+    desc:'Sistema de Acero: usa perfiles metálicos. Más ligero y rápido de construir; frecuente en naves industriales y rascacielos.' },
+  madera: { nombre:'Madera',
+    desc:'Sistema de Madera: ecológico y flexible; usado sobre todo en construcciones de baja altura y viviendas residenciales.' }
+};
+function opcionesSistema(sel){
+  return Object.keys(SISTEMAS_EDIF).map(k =>
+    '<option value="' + k + '"' + (k === sel ? ' selected' : '') + '>' + esc(SISTEMAS_EDIF[k].nombre) + '</option>').join('');
+}
+/* Dibuja UN piso del edificio según el sistema estructural (usa el helper caja
+   global). Coordenadas locales centradas; el piso arranca en y (su base). */
+function pisoSistemaEdificio(g, sis, w, d, hP, y){
+  const t = 0.12;
+  const grid = len => { const step = 6.5, n = Math.max(1, Math.round(len / step)), a = []; for (let i = 0; i <= n; i++) a.push(-len/2 + i*len/n); return a; };
+  if (sis === 'muros'){
+    const cm = 0xb0a99c, vent = 0x23262b;                       // muros macizos + ventanas pequeñas
+    caja(g, w, hP, t, cm, 0, y + hP/2, -d/2, 0.99);
+    caja(g, w, hP, t, cm, 0, y + hP/2,  d/2, 0.99);
+    caja(g, t, hP, d, cm, -w/2, y + hP/2, 0, 0.99);
+    caja(g, t, hP, d, cm,  w/2, y + hP/2, 0, 0.99);
+    const nx = Math.max(2, Math.round(w / 4.5));
+    for (let k = 0; k < nx; k++){ const x = -w/2 + (k + 0.5) * (w/nx);
+      caja(g, Math.min(1.1, w/nx*0.45), hP*0.4, 0.06, vent, x, y + hP*0.58,  d/2 + 0.02, 0.9);
+      caja(g, Math.min(1.1, w/nx*0.45), hP*0.4, 0.06, vent, x, y + hP*0.58, -d/2 - 0.02, 0.9);
+    }
+    const nz = Math.max(1, Math.round(d / 4.5));
+    for (let k = 0; k < nz; k++){ const z = -d/2 + (k + 0.5) * (d/nz);
+      caja(g, 0.06, hP*0.4, Math.min(1.1, d/nz*0.45), vent,  w/2 + 0.02, y + hP*0.58, z, 0.9);
+      caja(g, 0.06, hP*0.4, Math.min(1.1, d/nz*0.45), vent, -w/2 - 0.02, y + hP*0.58, z, 0.9);
+    }
+    return;
+  }
+  // sistemas con columnas a la vista (aporticado / dual / acero / madera)
+  let colC, vidC, vidO, cw;
+  if (sis === 'acero'){ colC = 0x7f8c9a; vidC = 0x9fc4e8; vidO = 0.42; cw = 0.18; }
+  else if (sis === 'madera'){ colC = 0xa97a4d; vidC = 0xd8c8a8; vidO = 0.9; cw = 0.26; }
+  else { colC = 0x9a9d9c; vidC = 0xbdd6e2; vidO = 0.5; cw = 0.32; }   // aporticado / dual (concreto)
+  const xs = grid(w);
+  xs.forEach(x => [-d/2, d/2].forEach(z => caja(g, cw, hP, cw, colC, x, y + hP/2, z)));   // columnas
+  grid(d).filter(z => Math.abs(z) < d/2 - 0.01).forEach(z => [-w/2, w/2].forEach(x => caja(g, cw, hP, cw, colC, x, y + hP/2, z)));
+  caja(g, w - cw, hP*0.86, 0.05, vidC, 0, y + hP*0.52,  d/2, vidO);   // relleno traslúcido (fachada)
+  caja(g, w - cw, hP*0.86, 0.05, vidC, 0, y + hP*0.52, -d/2, vidO);
+  caja(g, 0.05, hP*0.86, d - cw, vidC,  w/2, y + hP*0.52, 0, vidO);
+  caja(g, 0.05, hP*0.86, d - cw, vidC, -w/2, y + hP*0.52, 0, vidO);
+  if (sis === 'dual'){                                              // muros de cortante en los extremos
+    const cm = 0xb6b2a8;
+    caja(g, t, hP, d*0.86, cm, -w/2 + 0.06, y + hP/2, 0, 0.99);
+    caja(g, t, hP, d*0.86, cm,  w/2 - 0.06, y + hP/2, 0, 0.99);
+  }
+  if (sis === 'acero'){                                             // arriostramiento en X en las caras cortas
+    [-w/2, w/2].forEach(x => {
+      const len = Math.hypot(d, hP);
+      const a = caja(g, 0.09, 0.09, len, colC, x, y + hP/2, 0); a.rotation.x = Math.atan2(hP, d); a.castShadow = false;
+      const b = caja(g, 0.09, 0.09, len, colC, x, y + hP/2, 0); b.rotation.x = -Math.atan2(hP, d); b.castShadow = false;
+    });
+  }
+}
+
 /* ---- espacio en obra: reutiliza el constructor de provisionales ---- */
 function construirEspacio(def){
   let color = parseInt(String(def.color || '#3f7fbf').replace('#', ''), 16);
@@ -55,22 +123,21 @@ function construirEspacio(def){
   return g;
 }
 
-/* ---- edificio: pisos apilados con la fachada tipo del proyecto ---- */
+/* ---- edificio: pisos apilados, dibujados según su sistema estructural ---- */
 function construirEdificio(def){
   const hP = def.hPiso || CFG.hPiso;
   const alto = def.pisos * hP;
+  const sis = SISTEMAS_EDIF[def.sistema] ? def.sistema : 'aporticado';
+  const S = SISTEMAS_EDIF[sis];
   const g = new THREE.Group();
+  const colLosa = (sis === 'madera') ? 0xcaa06a : (sis === 'acero') ? 0xbfc6cd : 0xcfd3d8;
   for (let i = 0; i < def.pisos; i++){
-    const matF = new THREE.MeshLambertMaterial({ map: texFach.clone() });
-    matF.map.needsUpdate = true;
-    matF.map.repeat.set(Math.max(1, Math.round(def.w / 6.2)), 1);
-    const mats = [matLado.clone(), matLado.clone(), matTecho.clone(), matTecho.clone(), matF, matF.clone()];
-    const piso = new THREE.Mesh(new THREE.BoxGeometry(def.w, hP, def.d), mats);
-    piso.position.y = i * hP + hP / 2;
-    piso.castShadow = true; piso.receiveShadow = true;
-    g.add(piso);
-    const losa = new THREE.Mesh(new THREE.BoxGeometry(def.w + 0.5, 0.2, def.d + 0.35), matLosaT.clone());
+    const y = i * hP;
+    pisoSistemaEdificio(g, sis, def.w, def.d, hP, y);
+    const losa = new THREE.Mesh(new THREE.BoxGeometry(def.w + 0.5, 0.2, def.d + 0.35),
+      new THREE.MeshLambertMaterial({ color: colLosa }));
     losa.position.y = (i + 1) * hP;
+    losa.castShadow = true; losa.receiveShadow = true;
     g.add(losa);
   }
   g.userData.esProvisional = true;
@@ -80,9 +147,10 @@ function construirEdificio(def){
     aforo: '—',
     dimensiones: def.w + ' × ' + def.d + ' m · ' + def.pisos + (def.pisos === 1 ? ' piso' : ' pisos'),
     altura: (Math.round(alto * 100) / 100) + ' m (' + def.pisos + ' × ' + hP + ' m de entrepiso)',
-    material: 'Edificio creado por el equipo desde el botón "Espacios"',
-    cerramiento: 'Volumen de referencia con la fachada tipo del proyecto',
+    material: 'Sistema estructural: ' + S.nombre,
+    cerramiento: 'Volumen de referencia dibujado según su sistema estructural',
     descripcion: (def.descripcion ? esc(def.descripcion).replace(/\n/g, '<br>') + '<br><br>' : '') +
+      '<b style="color:#a0cf52">' + esc(S.nombre) + '.</b> ' + esc(S.desc) + '<br><br>' +
       'Edificio de ' + def.pisos + (def.pisos === 1 ? ' piso' : ' pisos') +
       ' creado por el equipo. Arrástralo para ubicarlo, gíralo de a 45°, bloquéalo ' +
       'o elimínalo cuando ya no lo necesites en la obra.'
@@ -166,7 +234,8 @@ function renderEditorEspacio(def){
         num('edAncho', 'Ancho (m)', def.w, 2, 80, 0.1) +
         num('edFondo', 'Fondo (m)', def.d, 2, 60, 0.1) +
         (esEd
-          ? num('edPisos', 'Pisos', def.pisos, 1, 30, 1) + num('edHPiso', 'Entrepiso (m)', def.hPiso, 2, 5, 0.05)
+          ? num('edPisos', 'Pisos', def.pisos, 1, 30, 1) + num('edHPiso', 'Entrepiso (m)', def.hPiso, 2, 5, 0.05) +
+            '<label style="width:100%">Sistema estructural <select id="edSistema" style="flex:1">' + opcionesSistema(def.sistema || 'aporticado') + '</select></label>'
           : num('edAlto', 'Altura (m)', def.h, 1, 12, 0.1) +
             '<label>Color <input type="color" id="edColor" value="' + (def.color || '#3f7fbf') + '"></label>' +
             '<label><input type="checkbox" id="edMuros"' + (def.muros ? ' checked' : '') + '> Muros</label>' +
@@ -202,6 +271,8 @@ function guardarEdicionEspacio(){
   if (def.clase === 'edificio'){
     def.pisos = Math.round(numLim(document.getElementById('edPisos').value, def.pisos, 1, 30));
     def.hPiso = numLim(document.getElementById('edHPiso').value, def.hPiso, 2, 5);
+    const sisEl = document.getElementById('edSistema');
+    if (sisEl && SISTEMAS_EDIF[sisEl.value]) def.sistema = sisEl.value;
   } else {
     def.h = numLim(document.getElementById('edAlto').value, def.h, 1, 12);
     def.color = document.getElementById('edColor').value || def.color;
@@ -253,6 +324,7 @@ function aplicarPersonalizados(lista){
     if (d2.clase === 'edificio'){
       d2.pisos = Math.round(numLim(def.pisos, 5, 1, 30));
       d2.hPiso = numLim(def.hPiso, CFG.hPiso, 2, 5);
+      d2.sistema = SISTEMAS_EDIF[def.sistema] ? def.sistema : 'aporticado';
     } else {
       d2.h = numLim(def.h, 2.5, 1, 12);
       d2.color = def.color || '#3f7fbf';
@@ -311,6 +383,7 @@ function renderEspacios(){
         '<span id="espSoloEdificio" style="display:none; gap:8px; flex-wrap:wrap; align-items:center">' +
           '<label>Pisos <input type="number" id="espPisos" value="5" min="1" max="30" step="1" style="width:56px"></label>' +
           '<label>Entrepiso (m) <input type="number" id="espHPiso" value="2.65" min="2" max="5" step="0.05" style="width:68px"></label>' +
+          '<label style="width:100%">Sistema estructural <select id="espSistema" style="flex:1">' + opcionesSistema('aporticado') + '</select></label>' +
         '</span>' +
       '</div>' +
       '<button class="orgAccion primario" style="margin:0; align-self:flex-start" onclick="agregarPersonalizado()">' +
@@ -340,6 +413,8 @@ function agregarPersonalizado(){
     def.d = numLim(document.getElementById('espFondo').value, 12, 2, 60);
     def.pisos = Math.round(numLim(document.getElementById('espPisos').value, 5, 1, 30));
     def.hPiso = numLim(document.getElementById('espHPiso').value, CFG.hPiso, 2, 5);
+    const sisEl = document.getElementById('espSistema');
+    def.sistema = (sisEl && SISTEMAS_EDIF[sisEl.value]) ? sisEl.value : 'aporticado';
   } else {
     def.w = numLim(document.getElementById('espAncho').value, 10, 2, 80);
     def.d = numLim(document.getElementById('espFondo').value, 8, 2, 60);
