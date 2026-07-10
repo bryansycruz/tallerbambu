@@ -84,11 +84,18 @@ document.getElementById('btnPiso4').onclick = togglePiso4;
    pantallas angostas o con varios grupos. En móvil manda el CSS (top fijo
    bajo el botón "Menú" plegado), así que ahí no se toca el estilo. */
 function posicionarBanner(){
-  const banner = document.getElementById('vistaBanner');
   const ui = document.getElementById('ui');
-  if (!banner || !ui) return;
-  if (innerWidth <= 820){ banner.style.top = ''; return; }
-  banner.style.top = Math.round(ui.getBoundingClientRect().bottom + 10) + 'px';
+  if (!ui) return;
+  const bajoBarra = Math.round(ui.getBoundingClientRect().bottom + 10) + 'px';
+  const enMovil = innerWidth <= 820;
+  // los dos avisos flotantes que aparecen bajo la barra: el banner de las
+  // vistas de corte y el aviso de "Dibujar ruta". Ambos se sitúan justo bajo
+  // la barra real (que crece a dos filas al haber más grupos). En móvil manda
+  // el CSS (top fijo bajo el botón "Menú" plegado).
+  ['vistaBanner', 'modoAviso'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.top = enMovil ? '' : bajoBarra;
+  });
 }
 addEventListener('resize', posicionarBanner);
 function actualizarBanner(){
@@ -133,6 +140,7 @@ btnFlujo.onclick = () => {
   btnFlujo.classList.toggle('activo', modoFlujo);
   btnFin.style.display = modoFlujo ? '' : 'none';
   document.getElementById('modoAviso').style.display = modoFlujo ? 'block' : 'none';
+  if (modoFlujo) posicionarBanner();   // ubica el aviso bajo la barra (no la tapa)
   if (!modoFlujo) finalizarRuta();
 };
 btnFin.onclick = () => { finalizarRuta(); };

@@ -367,7 +367,11 @@
 }
 #camBody input[type="date"] { color-scheme:dark; }
 /* iconos más pequeños en esta ventana: la fila de cada camión es angosta y
-   los iconos a tamaño normal (13-14px) se veían desproporcionados */
+   los iconos a tamaño normal se veían desproporcionados. La regla general
+   acota TODOS los svg del cuerpo (incluye el icono de camión en línea dentro
+   de .planoNom, que no es botón y por eso salía enorme, ~435px). */
+#camBody svg { width:13px; height:13px; vertical-align:-2px; flex:none; }
+#camBody .planoNom svg { width:13px; height:13px; margin-right:2px; }
 #camBody .planoBtn { padding:4px 7px; }
 #camBody .planoBtn svg { width:10px; height:10px; }
 #camBody .orgAccion svg { width:12px; height:12px; margin-right:4px; }
