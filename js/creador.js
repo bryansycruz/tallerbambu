@@ -142,6 +142,93 @@ function eliminarPersonalizado(nombre){
   avisoGuardado('"' + nombre + '" eliminado de la obra');
 }
 
+/* ---- editar las dimensiones (y nombre/descripción) de un elemento creado ----
+   Reconstruye el elemento con las medidas nuevas conservando su posición,
+   rotación y bloqueo; los cambios se guardan con el resto del estado. */
+let editandoNombre = null;
+function abrirEditorPersonalizado(nombre){
+  const def = personalizados.find(p => p.nombre === nombre);
+  if (!def) return;
+  editandoNombre = nombre;
+  renderEditorEspacio(def);
+  document.getElementById('espOverlay').style.display = 'flex';
+}
+function renderEditorEspacio(def){
+  const esEd = def.clase === 'edificio';
+  const num = (id, lbl, val, min, max, step) =>
+    '<label>' + lbl + ' <input type="number" id="' + id + '" value="' + val + '" min="' + min + '" max="' + max + '" step="' + step + '" style="width:70px"></label>';
+  document.getElementById('espBody').innerHTML =
+    '<div class="desc">Editando <b style="color:#a0cf52">' + esc(def.nombre) + '</b> (' + (esEd ? 'Edificio' : 'Espacio') + '). ' +
+      'Cambia sus medidas y guarda; conserva su posición y rotación en la obra.</div>' +
+    '<div style="display:flex; flex-direction:column; gap:8px; margin-top:10px">' +
+      '<input id="edNombre" maxlength="40" value="' + esc(def.nombre) + '" placeholder="Nombre">' +
+      '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">' +
+        num('edAncho', 'Ancho (m)', def.w, 2, 80, 0.1) +
+        num('edFondo', 'Fondo (m)', def.d, 2, 60, 0.1) +
+        (esEd
+          ? num('edPisos', 'Pisos', def.pisos, 1, 30, 1) + num('edHPiso', 'Entrepiso (m)', def.hPiso, 2, 5, 0.05)
+          : num('edAlto', 'Altura (m)', def.h, 1, 12, 0.1) +
+            '<label>Color <input type="color" id="edColor" value="' + (def.color || '#3f7fbf') + '"></label>' +
+            '<label><input type="checkbox" id="edMuros"' + (def.muros ? ' checked' : '') + '> Muros</label>' +
+            '<label><input type="checkbox" id="edTecho"' + (def.techo ? ' checked' : '') + '> Techo</label>') +
+      '</div>' +
+      '<textarea id="edDesc" maxlength="400" rows="2" placeholder="Descripción (opcional)">' + esc(def.descripcion || '') + '</textarea>' +
+      '<div style="display:flex; gap:6px">' +
+        '<button class="orgAccion primario" style="margin:0" onclick="guardarEdicionEspacio()">Guardar cambios</button>' +
+        '<button class="orgAccion" style="margin:0" onclick="cancelarEdicionEspacio()">Cancelar</button>' +
+      '</div>' +
+    '</div>';
+}
+function cancelarEdicionEspacio(){ editandoNombre = null; renderEspacios(); }
+function guardarEdicionEspacio(){
+  const def = personalizados.find(p => p.nombre === editandoNombre);
+  const g = draggables.find(x => x.userData.personalizado && x.userData.info.nombre === editandoNombre);
+  if (!def || !g){ editandoNombre = null; renderEspacios(); return; }
+  // conservar lo que no se edita
+  const pos = { x: g.position.x, z: g.position.z };
+  const rot = g.rotation.y;
+  const bloqueado = !!g.userData.bloqueado;
+  const antiguo = def.nombre;
+  // nombre nuevo (único, sin chocar con OTROS elementos)
+  let nuevo = (document.getElementById('edNombre').value || '').trim().slice(0, 40) || antiguo;
+  if (nuevo !== antiguo){
+    let base = nuevo, n = 2;
+    while (draggables.some(x => x !== g && x.userData.info.nombre === nuevo)) nuevo = base + ' ' + (n++);
+  }
+  def.nombre = nuevo;
+  def.descripcion = (document.getElementById('edDesc').value || '').trim().slice(0, 400);
+  def.w = numLim(document.getElementById('edAncho').value, def.w, 2, 80);
+  def.d = numLim(document.getElementById('edFondo').value, def.d, 2, 60);
+  if (def.clase === 'edificio'){
+    def.pisos = Math.round(numLim(document.getElementById('edPisos').value, def.pisos, 1, 30));
+    def.hPiso = numLim(document.getElementById('edHPiso').value, def.hPiso, 2, 5);
+  } else {
+    def.h = numLim(document.getElementById('edAlto').value, def.h, 1, 12);
+    def.color = document.getElementById('edColor').value || def.color;
+    def.muros = document.getElementById('edMuros').checked;
+    def.techo = document.getElementById('edTecho').checked;
+  }
+  // reconstruir el elemento con las medidas nuevas
+  quitarGrupoEscena(g);
+  draggables.splice(draggables.indexOf(g), 1);
+  const ng = (def.clase === 'edificio') ? construirEdificio(def) : construirEspacio(def);
+  ng.position.set(pos.x, 0, pos.z);
+  ng.rotation.y = rot;
+  ng.userData.bloqueado = bloqueado;
+  ajustarEtiquetaNueva(ng);
+  actualizarTinte(ng);
+  reconstruirSelector();
+  // si se renombró, mantener el destino de los camiones que apuntaban a él
+  if (antiguo !== nuevo && typeof camiones !== 'undefined' && Array.isArray(camiones)){
+    camiones.forEach(c => { if (c && c.zona === antiguo) c.zona = nuevo; });
+  }
+  editandoNombre = null;
+  guardarCompartido();
+  document.getElementById('espOverlay').style.display = 'none';
+  seleccionar(ng);
+  avisoGuardado('Dimensiones actualizadas: ' + nuevo);
+}
+
 /* recrea los personalizados al cargar estado (local, respaldo o Supabase) */
 function aplicarPersonalizados(lista){
   for (let i = draggables.length - 1; i >= 0; i--){
@@ -190,6 +277,7 @@ function renderEspacios(){
           '<span class="planoNom">' + icono(p.clase === 'edificio' ? 'edificio' : 'etiqueta') +
             ' <b style="color:#e8ecf2">' + esc(p.nombre) + '</b> <small>· ' + dims + '</small></span>' +
           '<span>' +
+            '<button class="planoBtn" title="Editar dimensiones" onclick="editarPersonalizadoIdx(' + i + ')">' + icono('editar') + '</button> ' +
             '<button class="planoBtn" title="Llevar la cámara hasta este elemento" onclick="irAPersonalizadoIdx(' + i + ')">' + icono('ojo') + '</button> ' +
             '<button class="planoBtn peligro" title="Eliminar de la obra" onclick="eliminarPersonalizadoIdx(' + i + ')">' + icono('basura') + '</button>' +
           '</span></div>';
@@ -272,6 +360,10 @@ function agregarPersonalizado(){
 function eliminarPersonalizadoIdx(i){
   const p = personalizados[i];
   if (p) eliminarPersonalizado(p.nombre);
+}
+function editarPersonalizadoIdx(i){
+  const p = personalizados[i];
+  if (p) abrirEditorPersonalizado(p.nombre);
 }
 function irAPersonalizadoIdx(i){
   const p = personalizados[i];

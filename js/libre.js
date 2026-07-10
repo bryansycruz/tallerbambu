@@ -18,7 +18,8 @@ const ICO = {
   girarDer: '<path d="M20 11a8 8 0 10.6 4.5M20 5v6h-6"/>',
   grua:     '<path d="M4 21V4h3l12 3-2 3M7 4l-2 3M9 7v14M5 21h8"/>',
   edificio: '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8.5 7h2M13.5 7h2M8.5 11h2M13.5 11h2M10 21v-3h4v3"/>',
-  caja:     '<path d="M3 8l9-5 9 5v8l-9 5-9-5z M3 8l9 5 9-5M12 13v8"/>'
+  caja:     '<path d="M3 8l9-5 9 5v8l-9 5-9-5z M3 8l9 5 9-5M12 13v8"/>',
+  editar:   '<path d="M4 20h4L18.5 9.5a2.1 2.1 0 00-3-3L5 17v3z M13.5 6.5l3 3"/>'
 };
 function ic(n){
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICO[n] || '') + '</svg>';
@@ -532,6 +533,7 @@ function seleccionar(g){
       '<button style="flex:1" onclick="girarSel(-1)">' + ic('girarIzq') + 'Girar 45°</button>' +
       '<button style="flex:1" onclick="girarSel(1)">' + ic('girarDer') + 'Girar 45°</button>' +
     '</div>' +
+    '<button onclick="editarSel()">' + ic('editar') + 'Editar dimensiones</button>' +
     '<button class="btnEliminar" onclick="eliminarSel()">' + ic('basura') + 'Eliminar de la obra</button>';
 }
 function ubicTexto(g){ return 'x: ' + Math.round(g.position.x) + ' m · z: ' + Math.round(g.position.z) + ' m'; }
@@ -554,6 +556,7 @@ function renderVentana(){
           '<span class="planoNom">' + ic(d.tipo === 'edificio' ? 'edificio' : (d.tipo === 'gruaTorre' || d.tipo === 'gruaPluma') ? 'grua' : 'caja') +
             ' <b style="color:#e8ecf2">' + esc(d.nombre) + '</b> <small>· ' + NOMBRE_TIPO[d.tipo] + '</small></span>' +
           '<span>' +
+            '<button class="planoBtn" title="Editar dimensiones" onclick="editarLibreIdx(' + i + ')">' + ic('editar') + '</button> ' +
             '<button class="planoBtn" title="Ir a este elemento" onclick="irAElemIdx(' + i + ')">' + ic('ojo') + '</button> ' +
             '<button class="planoBtn peligro" title="Eliminar" onclick="eliminarElemIdx(' + i + ')">' + ic('basura') + '</button>' +
           '</span></div>';
@@ -641,6 +644,83 @@ function irAElemIdx(i){
   seleccionar(g); irA(g.position.x, g.position.z, 70);
 }
 function eliminarElemIdx(i){ if (elementos[i]) eliminarElemento(elementos[i]); }
+
+/* ---- editar dimensiones (y nombre/descripción) de un elemento creado ----
+   Reconstruye el elemento con las medidas nuevas. La posición y la rotación se
+   conservan porque el def las mantiene actualizadas (arrastre y giro). */
+let editandoLibre = null;
+function editarSel(){ if (seleccionado) abrirEditorLibre(seleccionado); }
+function editarLibreIdx(i){ if (elementos[i]) abrirEditorLibre(elementos[i]); }
+function abrirEditorLibre(g){
+  editandoLibre = g;
+  renderEditorLibre(g.userData.def);
+  document.getElementById('libreOverlay').style.display = 'flex';
+}
+function renderEditorLibre(d){
+  const num = (id, lbl, val, min, max, step) =>
+    '<label>' + lbl + ' <input type="number" id="' + id + '" value="' + val + '" min="' + min + '" max="' + max + '" step="' + step + '" style="width:70px"></label>';
+  let campos = '';
+  if (d.tipo === 'espacio'){
+    campos = num('edAncho','Ancho (m)',d.w,2,90,0.1) + num('edFondo','Fondo (m)',d.d,2,70,0.1) + num('edAlto','Altura (m)',d.h,1,14,0.1) +
+      '<label>Color <input type="color" id="edColor" value="' + (d.color || '#3f7fbf') + '"></label>' +
+      '<label><input type="checkbox" id="edMuros"' + (d.muros ? ' checked' : '') + '> Muros</label>' +
+      '<label><input type="checkbox" id="edTecho"' + (d.techo ? ' checked' : '') + '> Techo</label>';
+  } else if (d.tipo === 'edificio'){
+    campos = num('edAncho','Ancho (m)',d.w,3,90,0.1) + num('edFondo','Fondo (m)',d.d,3,70,0.1) +
+      num('edPisos','Pisos',d.pisos,1,40,1) + num('edHPiso','Entrepiso (m)',d.hPiso,2,5,0.05);
+  } else if (d.tipo === 'malacate'){
+    campos = num('edMastil','Altura (m)',d.mastil,6,80,0.5);
+  } else if (d.tipo === 'gruaTorre'){
+    campos = num('edMastil','Altura mástil (m)',d.mastil,8,90,0.5) + num('edBrazo','Largo del brazo (m)',d.brazo,8,90,0.5) +
+      num('edRadio','Radio de giro (m)',d.radio,4,90,0.5);
+  } else if (d.tipo === 'gruaPluma'){
+    campos = num('edBrazo','Largo de la pluma (m)',d.brazo,6,80,0.5) + num('edAngulo','Inclinación (°)',d.angulo,10,80,1) +
+      num('edRadio','Radio de giro (m)',d.radio,4,80,0.5);
+  }
+  document.getElementById('libreBody').innerHTML =
+    '<div class="desc">Editando <b style="color:#a0cf52">' + esc(d.nombre) + '</b> (' + NOMBRE_TIPO[d.tipo] + '). ' +
+      'Cambia sus medidas y guarda; conserva su posición en la obra.</div>' +
+    '<div style="margin-top:10px; display:flex; flex-direction:column; gap:8px">' +
+      '<input id="edNombre" maxlength="40" value="' + esc(d.nombre) + '" placeholder="Nombre">' +
+      '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">' + campos + '</div>' +
+      '<textarea id="edDesc" maxlength="400" rows="2" placeholder="Descripción (opcional)">' + esc(d.descripcion || '') + '</textarea>' +
+      '<div style="display:flex; gap:6px">' +
+        '<button class="orgAccion primario" style="margin:0" onclick="guardarEdicionLibre()">Guardar cambios</button>' +
+        '<button class="orgAccion" style="margin:0" onclick="cancelarEdicionLibre()">Cancelar</button>' +
+      '</div>' +
+    '</div>';
+}
+function cancelarEdicionLibre(){ editandoLibre = null; renderVentana(); }
+function guardarEdicionLibre(){
+  const g = editandoLibre;
+  if (!g){ renderVentana(); return; }
+  const d = g.userData.def;
+  const raw = Object.assign({}, d);   // conserva tipo, x, z, rot
+  raw.nombre = (document.getElementById('edNombre').value || '').trim().slice(0, 40) || d.nombre;
+  raw.descripcion = (document.getElementById('edDesc').value || '').trim().slice(0, 400);
+  if (d.tipo === 'espacio'){
+    raw.w = valNum('edAncho'); raw.d = valNum('edFondo'); raw.h = valNum('edAlto');
+    raw.color = valNum('edColor'); raw.muros = document.getElementById('edMuros').checked; raw.techo = document.getElementById('edTecho').checked;
+  } else if (d.tipo === 'edificio'){
+    raw.w = valNum('edAncho'); raw.d = valNum('edFondo'); raw.pisos = valNum('edPisos'); raw.hPiso = valNum('edHPiso');
+  } else if (d.tipo === 'malacate'){
+    raw.mastil = valNum('edMastil');
+  } else if (d.tipo === 'gruaTorre'){
+    raw.mastil = valNum('edMastil'); raw.brazo = valNum('edBrazo'); raw.radio = valNum('edRadio');
+  } else if (d.tipo === 'gruaPluma'){
+    raw.brazo = valNum('edBrazo'); raw.angulo = valNum('edAngulo'); raw.radio = valNum('edRadio');
+  }
+  const i = elementos.indexOf(g);
+  g.traverse(n => { if (n.geometry) n.geometry.dispose(); });
+  scene.remove(g);
+  elementos.splice(i, 1);
+  const ng = crearElemento(raw);
+  editandoLibre = null;
+  guardar();
+  document.getElementById('libreOverlay').style.display = 'none';
+  seleccionar(ng);
+  avisar('Dimensiones actualizadas: ' + ng.userData.def.nombre);
+}
 
 /* ============ GUARDAR / CARGAR (localStorage propio + respaldo JSON) ============ */
 const CLAVE = 'tallerLibre_v1';

@@ -243,6 +243,7 @@ function seleccionar(obj){
     (esProvisional ? '<button class="btnBloqueo ' + (obj.userData.bloqueado ? 'bloqueado' : 'libre') + '" onclick="toggleBloqueo()">' + icono(obj.userData.bloqueado ? 'candadoAbierto' : 'candado') + (obj.userData.bloqueado ? 'Bloqueado — toca para desbloquear' : 'Libre — toca para bloquear') + '</button>' : '') +
     (esProvisional ? '<div style="display:flex; gap:6px"><button style="flex:1" onclick="girarSeleccionado(-1)">' + icono('girarIzq') + 'Girar 45°</button><button style="flex:1" onclick="girarSeleccionado(1)">' + icono('girarDer') + 'Girar 45°</button></div>' : '') +
     (esProvisional ? '<button onclick="programarCamionZona(seleccionado.userData.info.nombre)">' + icono('camion') + 'Programar camión a esta zona</button>' : '') +
+    (obj.userData.personalizado ? '<button onclick="abrirEditorPersonalizado(seleccionado.userData.info.nombre)">' + icono('editar') + 'Editar dimensiones</button>' : '') +
     (obj.userData.personalizado ? '<button class="btnEliminar" onclick="eliminarPersonalizado(seleccionado.userData.info.nombre)">' + icono('basura') + 'Eliminar de la obra</button>' : '') +
     (obj.userData.esMalacate ? '<div style="display:flex; gap:6px">' +
       '<button style="flex:1" onclick="agregarMalacate()">' + icono('mas') + 'Agregar otro malacate</button>' +

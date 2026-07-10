@@ -28,6 +28,7 @@ const ICONOS = {
   x:             '<path d="M6 6l12 12M18 6L6 18"/>',
   mas:           '<path d="M12 5v14M5 12h14"/>',
   pincel:        '<path d="M14 3l7 7-9.5 9.5a3 3 0 01-2 .9H5v-4.5a3 3 0 01.9-2z M12 5l7 7"/>',
+  editar:        '<path d="M4 20h4L18.5 9.5a2.1 2.1 0 00-3-3L5 17v3z M13.5 6.5l3 3"/>',
   alerta:        '<path d="M12 3.5L2.5 20.5h19z M12 10v5M12 17.6h.01"/>',
   volver:        '<path d="M19 12H5M11 6l-6 6 6 6"/>',
   candado:       '<rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V7.5a4 4 0 018 0V11"/>',
