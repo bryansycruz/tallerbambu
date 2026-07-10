@@ -19,6 +19,27 @@ repintarTodo();   // semáforo inicial: provisionales libres en verde, bloqueado
 document.getElementById('btnMenu').onclick = () => {
   document.getElementById('ui').classList.toggle('abierto');
 };
+
+/* ---- Minimizar/expandir la barra de herramientas (escritorio) ----
+   Oculta los grupos de botones (Sótanos, Etiquetas, Camiones, etc.) dejando
+   solo el botón para volver a mostrarlos; recuerda la preferencia. ---- */
+(function(){
+  const ui = document.getElementById('ui');
+  const btn = document.getElementById('btnMin');
+  if (!ui || !btn) return;
+  let minimizado = false;
+  try { minimizado = localStorage.getItem('planoObra3D_menuMin') === '1'; } catch (e) {}
+  function set(v){
+    minimizado = v;
+    ui.classList.toggle('minimizado', minimizado);
+    btn.innerHTML = minimizado ? icono('menu') + 'Menú' : icono('menos');
+    btn.title = minimizado ? 'Mostrar el menú' : 'Minimizar el menú';
+    try { localStorage.setItem('planoObra3D_menuMin', minimizado ? '1' : '0'); } catch (e) {}
+    if (typeof posicionarBanner === 'function') posicionarBanner();
+  }
+  btn.onclick = () => set(!minimizado);
+  set(minimizado);
+})();
 document.getElementById('pTitulo').onclick = () => {
   document.getElementById('panel').classList.toggle('abierto');
   posicionarPad();

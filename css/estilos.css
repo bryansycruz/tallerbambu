@@ -92,6 +92,14 @@
   #ui button.activo { background:#4f8f2c; border-color:#a0cf52; }
   #ui label { color:#cfd6e0; font-size:13px; display:flex; align-items:center; gap:6px; }
   #ui input[type=range] { width:110px; }
+  /* botón para minimizar/expandir la barra (solo escritorio; en móvil ya se
+     pliega con "Menú"). El minimizado se restringe a pantallas grandes para
+     no chocar con el cajón móvil que usa la clase .abierto. */
+  #btnMin { display:inline-flex; align-items:center; gap:6px; }
+  @media (min-width: 821px){
+    #ui.minimizado { padding:7px 9px; }
+    #ui.minimizado > .uiGrupo { display:none; }
+  }
 
   #panel {
     position:absolute; top:12px; right:12px; z-index:10; width:300px;
@@ -422,6 +430,7 @@
 @media (max-width: 820px){
   /* barra de herramientas: plegada tras el botón Menú */
   #btnMenu { display:inline-block; }
+  #btnMin { display:none; }   /* en móvil manda el cajón de "Menú" */
   #ui {
     top:8px; left:8px; right:8px; max-width:none;
     gap:5px; padding:7px 9px;
