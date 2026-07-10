@@ -14,10 +14,11 @@ function estadoActual(){
     };
   });
   return {
-    version: 3,
+    version: 4,
     proyecto: 'Obras provisionales — Torre 5 pisos + 3 sótanos (cerramientos y acabados)',
     fecha: new Date().toISOString(),
     elementos,
+    personalizados: (typeof personalizados !== 'undefined') ? personalizados : [],
     rutas: rutas.map(r => r.puntos.map(p => [Math.round(p.x*100)/100, Math.round(p.z*100)/100])),
     malacate: parseFloat(rangoMalacate.value),
     malacatePos: [Math.round(malacate.position.x*100)/100, Math.round(malacate.position.z*100)/100],
@@ -31,6 +32,11 @@ function guardarLocal(){
 }
 function aplicarEstado(d){
   if (!d) return;
+  // espacios y edificios creados por el usuario: se recrean ANTES de aplicar
+  // las posiciones de "elementos" (que también los incluye por su nombre)
+  if (typeof aplicarPersonalizados === 'function'){
+    aplicarPersonalizados(Array.isArray(d.personalizados) ? d.personalizados : []);
+  }
   if (d.elementos){
     // migración: la zona "Paletizado" pasó a llamarse "Acopio de materiales"
     if (d.elementos['Paletizado'] && !d.elementos['Acopio de materiales']){

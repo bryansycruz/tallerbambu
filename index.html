@@ -73,6 +73,9 @@
     <button id="btnBorrar" title="Elimina todas las rutas dibujadas"><span class="ic" data-ic="basura"></span>Borrar rutas</button>
     <button id="btnCamiones" title="Programa la hora de entrada de los camiones de materiales"><span class="ic" data-ic="camion"></span>Camiones</button>
   </div>
+  <div class="uiGrupo" data-nombre="Crear en obra">
+    <button id="btnEspacios" title="Crea espacios y edificios con sus medidas, y elimínalos cuando no los necesites"><span class="ic" data-ic="mas"></span>Espacios</button>
+  </div>
   <div class="uiGrupo" data-nombre="Guardar y cargar">
     <button id="btnGuardar" title="Guarda para el equipo y descarga un respaldo"><span class="ic" data-ic="guardar"></span>Guardar</button>
     <button id="btnCargar" title="Carga un respaldo descargado"><span class="ic" data-ic="carpeta"></span>Cargar</button>
@@ -143,6 +146,17 @@
   </div>
 </div>
 
+<!-- ============ CREAR ESPACIOS Y EDIFICIOS ============ -->
+<div id="espOverlay">
+  <div id="espVentana">
+    <div id="espCabecera">
+      <h3 id="espTitulo">Crear espacios y edificios</h3>
+      <button id="espCerrar" title="Cerrar">✕</button>
+    </div>
+    <div id="espBody"></div>
+  </div>
+</div>
+
 <!-- ============ PANEL DE INFORMACIÓN ============ -->
 <div id="panel">
   <h2 id="pTitulo">Panel de obra</h2>
@@ -183,7 +197,8 @@
   <b>Piso 5:</b> clic sobre el piso 5 de la torre = abre su hoja de detalle<br>
   <b>Rutas:</b> "Dibujar ruta" → clics en el terreno → "Finalizar ruta"<br>
   <b>Organigrama:</b> clic en cada rol: funciones, resaltar su área y zonas de riesgo<br>
-  <b>Documentos:</b> selecciona una zona → ficha técnica, planos y enlaces de página
+  <b>Documentos:</b> selecciona una zona → ficha técnica, planos y enlaces de página<br>
+  <b>Espacios propios:</b> botón "Espacios" → crea espacios o edificios con sus medidas y elimínalos cuando quieras
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
@@ -202,6 +217,7 @@
 <script src="js/organigrama.js"></script>
 <script src="js/planos.js"></script>
 <script src="js/camiones.js"></script>
+<script src="js/creador.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

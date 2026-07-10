@@ -192,7 +192,11 @@ function renderCamiones(){
       '<input type="time" id="camHoraSet" value="' + minutosAHora(horaObra) + '">' +
       '<button class="orgAccion" style="margin:0" onclick="fijarHoraObra()">Fijar hora</button>' +
     '</div>' +
-    '<b>Camiones programados</b>' + filas +
+    '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap">' +
+      '<b>Camiones programados</b>' +
+      '<button class="orgAccion" style="margin:0" title="Descarga los pedidos en un archivo que abre Excel" onclick="descargarCamiones()">' +
+        icono('bajar') + 'Descargar Excel</button>' +
+    '</div>' + filas +
     '<div style="margin-top:12px; display:flex; flex-direction:column; gap:6px">' +
       '<div style="display:flex; gap:6px; flex-wrap:wrap">' +
         '<input type="time" id="camHora" value="08:00">' +
@@ -221,6 +225,33 @@ function quitarCamion(i){
   guardarCompartido();
   renderCamiones();
 }
+/* ---- descarga de los pedidos programados en CSV (abre directo en Excel) ---- */
+function descargarCamiones(){
+  if (!camiones.length){ avisoGuardado('No hay camiones programados para descargar'); return; }
+  const lista = [...camiones].sort((a, b) => horaAMinutos(a.hora) - horaAMinutos(b.hora));
+  const celda = v => {
+    v = String(v == null ? '' : v);
+    return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  };
+  const filas = [
+    ['Pedidos de camiones de materiales — Proyecto Bambú · Marinilla'],
+    ['Generado', new Date().toLocaleString()],
+    [],
+    ['#', 'Hora de entrada', 'Material', 'Zona de destino'],
+    ...lista.map((c, i) => [i + 1, c.hora, c.material, c.zona || 'Almacén central'])
+  ];
+  // BOM UTF-8 + separador ";": Excel en español lo abre con tildes y columnas correctas
+  const csv = String.fromCharCode(0xFEFF) + filas.map(f => f.map(celda).join(';')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  const fecha = new Date().toISOString().slice(0, 10);
+  a.href = URL.createObjectURL(blob);
+  a.download = 'pedidos_camiones_' + fecha + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  avisoGuardado('Pedidos descargados: pedidos_camiones_' + fecha + '.csv (ábrelo con Excel)');
+}
+
 function toggleReloj(){ relojCorriendo = !relojCorriendo; renderCamiones(); }
 function fijarHoraObra(){
   const v = document.getElementById('camHoraSet').value;

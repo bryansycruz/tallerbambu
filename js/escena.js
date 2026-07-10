@@ -662,23 +662,42 @@ const matBalcon = new THREE.MeshLambertMaterial({ color:0xcfd6dc });
   textoPiso('BALCONES', 3.2, 2.3, lado * (CFG.fondo/2 + 0.5), '#4a5560');
 });
 
-// cerramiento provisional perimetral (baranda naranja de seguridad,
-// por fuera del borde de los balcones)
-const matBar = new THREE.MeshLambertMaterial({ color:0xe07820, transparent:true, opacity:0.6 });
-matBar.userData.op0 = 0.6;
-[[0, CFG.fondo/2+1.15, CFG.largo+0.4, 0.1],[0,-CFG.fondo/2-1.15, CFG.largo+0.4, 0.1],
- [-CFG.largo/2-0.15, 0, 0.1, CFG.fondo+2.4],[CFG.largo/2+0.15, 0, 0.1, CFG.fondo+2.4]].forEach(([px,pz,w,d]) => {
-  const b = new THREE.Mesh(new THREE.BoxGeometry(w, 1.1, d), matBar.clone());
-  b.position.set(px, y4 + 1.75, pz);
-  piso4.add(b);
-});
+// baranda provisional de seguridad (por fuera de los balcones): pasamanos
+// superior e intermedio + parales. Reemplaza el panel naranja translúcido
+// que se veía como un cuadro flotante alrededor del piso.
+{
+  const matBar = new THREE.MeshLambertMaterial({ color:0xe07820 });
+  const lados = [
+    { w:CFG.largo+0.4, d:0.08, x:0, z: CFG.fondo/2+1.15 },
+    { w:CFG.largo+0.4, d:0.08, x:0, z:-CFG.fondo/2-1.15 },
+    { w:0.08, d:CFG.fondo+2.4, x:-CFG.largo/2-0.15, z:0 },
+    { w:0.08, d:CFG.fondo+2.4, x: CFG.largo/2+0.15, z:0 }
+  ];
+  lados.forEach(l => {
+    [1.15, 0.6].forEach(h => {                       // pasamanos y rodapié
+      const r = new THREE.Mesh(new THREE.BoxGeometry(l.w, 0.07, l.d), matBar);
+      r.position.set(l.x, y4 + 0.15 + h, l.z);
+      piso4.add(r);
+    });
+    const largoLado = Math.max(l.w, l.d);
+    const n = Math.max(2, Math.round(largoLado / 5)); // un paral cada ~5 m
+    for (let i=0; i<=n; i++){
+      const t = i/n - 0.5;
+      const p = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.2, 0.08), matBar);
+      p.position.set(l.x + (l.w > 1 ? t*l.w : 0), y4 + 0.75, l.z + (l.d > 1 ? t*l.d : 0));
+      piso4.add(p);
+    }
+  });
+}
 
 // zona de descargue del malacate + acopio en losa
 const zDesc = new THREE.Mesh(
   new THREE.BoxGeometry(5, 0.08, 3.5),
   new THREE.MeshLambertMaterial({ color:0xc9581e, transparent:true, opacity:0.65 })
 );
-zDesc.position.set(CFG.malacateX, y4 + 0.2, -CFG.fondo/2 + 2);
+// la placa va POR DEBAJO del texto (y4+0.22): antes quedaba encima y el
+// letrero "DESCARGUE MALACATE" se ocultaba — solo se veía un cuadro naranja
+zDesc.position.set(CFG.malacateX, y4 + 0.14, -CFG.fondo/2 + 2);
 piso4.add(zDesc);
 
 const et4a = crearEtiqueta('PISO 4', 9, 'rgba(70,120,45,0.9)');

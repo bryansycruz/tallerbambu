@@ -115,6 +115,9 @@
   #panel button.btnBloqueo.libre:hover { background:#48a838; }
   #panel button.btnBloqueo.bloqueado { background:#c0392b; border-color:#c0392b; color:#fff; }
   #panel button.btnBloqueo.bloqueado:hover { background:#d24638; }
+  /* eliminar espacios/edificios creados por el usuario */
+  #panel button.btnEliminar { background:#8e2f22; border-color:#a04030; color:#fff; }
+  #panel button.btnEliminar:hover { background:#a63a2a; }
 
   #ayuda {
     position:absolute; bottom:12px; left:12px; z-index:10;
@@ -348,6 +351,39 @@
 }
 #camBody input[type="time"] { color-scheme:dark; }
 #camBody b { color:#a0cf52; font-size:13px; }
+#camBody select {
+  background:#2e3646; border:1px solid #4a5468; color:#e8ecf2;
+  border-radius:6px; padding:7px 10px; font-size:13px;
+}
+
+/* ============ CREAR ESPACIOS Y EDIFICIOS ============ */
+#espOverlay {
+  position:fixed; inset:0; z-index:33; display:none;
+  align-items:center; justify-content:center; background:rgba(5,8,14,.65);
+}
+#espVentana {
+  width:min(600px, 94vw); max-height:84vh; overflow-y:auto;
+  background:#1c212b; border:1px solid #4a5468; border-radius:12px;
+  color:#e8ecf2; box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+#espCabecera {
+  display:flex; justify-content:space-between; align-items:center;
+  background:#242b38; padding:12px 18px; border-radius:12px 12px 0 0;
+  border-bottom:2px solid #4f8f2c; position:sticky; top:0; z-index:1;
+}
+#espCabecera h3 { margin:0; font-size:16px; color:#a0cf52; }
+#espCerrar { background:none; border:none; color:#9aa5b5; font-size:22px; cursor:pointer; line-height:1; }
+#espCerrar:hover { color:#fff; }
+#espBody { padding:14px 18px; font-size:13px; line-height:1.5; }
+#espBody input, #espBody select {
+  background:#2e3646; border:1px solid #4a5468; color:#e8ecf2;
+  border-radius:6px; padding:7px 10px; font-size:13px;
+}
+#espBody input[type="number"] { color-scheme:dark; }
+#espBody input[type="color"] { padding:2px 3px; width:42px; height:31px; cursor:pointer; }
+#espBody input[type="checkbox"] { width:auto; accent-color:#4f8f2c; }
+#espBody b { color:#a0cf52; font-size:13px; }
+#espBody label { color:#9aa5b5; font-size:12.5px; display:inline-flex; align-items:center; gap:5px; }
 
 /* ============ RESPONSIVE (móvil y tablet) ============ */
 #btnMenu { display:none; }
