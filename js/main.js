@@ -24,6 +24,26 @@ document.getElementById('pTitulo').onclick = () => {
   posicionarPad();
 };
 
+/* ---- Ocultar/mostrar el panel de información a voluntad (escritorio).
+   La ficha de un elemento puede estorbar la vista; este botón la pliega
+   dejando solo el título, y recuerda la preferencia entre sesiones. ---- */
+(function(){
+  const panel = document.getElementById('panel');
+  const btn = document.getElementById('panelToggle');
+  if (!panel || !btn) return;
+  let plegado = false;
+  try { plegado = localStorage.getItem('planoObra3D_panelPlegado') === '1'; } catch (e) {}
+  function set(v){
+    plegado = v;
+    panel.classList.toggle('plegado', plegado);
+    btn.textContent = plegado ? '+' : '–';
+    btn.title = plegado ? 'Mostrar el panel' : 'Ocultar el panel';
+    try { localStorage.setItem('planoObra3D_panelPlegado', plegado ? '1' : '0'); } catch (e) {}
+  }
+  btn.onclick = e => { e.stopPropagation(); set(!plegado); };
+  set(plegado);
+})();
+
 /* ---- Pad de navegación: se reubica según el borde real del panel para
    nunca quedar encima de su texto (más fiable que usar unidades vh, que
    varían con la barra de direcciones del navegador móvil). El panel no

@@ -98,7 +98,18 @@
     background:rgba(20,24,32,.92); border:1px solid #3a4150; border-radius:10px;
     padding:14px 16px; color:#e8ecf2; max-height:calc(100vh - 40px); overflow-y:auto;
   }
-  #panel h2 { margin:0 0 8px; font-size:16px; color:#a0cf52; }
+  #panel h2 { margin:0 0 8px; font-size:16px; color:#a0cf52; padding-right:28px; }
+  /* botón para ocultar/mostrar el panel (más específico que "#panel button"
+     para no heredar el width:100% de los botones de acción) */
+  #panel #panelToggle {
+    position:absolute; top:12px; right:12px; z-index:2;
+    width:24px; height:24px; margin:0; padding:0; line-height:1;
+    background:#2e3646; color:#9aa5b5; border:1px solid #4a5468; border-radius:6px;
+    cursor:pointer; font-size:16px; text-align:center;
+  }
+  #panel #panelToggle:hover { background:#3d4a62; color:#fff; }
+  /* plegado: solo queda el título + el botón para volver a abrirlo */
+  #panel.plegado #pBody { display:none; }
   #panel table { width:100%; border-collapse:collapse; font-size:12.5px; }
   #panel td { padding:4px 2px; border-bottom:1px solid #2c3342; vertical-align:top; }
   #panel td:first-child { color:#9aa5b5; width:38%; }
@@ -351,7 +362,8 @@
   background:#242b38; padding:12px 18px; border-radius:12px 12px 0 0;
   border-bottom:2px solid #4f8f2c; position:sticky; top:0; z-index:1;
 }
-#camCabecera h3 { margin:0; font-size:16px; color:#a0cf52; }
+#camCabecera h3 { margin:0; font-size:13px; letter-spacing:.2px; color:#a0cf52; }
+#camCabecera { padding:9px 16px; }
 #camCerrar { background:none; border:none; color:#9aa5b5; font-size:22px; cursor:pointer; line-height:1; }
 #camCerrar:hover { color:#fff; }
 #camBody { padding:14px 18px; font-size:13px; line-height:1.5; }
@@ -461,7 +473,11 @@
     border-radius:12px 12px 0 0; padding:12px 16px;
   }
   #panel.abierto { max-height:48vh; overflow-y:auto; }
-  #panel h2 { cursor:pointer; user-select:none; }
+  /* en móvil el panel ya se pliega tocando el título (cajón inferior):
+     el botón de escritorio sobra y se oculta para no chocar con ese gesto */
+  #panel #panelToggle { display:none; }
+  #panel.plegado #pBody { display:block; }   /* anula el plegado de escritorio */
+  #panel h2 { cursor:pointer; user-select:none; padding-right:0; }
   #panel h2::after { content:' ▾'; color:#9aa5b5; font-size:13px; }
   #panel.abierto h2::after { content:' ▴'; }
 
