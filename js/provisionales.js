@@ -36,6 +36,7 @@ function crearProvisional(def){
   const et = crearEtiqueta(def.nombre, Math.max(9, Math.min(20, def.w * 0.6)));
   et.position.y = def.h + 1.8;
   g.add(et);
+  if (typeof agregarCotas === 'function') agregarCotas(g, def.w, def.d, def.h);
   scene.add(g);
   draggables.push(g);
   const opt = document.createElement('option');

@@ -96,15 +96,20 @@ function estadoActual(){
 function guardarLocal(){
   try { localStorage.setItem('planoObra3D_v3', JSON.stringify(estadoActual())); } catch (e) {}
 }
+/* límites defensivos al cargar un JSON externo (archivo "Cargar" o Supabase):
+   una lista corrupta o manipulada no debe poder congelar la pestaña creando
+   miles de objetos 3D de golpe */
+function limitarArray(a, max){ return Array.isArray(a) ? a.slice(0, max) : []; }
+
 function aplicarEstado(d){
   if (!d) return;
   // espacios y edificios creados por el usuario: se recrean ANTES de aplicar
   // las posiciones de "elementos" (que también los incluye por su nombre)
   if (typeof aplicarPersonalizados === 'function'){
-    aplicarPersonalizados(Array.isArray(d.personalizados) ? d.personalizados : []);
+    aplicarPersonalizados(limitarArray(d.personalizados, 300));
   }
   if (typeof aplicarEquipos === 'function'){
-    aplicarEquipos(Array.isArray(d.equipos) ? d.equipos : []);
+    aplicarEquipos(limitarArray(d.equipos, 300));
   }
   // renombres/recoloreos/eliminaciones de provisionales de fábrica: se
   // aplican DESPUÉS de reconstruir todo (arriba) y ANTES del bloque de abajo,
@@ -126,19 +131,23 @@ function aplicarEstado(d){
   }
   rutas.forEach(r => scene.remove(r.grupo));
   rutas.length = 0;
-  (d.rutas || []).forEach(pts => {
+  limitarArray(d.rutas, 50).forEach(pts => {
+    if (!Array.isArray(pts)) return;
     iniciarRuta();
-    pts.forEach(pt => agregarPunto({ x:pt[0], z:pt[1] }));
+    limitarArray(pts, 500).forEach(pt => {
+      if (Array.isArray(pt) && pt.length >= 2) agregarPunto({ x:pt[0], z:pt[1] });
+    });
     finalizarRuta();
   });
   if (d.malacate !== undefined) rangoMalacate.value = d.malacate;
   if (Array.isArray(d.malacates) && d.malacates.length){
-    d.malacates.forEach((info, i) => {
+    const listaMalacates = limitarArray(d.malacates, 30);
+    listaMalacates.forEach((info, i) => {
       if (!malacates[i]) crearMalacate(info.nombre || nombreMalacateDisponible(), info.x || 0, info.z || 0);
       const s = ajustarMalacate(info.x, info.z);
       malacates[i].position.set(s.x, 0, s.z);
     });
-    while (malacates.length > d.malacates.length){
+    while (malacates.length > listaMalacates.length){
       quitarGrupoEscena(malacates[malacates.length - 1]);
       malacates.pop();
     }
@@ -161,7 +170,7 @@ function aplicarEstado(d){
   if (d.fechaObra) fechaObra = d.fechaObra;
   if (d.velReloj) VEL_RELOJ = d.velReloj;
   if (Array.isArray(d.camiones)){
-    camiones = d.camiones.map(c => {
+    camiones = limitarArray(d.camiones, 200).map(c => {
       if (!c) return c;
       const c2 = (c.zona === 'Paletizado') ? Object.assign({}, c, { zona: 'Acopio de materiales' }) : c;
       // migración: pedidos guardados antes de tener fecha quedan en el día simulado actual

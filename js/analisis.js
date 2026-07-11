@@ -105,6 +105,13 @@ function capturarPlanta(){
     x: camCtrl.target.x, y: camCtrl.target.y, z: camCtrl.target.z,
     r: camCtrl.radius, t: camCtrl.theta, p: camCtrl.phi
   };
+  // fuerza etiquetas y cotas visibles para la captura, sin tocar la
+  // preferencia del usuario (se restauran tal cual estaban después)
+  const etiquetasPrev = etiquetasTodas.map(s => s.visible);
+  etiquetasTodas.forEach(s => { s.visible = true; });
+  const cotasPrev = gruposCotas.map(gr => gr.visible);
+  gruposCotas.forEach(gr => { gr.visible = true; });
+
   camCtrl.target.set(10, 0, -2);
   camCtrl.radius = 165;
   camCtrl.theta = 0;      // norte arriba: el lote (163 m E-O) queda horizontal
@@ -112,11 +119,28 @@ function capturarPlanta(){
   actualizarCamara();
   renderer.render(scene, camera);
   const url = renderer.domElement.toDataURL('image/png');
+
   camCtrl.target.set(prev.x, prev.y, prev.z);
   camCtrl.radius = prev.r; camCtrl.theta = prev.t; camCtrl.phi = prev.p;
   actualizarCamara();
+  etiquetasTodas.forEach((s, i) => { s.visible = etiquetasPrev[i]; });
+  gruposCotas.forEach((gr, i) => { gr.visible = cotasPrev[i]; });
   renderer.render(scene, camera);
   return url;
+}
+/* filas del resumen de rutas para la hoja exportada: puntos dibujados y
+   longitud aproximada (suma de distancias entre puntos consecutivos) */
+function resumenRutas(){
+  return rutas.map((r, i) => {
+    let largo = 0;
+    for (let k = 1; k < r.puntos.length; k++) largo += r.puntos[k].distanceTo(r.puntos[k - 1]);
+    return {
+      nombre: 'Ruta ' + (i + 1),
+      color: '#' + coloresRuta[i % coloresRuta.length].toString(16).padStart(6, '0'),
+      puntos: r.puntos.length,
+      largo: Math.round(largo)
+    };
+  });
 }
 /* filas del cuadro de áreas para la hoja exportada (mismos datos que Zonas) */
 function filasCuadroAreas(){
@@ -136,8 +160,16 @@ function exportarPlano(){
   const filas = filasCuadroAreas();
   const totalArea = Math.round(filas.reduce((s, f) => s + (f.area || 0), 0) * 10) / 10;
   const alertas = validarObra();
+  const rts = resumenRutas();
   const fase = (typeof NOMBRES_FASE !== 'undefined' && NOMBRES_FASE[faseActual]) ? NOMBRES_FASE[faseActual] : '—';
   const fecha = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
+  const rutasHtml = '<h2>Rutas de materiales programadas</h2>' + (rts.length
+    ? '<table><tr><th>Ruta</th><th class="num">Puntos</th><th class="num">Longitud aprox.</th></tr>' +
+      rts.map(r => '<tr><td><span style="display:inline-block;width:10px;height:10px;background:' + r.color +
+        ';border-radius:2px;margin-right:6px;vertical-align:middle"></span>' + esc(r.nombre) + '</td>' +
+        '<td class="num">' + r.puntos + '</td><td class="num">' + r.largo + ' m</td></tr>').join('') +
+      '</table>'
+    : '<p style="color:#6a7260; font-size:11.5px; margin:4px 0">No hay rutas dibujadas todavía.</p>');
   const filasHtml = filas.map(f =>
     '<tr><td>' + esc(f.nombre) + '</td><td>' + esc(String(f.dimensiones)) + '</td>' +
     '<td class="num">' + (f.area !== null ? f.area : '—') + '</td><td>' + esc(String(f.aforo)) + '</td></tr>'
@@ -179,6 +211,7 @@ function exportarPlano(){
       filasHtml +
       '<tr class="total"><td>Total (' + filas.length + ' elementos)</td><td></td><td class="num">' + totalArea + '</td><td></td></tr>' +
     '</table>' +
+    rutasHtml +
     alertasHtml +
     '<script>window.addEventListener("load", function(){ setTimeout(function(){ window.print(); }, 400); });<\/script>' +
     '</body></html>';

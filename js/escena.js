@@ -154,6 +154,53 @@ function crearEtiqueta(texto, ancho, colorFondo){
   etiquetasTodas.push(sp);
   return sp;
 }
+/* ---- Cotas (líneas de dimensión con la medida) sobre zonas/edificios:
+   apagadas por defecto, se activan con el botón "Cotas" (main.js); también
+   se fuerzan visibles al exportar el plano sin importar si el usuario las
+   apagó (capturarPlanta en analisis.js). Van como hijos del propio grupo
+   arrastrable: heredan su posición Y rotación, así que la cota sigue
+   representando ancho/fondo aunque el elemento se gire. ---- */
+let mostrarCotas = false;
+const gruposCotas = [];
+function lineaCota(pts){
+  const geo = new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(p[0], p[1], p[2])));
+  return new THREE.Line(geo, new THREE.LineBasicMaterial({ color:0xffcc33, depthTest:false, transparent:true, opacity:0.95 }));
+}
+function etiquetaCota(texto, ancho){
+  const et = crearEtiqueta(texto, ancho, 'rgba(40,35,10,0.85)');
+  // visibilidad propia (mostrarCotas), independiente del botón "Etiquetas"
+  etiquetasTodas.splice(etiquetasTodas.indexOf(et), 1);
+  return et;
+}
+function agregarCotas(g, w, d, h){
+  if (!w || !d) return null;
+  const grp = new THREE.Group();
+  grp.visible = mostrarCotas;
+  grp.userData.esCota = true;
+  const y = 0.12, sep = 0.9, tic = 0.35;
+  const zc = d/2 + sep;
+  grp.add(lineaCota([[-w/2, y, zc], [w/2, y, zc]]));
+  grp.add(lineaCota([[-w/2, y, zc - tic], [-w/2, y, zc + tic]]));
+  grp.add(lineaCota([[ w/2, y, zc - tic], [ w/2, y, zc + tic]]));
+  const etW = etiquetaCota(w.toFixed(1) + ' m', Math.max(5, Math.min(11, w * 0.4)));
+  etW.position.set(0, y + 0.5, zc);
+  grp.add(etW);
+  const xc = w/2 + sep;
+  grp.add(lineaCota([[xc, y, -d/2], [xc, y, d/2]]));
+  grp.add(lineaCota([[xc - tic, y, -d/2], [xc + tic, y, -d/2]]));
+  grp.add(lineaCota([[xc - tic, y,  d/2], [xc + tic, y,  d/2]]));
+  const etD = etiquetaCota(d.toFixed(1) + ' m', Math.max(5, Math.min(11, d * 0.4)));
+  etD.position.set(xc, y + 0.5, 0);
+  grp.add(etD);
+  if (h){
+    const etH = etiquetaCota('h ' + h.toFixed(1) + ' m', 7);
+    etH.position.set(-w/2 - sep, h/2, -d/2 - sep*0.4);
+    grp.add(etH);
+  }
+  g.add(grp);
+  gruposCotas.push(grp);
+  return grp;
+}
 function etiquetaSuelo(texto, x, z, ancho, colorFondo){
   const e = crearEtiqueta(texto, ancho, colorFondo);
   e.position.set(x, alturaTerreno(x, z) + 3.2, z);

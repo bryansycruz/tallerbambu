@@ -48,7 +48,8 @@ const ICONOS = {
   ojo:           '<path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/>',
   mando:         '<rect x="2.5" y="6.5" width="19" height="11" rx="4.5"/><path d="M6.5 10v4M4.5 12h4"/><circle cx="15.5" cy="10.5" r="1.1"/><circle cx="18" cy="13" r="1.1"/>',
   grua:          '<path d="M5 21V3h12l4 4M17 7v14M9 7l-4.5 3.2M5 12h6M17 17h4"/>',
-  herramienta:   '<path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.7 2.7-2-2z"/>'
+  herramienta:   '<path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.7 2.7-2-2z"/>',
+  cota:          '<path d="M4 12h16M4 8v8M20 8v8M9 12v-2M13 12v2"/>'
 };
 function icono(n){
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICONOS[n] || '') + '</svg>';

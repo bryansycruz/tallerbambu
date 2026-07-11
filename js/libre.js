@@ -364,7 +364,7 @@ let seleccionado = null;
 let nivelMalacate = 0;  // altura compartida de las cabinas de malacate (0..1 del recorrido)
 
 function numLim(v, def, min, max){
-  v = parseFloat(v); if (!isFinite(v)) v = def;
+  v = parseFloat(String(v).replace(',', '.')); if (!isFinite(v)) v = def;
   return Math.min(max, Math.max(min, v));
 }
 function nombreDisponible(base){

@@ -214,6 +214,19 @@ document.getElementById('padEtiquetas').onclick = () => {
 // (se activan con el botón del ojo en el pad o con "Etiquetas" en el menú)
 if (innerWidth <= 820) setEtiquetas(false);
 
+/* ---- Cotas (medidas) de zonas y edificios: apagadas por defecto, el
+   usuario las activa cuando las necesita; capturarPlanta() (analisis.js)
+   las fuerza visibles al exportar el plano sin tocar esta preferencia. ---- */
+function setCotas(on){
+  mostrarCotas = on;
+  gruposCotas.forEach(gr => { gr.visible = mostrarCotas; });
+  document.getElementById('btnCotas').classList.toggle('activo', mostrarCotas);
+}
+document.getElementById('btnCotas').onclick = () => {
+  setCotas(!mostrarCotas);
+  avisoGuardado(mostrarCotas ? 'Cotas visibles' : 'Cotas ocultas');
+};
+
 /* ---- Pad de navegación táctil: flechas = desplazarse, +/− = zoom ----
    Mantener presionado repite el movimiento (como un joystick). */
 const PAD_ACCIONES = {

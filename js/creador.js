@@ -7,7 +7,7 @@
 let personalizados = [];   // defs: { clase:'espacio'|'edificio', nombre, w, d, h?, color?, muros?, techo?, pisos?, hPiso?, pos:[x,z] }
 
 function numLim(v, defecto, min, max){
-  v = parseFloat(v);
+  v = parseFloat(String(v).replace(',', '.'));
   if (!isFinite(v)) v = defecto;
   return Math.min(max, Math.max(min, v));
 }
@@ -168,6 +168,7 @@ function construirEdificio(def){
   const et = crearEtiqueta(def.nombre, Math.max(9, Math.min(20, def.w * 0.6)));
   et.position.y = alto + 2.2;
   g.add(et);
+  if (typeof agregarCotas === 'function') agregarCotas(g, def.w, def.d, alto);
   g.position.set(def.pos[0], 0, def.pos[1]);
   g.userData.idEstable = 'c:' + def.id;
   // el sistema estructural define el color por defecto; si el usuario lo
@@ -189,6 +190,15 @@ function quitarGrupoEscena(g){
     if (n.isSprite){
       const k = etiquetasTodas.indexOf(n);
       if (k >= 0) etiquetasTodas.splice(k, 1);
+    }
+    if (n.userData && n.userData.esCota){
+      const k = gruposCotas.indexOf(n);
+      if (k >= 0) gruposCotas.splice(k, 1);
+    }
+    if (n.geometry) n.geometry.dispose();
+    if (n.material){
+      const mats = Array.isArray(n.material) ? n.material : [n.material];
+      mats.forEach(m => { if (m.map) m.map.dispose(); m.dispose(); });
     }
   });
   scene.remove(g);
