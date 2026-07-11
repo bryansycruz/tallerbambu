@@ -301,6 +301,17 @@ function renderModificar(obj){
       '<small>Puede recorrer del piso ' + (obj.userData.pisoDesde + 1) + ' al piso ' + (obj.userData.pisoHasta + 1) + '</small>' +
       '</div>';
   }
+  if (obj.userData.tipoEquipo === 'plumaGrua'){
+    html += '<div class="desc" style="margin-top:8px">' +
+      '<b class="txtFuerte">Brazo y radio de giro</b>' +
+      '<div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; align-items:center">' +
+        '<label style="display:flex; align-items:center; gap:4px">Brazo (m) <input id="modBrazo" type="number" min="8" max="40" step="1" value="' + obj.userData.brazo + '" style="width:60px"></label>' +
+        '<label style="display:flex; align-items:center; gap:4px">Radio (m) <input id="modRadio" type="number" min="10" max="50" step="1" value="' + obj.userData.radioGrua + '" style="width:64px"></label>' +
+        '<button style="width:auto" title="Aplicar" onclick="modificarGrua()">' + icono('check') + ' Aplicar</button>' +
+      '</div>' +
+      '<small>El anillo amarillo sobre el terreno muestra el alcance real y su medida.</small>' +
+      '</div>';
+  }
   if (id){
     html += '<div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--borde)">' +
       '<label style="display:block">Nombre' +

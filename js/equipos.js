@@ -1,5 +1,5 @@
 /* Equipos y maquinaria móvil de obra (montacargas, carretilla, plataforma de
-   transporte, andamio colgante y pluma grúa) + panel "Zonas y aforo".
+   transporte, andamio colgante y torre grúa) + panel "Zonas y aforo".
    Se crean desde el botón "Equipos", se comportan como cualquier provisional
    (arrastrar, girar, bloquear, destino de camiones) y persisten junto con el
    resto de la distribución (ver estado.js). */
@@ -13,7 +13,7 @@ const TIPOS_EQUIPO = {
   carretilla:           { nombre: 'Carretilla' },
   plataformaTransporte: { nombre: 'Plataforma de transporte' },
   andamioColgante:      { nombre: 'Andamio colgante' },
-  plumaGrua:            { nombre: 'Pluma grúa' }
+  plumaGrua:            { nombre: 'Torre grúa' }
 };
 /* subgrupos del selector "Equipos": vertical = sube/baja material entre
    niveles; horizontal = lo mueve por el mismo piso */
@@ -33,6 +33,8 @@ const MAT_AMARILLO_EQ = 0xf0b429;
 const MAT_GRIS_EQ = 0x6d7075;
 const MAT_NEGRO_EQ = 0x23262b;
 const MAT_AZUL_EQ = 0x2e6db8;
+const MAT_ROJO_EQ = 0xc0392b;
+const MAT_NARANJA_EQ = 0xd9822b;
 
 function ruedaEq(g, x, y, z, r){
   const m = new THREE.Mesh(new THREE.CylinderGeometry(r || 0.16, r || 0.16, 0.1, 10), new THREE.MeshLambertMaterial({ color: MAT_NEGRO_EQ }));
@@ -43,22 +45,39 @@ function ruedaEq(g, x, y, z, r){
   return m;
 }
 
-/* ---- Montacargas eléctrico: carro a batería con mástil y horquillas ---- */
+/* ---- Montacargas eléctrico: chasis + contrapeso trasero + techo de
+   protección tipo jaula (parales finos, NO cabina cerrada) + mástil de dos
+   rieles con horquillas al frente — silueta de montacargas reconocible,
+   bien distinta de la transpaleta manual (baja y sin techo/mástil). ---- */
 function construirMontacargasElectrico(def){
   const g = new THREE.Group();
-  caja(g, 1.3, 0.55, 0.8, MAT_AMARILLO_EQ, 0, 0.35, 0.15);
-  caja(g, 0.7, 0.5, 0.5, MAT_NEGRO_EQ, -0.1, 0.9, 0.15);
-  caja(g, 0.5, 0.6, 0.05, MAT_GRIS_EQ, 0.15, 1.3, 0.15);
-  [[-0.5, -0.3], [0.5, -0.3], [-0.5, 0.6], [0.5, 0.6]].forEach(([x, z]) => ruedaEq(g, x, 0.16, z, 0.16));
-  caja(g, 0.12, 2.1, 0.5, MAT_GRIS_EQ, -0.65, 1.1, -0.35);
-  caja(g, 0.9, 0.07, 0.12, MAT_GRIS_EQ, -1.05, 0.16, -0.55);
-  caja(g, 0.9, 0.07, 0.12, MAT_GRIS_EQ, -1.05, 0.16, -0.15);
+  // contrapeso trasero: bloque macizo, opuesto a las horquillas
+  caja(g, 0.5, 0.5, 0.7, MAT_NEGRO_EQ, 0.55, 0.32, 0.15);
+  // chasis
+  caja(g, 1.15, 0.42, 0.75, MAT_AMARILLO_EQ, 0.05, 0.28, 0.15);
+  // asiento del operario + respaldo
+  caja(g, 0.32, 0.28, 0.3, MAT_NEGRO_EQ, 0.2, 0.63, 0.15);
+  caja(g, 0.3, 0.34, 0.06, MAT_NEGRO_EQ, 0.2, 0.87, 0.0);
+  // techo de protección: 4 parales finos + techo plano (jaula, no cabina cerrada)
+  [[-0.15, -0.1], [0.45, -0.1], [-0.15, 0.4], [0.45, 0.4]].forEach(([x, z]) => {
+    caja(g, 0.045, 1.2, 0.045, MAT_GRIS_EQ, x, 0.82, z);
+  });
+  caja(g, 0.75, 0.05, 0.65, MAT_GRIS_EQ, 0.15, 1.44, 0.15);
+  // ruedas: motrices grandes junto al mástil, dirección pequeñas atrás
+  ruedaEq(g, -0.4, 0.24, -0.15, 0.24); ruedaEq(g, -0.4, 0.24, 0.45, 0.24);
+  ruedaEq(g, 0.5, 0.15, -0.05, 0.15); ruedaEq(g, 0.5, 0.15, 0.35, 0.15);
+  // mástil: 2 rieles verticales + travesaños — se lee como mástil, no bloque ciego
+  [-0.13, 0.43].forEach(z => caja(g, 0.09, 2.0, 0.09, MAT_GRIS_EQ, -0.62, 1.05, z));
+  for (let y = 0.2; y < 1.95; y += 0.55) caja(g, 0.09, 0.06, 0.68, MAT_GRIS_EQ, -0.62, y, 0.15);
+  // porta-horquillas + horquillas (2 dientes a ras de piso, sobresaliendo al frente)
+  caja(g, 0.5, 0.32, 0.68, MAT_GRIS_EQ, -0.85, 0.17, 0.15);
+  [-0.15, 0.42].forEach(z => caja(g, 0.85, 0.06, 0.1, MAT_NEGRO_EQ, -1.3, 0.06, z));
   g.userData.info = {
     nombre: def.nombre,
     aforo: 'Operario 1 persona · carga hasta 1.000 kg',
-    dimensiones: '1.3 × 0.8 m',
-    altura: 'Mástil 2.1 m',
-    material: 'Montacargas eléctrico a batería — mástil vertical con horquillas para tarimas y material paletizado',
+    dimensiones: '≈2.5 × 1.0 m (con horquillas)',
+    altura: 'Mástil 2.0 m · techo de protección 1.5 m',
+    material: 'Montacargas eléctrico a batería — contrapeso trasero, techo de protección tipo jaula y mástil de dos rieles con horquillas',
     cerramiento: 'Equipo móvil sin cerramiento',
     descripcion: (def.descripcion ? esc(def.descripcion).replace(/\n/g, '<br>') + '<br><br>' : '') +
       'Montacargas eléctrico creado desde "Equipos". Arrástralo, gíralo de a 45°, bloquéalo o elimínalo cuando ya no se necesite.'
@@ -66,23 +85,31 @@ function construirMontacargasElectrico(def){
   return g;
 }
 
-/* ---- Montacargas manual: transpaleta de gato hidráulico ---- */
+/* ---- Montacargas manual: transpaleta de gato hidráulico. Silueta a
+   propósito muy baja y plana (horquillas casi a ras de piso, sin techo ni
+   mástil) para no confundirse con el montacargas eléctrico; cilindro
+   hidráulico visible + timón alto en T como rasgos distintivos. ---- */
 function construirMontacargasManual(def){
   const g = new THREE.Group();
-  caja(g, 1.0, 0.08, 0.16, MAT_GRIS_EQ, 0, 0.14, -0.22);
-  caja(g, 1.0, 0.08, 0.16, MAT_GRIS_EQ, 0, 0.14, 0.22);
-  ruedaEq(g, -0.4, 0.1, -0.22, 0.1); ruedaEq(g, -0.4, 0.1, 0.22, 0.1);
-  ruedaEq(g, 0.42, 0.09, 0, 0.09);
-  caja(g, 0.5, 0.35, 0.4, MAT_AMARILLO_EQ, -0.55, 0.28, 0);
-  const barra = caja(g, 0.06, 1.0, 0.06, MAT_NEGRO_EQ, -0.9, 0.6, 0);
-  barra.rotation.x = -0.5;
-  caja(g, 0.4, 0.06, 0.06, MAT_NEGRO_EQ, -1.15, 0.95, 0);
+  // horquillas: 2 tablas largas y muy bajas
+  [-0.22, 0.22].forEach(z => caja(g, 1.05, 0.05, 0.13, MAT_ROJO_EQ, 0.15, 0.08, z));
+  [-0.22, 0.22].forEach(z => ruedaEq(g, 0.65, 0.05, z, 0.05));
+  // unidad hidráulica: cilindro del gato + cuerpo
+  cilindro(g, 0.1, 0.3, MAT_NEGRO_EQ, -0.4, 0.2, 0);
+  caja(g, 0.4, 0.34, 0.34, MAT_ROJO_EQ, -0.48, 0.24, 0);
+  // eje trasero con ruedas de dirección, más grandes que las guía del frente
+  ruedaEq(g, -0.48, 0.13, -0.22, 0.13); ruedaEq(g, -0.48, 0.13, 0.22, 0.13);
+  // timón: barra inclinada alta + empuñadura en T (rasgo clave, bien visible)
+  const barra = caja(g, 0.055, 1.1, 0.055, MAT_NEGRO_EQ, -0.85, 0.66, 0);
+  barra.rotation.z = -0.6;
+  caja(g, 0.06, 0.4, 0.06, MAT_NEGRO_EQ, -1.25, 1.05, 0);
+  caja(g, 0.06, 0.06, 0.42, MAT_NEGRO_EQ, -1.25, 1.2, 0);
   g.userData.info = {
     nombre: def.nombre,
     aforo: 'Operario 1 persona · carga hasta 2.000 kg',
-    dimensiones: '1.15 × 0.5 m',
-    altura: 'Horquilla a 0.14 m del piso',
-    material: 'Transpaleta manual (gato hidráulico) para mover tarimas sobre piso firme',
+    dimensiones: '≈1.5 × 0.5 m (con timón)',
+    altura: 'Horquilla a 0.08 m del piso · timón hasta 1.2 m',
+    material: 'Transpaleta manual (gato hidráulico) — horquillas bajas y timón en T; para mover tarimas sobre piso firme',
     cerramiento: 'Equipo móvil sin cerramiento',
     descripcion: (def.descripcion ? esc(def.descripcion).replace(/\n/g, '<br>') + '<br><br>' : '') +
       'Montacargas manual creado desde "Equipos". Arrástralo, gíralo de a 45°, bloquéalo o elimínalo cuando ya no se necesite.'
@@ -90,18 +117,22 @@ function construirMontacargasManual(def){
   return g;
 }
 
-/* ---- Carretilla de obra (bugui) ---- */
+/* ---- Carretilla de obra (bugui): rueda delantera grande y prominente (el
+   rasgo más reconocible de una carretilla) + tina con borde + horquilla
+   que conecta la rueda a la tina, para que se lea como un solo objeto. ---- */
 function construirCarretilla(def){
   const g = new THREE.Group();
-  const tub = caja(g, 0.55, 0.35, 0.75, MAT_AZUL_EQ, 0, 0.45, -0.05);
-  tub.rotation.x = -0.15;
-  ruedaEq(g, 0, 0.16, -0.55, 0.16);
+  const tub = caja(g, 0.6, 0.3, 0.7, MAT_AZUL_EQ, 0, 0.42, -0.05);
+  tub.rotation.x = -0.2;
+  caja(g, 0.66, 0.04, 0.76, MAT_AZUL_EQ, 0, 0.58, -0.12);   // borde/labio superior de la tina
+  ruedaEq(g, 0, 0.22, -0.62, 0.22);
+  caja(g, 0.04, 0.5, 0.04, MAT_NEGRO_EQ, 0, 0.22, -0.5);    // horquilla de la rueda
   [[-0.22, -0.35], [0.22, -0.35]].forEach(([x, z]) => {
     const pata = caja(g, 0.05, 0.5, 0.05, MAT_NEGRO_EQ, x, 0.22, z);
     pata.rotation.x = 0.4;
   });
-  [-0.24, 0.24].forEach(x => {
-    const asa = caja(g, 0.05, 0.9, 0.05, MAT_NEGRO_EQ, x, 0.4, 0.5);
+  [-0.26, 0.26].forEach(x => {
+    const asa = caja(g, 0.05, 0.95, 0.05, MAT_NEGRO_EQ, x, 0.42, 0.52);
     asa.rotation.x = 0.55;
   });
   g.userData.info = {
@@ -117,20 +148,26 @@ function construirCarretilla(def){
   return g;
 }
 
-/* ---- Plataforma de transporte sobre ruedas giratorias ---- */
+/* ---- Plataforma de transporte sobre ruedas giratorias, con manija de
+   empuje en un extremo — sin la manija se leía como una mesa fija, no
+   como un carro que se empuja de un lado a otro. ---- */
 function construirPlataformaTransporte(def){
   const g = new THREE.Group();
   const w = def.w || 1.6, d = def.d || 1.0;
-  caja(g, w, 0.15, d, MAT_GRIS_EQ, 0, 0.25, 0);
+  caja(g, w, 0.12, d, MAT_NARANJA_EQ, 0, 0.22, 0);
   [[-w / 2 + 0.15, -d / 2 + 0.15], [w / 2 - 0.15, -d / 2 + 0.15], [-w / 2 + 0.15, d / 2 - 0.15], [w / 2 - 0.15, d / 2 - 0.15]]
     .forEach(([x, z]) => ruedaEq(g, x, 0.1, z, 0.1));
-  [-w / 2, w / 2].forEach(x => caja(g, 0.05, 0.3, d, MAT_NEGRO_EQ, x, 0.47, 0, 0.7));
+  [-w / 2, w / 2].forEach(x => caja(g, 0.05, 0.28, d, MAT_NEGRO_EQ, x, 0.42, 0, 0.7));
+  // manija de empuje en un extremo (característica clave: es un carro que se empuja)
+  const postX = w / 2 - 0.06;
+  [-d / 2 + 0.1, d / 2 - 0.1].forEach(z => caja(g, 0.05, 0.75, 0.05, MAT_NEGRO_EQ, postX, 0.6, z));
+  caja(g, 0.06, 0.06, d - 0.1, MAT_NEGRO_EQ, postX, 0.95, 0);
   g.userData.info = {
     nombre: def.nombre, w, d,
     aforo: 'Carga hasta ' + (def.capacidad || 500) + ' kg',
     dimensiones: w + ' × ' + d + ' m',
-    altura: 'Plataforma a 0.25 m del piso',
-    material: 'Plataforma de transporte sobre ruedas giratorias para mover material entre zonas',
+    altura: 'Plataforma a 0.22 m del piso · manija a 0.95 m',
+    material: 'Plataforma de transporte sobre ruedas giratorias, con manija de empuje, para mover material entre zonas',
     cerramiento: 'Equipo móvil sin cerramiento',
     descripcion: (def.descripcion ? esc(def.descripcion).replace(/\n/g, '<br>') + '<br><br>' : '') +
       'Plataforma de transporte creada desde "Equipos". Arrástrala, gírala de a 45°, bloquéala o elimínala cuando ya no se necesite.'
@@ -153,11 +190,17 @@ function construirAndamioColgante(def){
   const largoCable = Math.max(0.3, yViga - yPlataforma);
   [-ancho / 2 + 0.15, ancho / 2 - 0.15].forEach(x => {
     cilindro(g, 0.025, largoCable, MAT_NEGRO_EQ, x, yPlataforma + largoCable / 2, 1.2);
+    // malacate (cajita al tope de cada cable): de aquí "cuelga" el andamio
+    caja(g, 0.22, 0.16, 0.22, MAT_NARANJA_EQ, x, yPlataforma + largoCable, 1.2);
   });
   caja(g, ancho, 0.12, 0.6, MAT_AMARILLO_EQ, 0, yPlataforma, 0.5);
-  [-ancho / 2 + 0.08, ancho / 2 - 0.08].forEach(x => caja(g, 0.05, 1.0, 0.05, MAT_NEGRO_EQ, x, yPlataforma + 0.5, 0.5));
+  // barandas: parales en las 4 esquinas + travesaños en los 4 lados (jaula
+  // completa — antes solo tenía frente/atrás y se leía como una tabla suelta)
+  [[-ancho / 2 + 0.08, 0.22], [-ancho / 2 + 0.08, 0.78], [ancho / 2 - 0.08, 0.22], [ancho / 2 - 0.08, 0.78]]
+    .forEach(([x, z]) => caja(g, 0.05, 1.0, 0.05, MAT_NEGRO_EQ, x, yPlataforma + 0.5, z));
   caja(g, ancho, 0.05, 0.05, MAT_NEGRO_EQ, 0, yPlataforma + 1.0, 0.78);
   caja(g, ancho, 0.05, 0.05, MAT_NEGRO_EQ, 0, yPlataforma + 1.0, 0.22);
+  [-ancho / 2 + 0.08, ancho / 2 - 0.08].forEach(x => caja(g, 0.05, 0.05, 0.56, MAT_NEGRO_EQ, x, yPlataforma + 1.0, 0.5));
 
   g.userData.esAndamio = true;
   g.userData.pisoDesde = pisoDesde;
@@ -178,9 +221,20 @@ function construirAndamioColgante(def){
   return g;
 }
 
-/* ---- Pluma grúa: mástil de celosía + pluma giratoria (igual estructura que
-   una torre grúa). "En el suelo" = mástil completo desde el piso, junto a la
-   torre; "Encima de la torre" = mástil corto anclado sobre la cubierta. ---- */
+/* ---- Torre grúa (pluma grúa): mástil de celosía + pluma giratoria.
+   "En el suelo" = mástil completo desde el piso, junto a la torre;
+   "Encima de la torre" = mástil corto anclado sobre la cubierta. ---- */
+function diagonalEq(g, x1, y1, z1, x2, y2, z2, color){
+  const dir = new THREE.Vector3(x2 - x1, y2 - y1, z2 - z1);
+  const len = dir.length();
+  dir.normalize();
+  const m = new THREE.Mesh(new THREE.BoxGeometry(0.08, len, 0.08), new THREE.MeshLambertMaterial({ color }));
+  m.position.set((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+  m.castShadow = true;
+  g.add(m);
+  return m;
+}
 function construirPlumaGrua(def){
   const g = new THREE.Group();
   const enTecho = def.ubicacion === 'techo';
@@ -189,8 +243,10 @@ function construirPlumaGrua(def){
   const R = def.radio || 25;
   // radio de barrido visible en el piso (o sobre la cubierta si va en techo):
   // ayuda a ubicar acopios dentro del alcance; validarObra() (analisis.js)
-  // usa el mismo radioGrua para alertar cuando un acopio queda por fuera
+  // usa el mismo radioGrua para alertar cuando un acopio queda por fuera.
+  // brazo/radio quedan en userData para poder editarlos luego desde "Modificar"
   g.userData.radioGrua = R;
+  g.userData.brazo = L;
   const anillo = new THREE.Mesh(
     new THREE.RingGeometry(Math.max(0.5, R - 0.35), R, 48),
     new THREE.MeshBasicMaterial({ color: 0xf0b429, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false })
@@ -198,12 +254,24 @@ function construirPlumaGrua(def){
   anillo.rotation.x = -Math.PI / 2;
   anillo.position.y = 0.06;
   g.add(anillo);
+  // medida del radio de giro, siempre visible sobre el anillo (se apaga y
+  // enciende junto con el botón "Etiquetas", igual que el nombre)
+  const etR = crearEtiqueta('Radio ' + R + ' m', 9, 'rgba(120,85,10,0.88)');
+  etR.position.set(R * 0.7, 0.75, R * 0.7);
+  g.add(etR);
   [[-0.9, -0.9], [0.9, -0.9], [-0.9, 0.9], [0.9, 0.9]].forEach(([x, z]) => {
     caja(g, 0.16, H, 0.16, MAT_AMARILLO_EQ, x, H / 2, z);
   });
+  let zigzag = false;
   for (let y = 1; y < H; y += 2.4){
+    const y2 = Math.min(H, y + 2.4);
     [[0, -0.9], [0, 0.9]].forEach(([x, z]) => caja(g, 1.8, 0.1, 0.1, MAT_AMARILLO_EQ, x, y, z));
     [[-0.9, 0], [0.9, 0]].forEach(([x, z]) => caja(g, 0.1, 0.1, 1.8, MAT_AMARILLO_EQ, x, y, z));
+    // diagonales en cruz (celosía real de torre grúa, no una simple escalera)
+    const xa = zigzag ? -0.9 : 0.9, xb = zigzag ? 0.9 : -0.9;
+    diagonalEq(g, xa, y, -0.9, xb, y2, -0.9, MAT_AMARILLO_EQ);
+    diagonalEq(g, xa, y, 0.9, xb, y2, 0.9, MAT_AMARILLO_EQ);
+    zigzag = !zigzag;
   }
   const giro = new THREE.Group();
   giro.position.y = H;
@@ -229,11 +297,11 @@ function construirPlumaGrua(def){
     aforo: 'Operador 1 persona en cabina · capacidad según radio de trabajo',
     altura: enTecho ? ('Mástil corto sobre la cubierta (+' + Math.round(CFG.alto) + ' m)') : ('Mástil ' + Math.round(H) + ' m desde el suelo'),
     dimensiones: 'Pluma ' + L + ' m · radio de giro ' + R + ' m · alcance ≈ ' + alcance + ' m',
-    material: 'Pluma grúa (torre grúa) — el brazo gira sobre el mástil',
+    material: 'Torre grúa — el brazo gira sobre el mástil de celosía',
     cerramiento: enTecho ? 'Montada sobre la cubierta de la torre' : 'Base fija en el suelo, junto a la torre',
     descripcion: (def.descripcion ? esc(def.descripcion).replace(/\n/g, '<br>') + '<br><br>' : '') +
-      'Pluma grúa creada desde "Equipos" (' + (enTecho ? 'sobre la cubierta' : 'en el suelo') + '). ' +
-      'Arrástrala, gírala de a 45°, bloquéala o elimínala cuando ya no se necesite.'
+      'Torre grúa creada desde "Equipos" (' + (enTecho ? 'sobre la cubierta' : 'en el suelo') + '). ' +
+      'Arrástrala, gírala de a 45°, bloquéala o elimínala cuando ya no se necesite. El brazo y el radio de giro se pueden ajustar después desde "Modificar".'
   };
   return g;
 }
@@ -336,6 +404,31 @@ function moverAndamio(valor){
   reconstruirSelector();
   guardarCompartido();
   seleccionar(ng);
+}
+
+/* control "Brazo y radio de giro" de la ficha de la torre grúa: reconstruye
+   el grupo con las medidas nuevas, conservando posición, rotación y bloqueo
+   (mismo patrón que moverAndamio) */
+function modificarGrua(){
+  if (!seleccionado || seleccionado.userData.tipoEquipo !== 'plumaGrua') return;
+  const nombre = seleccionado.userData.info.nombre;
+  const def = equiposCreados.find(e => e.nombre === nombre);
+  if (!def) return;
+  def.brazo = numLim(document.getElementById('modBrazo').value, def.brazo, 8, 40);
+  def.radio = numLim(document.getElementById('modRadio').value, def.radio, 10, 50);
+  def.pos = [seleccionado.position.x, seleccionado.position.z];
+  const rot = seleccionado.rotation.y;
+  const bloqueado = !!seleccionado.userData.bloqueado;
+  quitarGrupoEscena(seleccionado);
+  draggables.splice(draggables.indexOf(seleccionado), 1);
+  const ng = construirEquipo(def);
+  ng.rotation.y = rot;
+  ng.userData.bloqueado = bloqueado;
+  actualizarTinte(ng);
+  reconstruirSelector();
+  guardarCompartido();
+  seleccionar(ng);
+  avisoGuardado('Torre grúa actualizada: brazo ' + def.brazo + ' m · radio ' + def.radio + ' m');
 }
 
 /* recrea los equipos al cargar estado (local, respaldo o Supabase) */
