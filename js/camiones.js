@@ -216,7 +216,7 @@ function resumenCamiones(){
   const chips = (obj) => Object.entries(obj).sort((a, b) => a[0] < b[0] ? -1 : 1)
     .map(([k, n]) => '<span class="chipEspacio">' + esc(k) + ' · ' + n + '</span>').join('');
   return '<div class="desc" style="margin:6px 0 12px">' +
-    '<b style="color:#a0cf52">Resumen:</b> ' + camiones.length + ' ' + (camiones.length === 1 ? 'camión' : 'camiones') + ' programado' + (camiones.length === 1 ? '' : 's') + '.<br>' +
+    '<b class="txtAcento">Resumen:</b> ' + camiones.length + ' ' + (camiones.length === 1 ? 'camión' : 'camiones') + ' programado' + (camiones.length === 1 ? '' : 's') + '.<br>' +
     '<div style="margin-top:5px; display:flex; flex-wrap:wrap; gap:5px">' + chips(porFecha) + '</div>' +
     '<div style="margin-top:5px; display:flex; flex-wrap:wrap; gap:5px">' + chips(porZona) + '</div>' +
   '</div>';
@@ -228,7 +228,7 @@ function renderCamiones(){
     ? lista.map(c => {
         const i = camiones.indexOf(c);
         return '<div class="planoFila">' +
-          '<span class="planoNom">' + icono('camion') + ' <b style="color:#e8ecf2">' + esc(c.fecha || fechaObra) + ' ' + esc(c.hora) + '</b> · ' +
+          '<span class="planoNom">' + icono('camion') + ' <b class="txtFuerte">' + esc(c.fecha || fechaObra) + ' ' + esc(c.hora) + '</b> · ' +
             esc(c.material) + ' <small>→ ' + esc(c.zona || 'Almacén central') + '</small></span>' +
           '<span>' +
             '<button class="planoBtn" title="Enviar el camión ahora mismo" onclick="lanzarCamion(camiones[' + i + '])">' + icono('ruta') + '</button> ' +
@@ -242,10 +242,10 @@ function renderCamiones(){
       '(se dibuja su recorrido), descarga y sale por el lavado de llantas. El reloj corre acelerado y avanza de ' +
       'día para que se note la entrada de camiones programados a futuro.</div>' +
     '<div style="display:flex; align-items:center; gap:8px; margin:12px 0; flex-wrap:wrap">' +
-      '<b>Reloj de obra:</b> <span id="camFechaActual" style="color:#9aa5b5">' + fechaObra + '</span>' +
+      '<b>Reloj de obra:</b> <span id="camFechaActual" class="txtSuave">' + fechaObra + '</span>' +
       '<span id="camHoraActual" style="font-variant-numeric:tabular-nums">' + minutosAHora(horaObra) + '</span>' +
       '<button class="orgAccion" style="margin:0" onclick="toggleReloj()">' + (relojCorriendo ? 'Pausar' : 'Reanudar') + '</button>' +
-      '<label style="color:#9aa5b5; font-size:12.5px">Velocidad ' +
+      '<label class="txtSuave" style="font-size:12.5px">Velocidad ' +
         '<select id="camVelocidad" onchange="cambiarVelocidad()">' + opcionesVelocidad() + '</select></label>' +
     '</div>' +
     '<div style="display:flex; align-items:center; gap:6px; margin:0 0 14px; flex-wrap:wrap">' +
@@ -266,7 +266,7 @@ function renderCamiones(){
         '<input id="camMaterial" maxlength="60" placeholder="Material (ej: Cerámica)" style="flex:1; min-width:140px">' +
       '</div>' +
       '<div style="display:flex; gap:6px; align-items:center">' +
-        '<span style="color:#9aa5b5">Destino:</span>' +
+        '<span class="txtSuave">Destino:</span>' +
         '<select id="camZona" style="flex:1">' + opcionesZonas(zonaCamionSel) + '</select>' +
         '<button class="orgAccion primario" style="margin:0" onclick="agregarCamion()">' + icono('mas') + 'Agregar</button>' +
       '</div>' +

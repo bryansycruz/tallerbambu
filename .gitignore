@@ -32,6 +32,9 @@ __pycache__/
 *.tmp
 *.bak
 
+# proyecto 
+proyecto bambuco/
+
 # ============ SISTEMA ============
 .DS_Store
 Thumbs.db

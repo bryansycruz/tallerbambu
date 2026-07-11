@@ -150,7 +150,7 @@ function construirEdificio(def){
     material: 'Sistema estructural: ' + S.nombre,
     cerramiento: 'Volumen de referencia dibujado según su sistema estructural',
     descripcion: (def.descripcion ? esc(def.descripcion).replace(/\n/g, '<br>') + '<br><br>' : '') +
-      '<b style="color:#a0cf52">' + esc(S.nombre) + '.</b> ' + esc(S.desc) + '<br><br>' +
+      '<b class="txtAcento">' + esc(S.nombre) + '.</b> ' + esc(S.desc) + '<br><br>' +
       'Edificio de ' + def.pisos + (def.pisos === 1 ? ' piso' : ' pisos') +
       ' creado por el equipo. Arrástralo para ubicarlo, gíralo de a 45°, bloquéalo ' +
       'o elimínalo cuando ya no lo necesites en la obra.'
@@ -226,7 +226,7 @@ function renderEditorEspacio(def){
   const num = (id, lbl, val, min, max, step) =>
     '<label>' + lbl + ' <input type="number" id="' + id + '" value="' + val + '" min="' + min + '" max="' + max + '" step="' + step + '" style="width:70px"></label>';
   document.getElementById('espBody').innerHTML =
-    '<div class="desc">Editando <b style="color:#a0cf52">' + esc(def.nombre) + '</b> (' + (esEd ? 'Edificio' : 'Espacio') + '). ' +
+    '<div class="desc">Editando <b class="txtAcento">' + esc(def.nombre) + '</b> (' + (esEd ? 'Edificio' : 'Espacio') + '). ' +
       'Cambia sus medidas y guarda; conserva su posición y rotación en la obra.</div>' +
     '<div style="display:flex; flex-direction:column; gap:8px; margin-top:10px">' +
       '<input id="edNombre" maxlength="40" value="' + esc(def.nombre) + '" placeholder="Nombre">' +
@@ -347,7 +347,7 @@ function renderEspacios(){
           : p.w + ' × ' + p.d + ' m · h ' + p.h + ' m';
         return '<div class="planoFila">' +
           '<span class="planoNom">' + icono(p.clase === 'edificio' ? 'edificio' : 'etiqueta') +
-            ' <b style="color:#e8ecf2">' + esc(p.nombre) + '</b> <small>· ' + dims + '</small></span>' +
+            ' <b class="txtFuerte">' + esc(p.nombre) + '</b> <small>· ' + dims + '</small></span>' +
           '<span>' +
             '<button class="planoBtn" title="Editar dimensiones" onclick="editarPersonalizadoIdx(' + i + ')">' + icono('editar') + '</button> ' +
             '<button class="planoBtn" title="Llevar la cámara hasta este elemento" onclick="irAPersonalizadoIdx(' + i + ')">' + icono('ojo') + '</button> ' +

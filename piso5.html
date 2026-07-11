@@ -7,54 +7,99 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+  /* aplica el tema guardado ANTES de pintar para evitar parpadeo */
+  document.documentElement.dataset.tema = localStorage.getItem('temaObra') || 'claro';
+</script>
 <style>
-  /* Plancha técnica clara: papel, tinta oscura y el verde institucional del proyecto */
-  html, body { margin:0; padding:0; background:#edebe0; font-family:'Inter', 'Segoe UI', Arial, sans-serif; color:#262c34; }
+  /* Plancha técnica "Bambú" con dos temas (claro por defecto y oscuro):
+     retícula de puntos, tarjetas planas, acento en verde oscuro y
+     Space Grotesk en los títulos. Comparte la elección de tema (localStorage
+     "temaObra") con el resto del proyecto. */
+  :root {
+    color-scheme:light;
+    --fondo:#f4f6f1; --puntos:rgba(46,107,36,.12);
+    --superficie:#ffffff; --sup-baja:#f4f6f0;
+    --linea:#e4e8dd; --borde:#d9ddd1; --borde-2:#c3c9b8;
+    --texto:#1f241b; --texto-2:#6a7260;
+    --acento:#2e6b24; --acento-hover:#245418; --acento-texto:#2e6b24;
+    --acento-suave:rgba(46,107,36,.08); --sobre-acento:#ffffff;
+    --sombra:0 12px 34px rgba(30,40,20,.14);
+  }
+  :root[data-tema="oscuro"] {
+    color-scheme:dark;
+    --fondo:#0a0a0a; --puntos:rgba(110,160,70,.10);
+    --superficie:#111111; --sup-baja:#0d0d0d;
+    --linea:#222222; --borde:#333333; --borde-2:#444444;
+    --texto:#f2f2f2; --texto-2:#999999;
+    --acento:#4f8f2c; --acento-hover:#5aa233; --acento-texto:#8cbf6b;
+    --acento-suave:rgba(140,191,107,.08); --sobre-acento:#ffffff;
+    --sombra:0 20px 60px rgba(0,0,0,.6);
+  }
+  html, body {
+    margin:0; padding:0; background-color:var(--fondo);
+    background-image:radial-gradient(var(--puntos) 1px, transparent 1px);
+    background-size:40px 40px;
+    font-family:'Inter', 'Helvetica Neue', Arial, sans-serif; color:var(--texto);
+  }
+  ::selection { background:var(--acento); color:#fff; }
   .contenido { max-width:980px; margin:0 auto; padding:22px 18px 54px; }
   header {
     display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
-    border-bottom:3px solid #4f8f2c; padding-bottom:12px; margin-bottom:18px;
+    border-bottom:2px solid var(--acento); padding-bottom:12px; margin-bottom:18px;
   }
   h1 {
-    margin:0; font-size:23px; color:#2f5e14; font-family:'Space Grotesk','Inter',sans-serif;
-    letter-spacing:1px; text-transform:uppercase;
+    margin:0; font-size:22px; color:var(--acento-texto); font-family:'Space Grotesk','Inter',sans-serif;
+    letter-spacing:1.5px; text-transform:uppercase;
   }
-  header small { color:#6d7566; display:block; margin-top:3px; font-size:12.5px; }
+  header small { color:var(--texto-2); display:block; margin-top:3px; font-size:12.5px; }
   .volver {
-    display:inline-flex; align-items:center; gap:6px; background:#4f8f2c; color:#fff;
-    border:none; padding:9px 16px; border-radius:6px; font-size:13px; font-weight:600;
-    text-decoration:none; cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px; background:var(--acento); color:var(--sobre-acento);
+    border:1px solid var(--acento); padding:10px 16px; border-radius:0; font-size:12px; font-weight:700;
+    text-transform:uppercase; letter-spacing:1px; text-decoration:none; cursor:pointer;
+    font-family:'Space Grotesk','Inter',sans-serif;
+    transition:background .2s, border-color .2s;
   }
-  .volver:hover { background:#5aa233; }
+  .volver:hover { background:var(--acento-hover); border-color:var(--acento-hover); }
   .volver svg { width:14px; height:14px; }
+  .btnTema {
+    display:inline-flex; align-items:center; background:transparent; color:var(--texto-2);
+    border:1px solid var(--borde-2); padding:10px 14px; border-radius:0; font-size:11px; font-weight:600;
+    text-transform:uppercase; letter-spacing:1px; cursor:pointer;
+    font-family:'Space Grotesk','Inter',sans-serif;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .btnTema:hover { background:var(--acento-suave); border-color:var(--acento); color:var(--acento-texto); }
   h2 {
-    font-size:15px; color:#2f5e14; margin:26px 0 10px; display:flex; align-items:center; gap:7px;
-    font-family:'Space Grotesk','Inter',sans-serif; letter-spacing:1px; text-transform:uppercase;
+    font-size:13px; color:var(--acento-texto); margin:26px 0 10px; display:flex; align-items:center; gap:7px;
+    font-family:'Space Grotesk','Inter',sans-serif; letter-spacing:1.5px; text-transform:uppercase;
   }
   h2 svg { width:15px; height:15px; }
   .tarjeta {
-    background:#fff; border:1px solid #d9d5c6; border-radius:10px; padding:14px 16px;
-    box-shadow:0 2px 10px rgba(50,50,35,.07);
+    background:var(--superficie); border:1px solid var(--borde); border-radius:0; padding:14px 16px;
+    box-shadow:var(--sombra);
   }
   table { width:100%; border-collapse:collapse; font-size:12.5px; }
-  th { text-align:left; color:#6d7566; font-weight:700; padding:6px 8px; border-bottom:2px solid #dcd8c9; font-size:11.5px; text-transform:uppercase; letter-spacing:.4px; }
-  td { padding:6px 8px; border-bottom:1px solid #eae7db; }
-  td:first-child { color:#3a424c; font-weight:600; }
+  th { text-align:left; color:var(--texto-2); font-weight:700; padding:6px 8px; border-bottom:2px solid var(--borde-2); font-size:11px; text-transform:uppercase; letter-spacing:1px; }
+  td { padding:6px 8px; border-bottom:1px solid var(--linea); }
+  td:first-child { color:var(--texto); font-weight:600; }
   .num { text-align:right; font-variant-numeric:tabular-nums; }
-  tr.total td { color:#2f5e14; font-weight:bold; border-top:2px solid #c9c4b1; background:#f4f7ec; }
+  tr.total td { color:var(--acento-texto); font-weight:bold; border-top:2px solid var(--borde-2); background:var(--acento-suave); }
   .fila2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   @media (max-width:700px){ .fila2 { grid-template-columns:1fr; } }
-  .dato { display:flex; justify-content:space-between; padding:5px 2px; border-bottom:1px solid #eae7db; font-size:13px; }
-  .dato span:first-child { color:#6d7566; }
-  .dato span:last-child { font-weight:600; }
+  .dato { display:flex; justify-content:space-between; padding:5px 2px; border-bottom:1px solid var(--linea); font-size:13px; }
+  .dato span:first-child { color:var(--texto-2); }
+  .dato span:last-child { font-weight:600; color:var(--texto); }
   .plano-svg { width:100%; height:auto; display:block; }
-  .leyenda { display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; font-size:12px; color:#5a6252; }
-  .leyenda i { display:inline-block; width:11px; height:11px; border-radius:2px; margin-right:5px; vertical-align:-1px; border:1px solid rgba(0,0,0,.15); }
+  /* las cotas del plano (TORRE 01/02, JUNTA) siguen el acento del tema */
+  .plano-svg .svgCotas { fill:var(--acento-texto); }
+  .leyenda { display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; font-size:12px; color:var(--texto-2); }
+  .leyenda i { display:inline-block; width:11px; height:11px; border-radius:0; margin-right:5px; vertical-align:-1px; border:1px solid rgba(127,127,127,.35); }
   .pendiente {
-    border:2px dashed #c9c4b1; border-radius:10px; padding:26px 14px; background:#faf9f2;
-    text-align:center; color:#7a8172; font-size:13px; line-height:1.6;
+    border:2px dashed var(--borde-2); border-radius:0; padding:26px 14px; background:var(--sup-baja);
+    text-align:center; color:var(--texto-2); font-size:13px; line-height:1.6;
   }
-  .nota { color:#7a8172; font-size:12px; margin-top:8px; line-height:1.5; }
+  .nota { color:var(--texto-2); font-size:12px; margin-top:8px; line-height:1.5; }
 </style>
 </head>
 <body>
@@ -65,10 +110,13 @@
     <h1>Piso 5 — Hoja de detalle</h1>
     <small>Proyecto Bambú · Marinilla, Antioquia — Torres 01 y 02 · Taller II</small>
   </div>
-  <a class="volver" href="index.html">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
-    Volver al plano 3D
-  </a>
+  <div>
+    <a class="volver" href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      Volver al plano 3D
+    </a>
+    <button class="btnTema" title="Alternar entre fondo blanco y negro"></button>
+  </div>
 </header>
 
 <div class="fila2">
@@ -155,9 +203,9 @@
     <text x="642" y="125" font-family="Inter, Segoe UI, Arial" font-size="9" fill="#6a2a66" text-anchor="middle">CIRC. 51,38 m²</text>
     <!-- malacate en fachada sur T1 -->
     <rect x="252" y="204" width="22" height="14" fill="#d9a521" stroke="#8a6a10"/>
-    <text x="263" y="232" font-family="Inter, Segoe UI, Arial" font-size="10" fill="#8a6a10" text-anchor="middle" font-weight="600">MALACATE</text>
-    <!-- cotas -->
-    <g font-family="Inter, Segoe UI, Arial" font-size="11" fill="#5f6a58" text-anchor="middle" font-weight="600">
+    <text x="263" y="232" font-family="Inter, Segoe UI, Arial" font-size="10" fill="#d9a521" text-anchor="middle" font-weight="600">MALACATE</text>
+    <!-- cotas: el color lo pone el CSS (.svgCotas) según el tema -->
+    <g class="svgCotas" font-family="Inter, Segoe UI, Arial" font-size="11" text-anchor="middle" font-weight="600">
       <text x="263" y="16">TORRE 01 — 49.73 m</text>
       <text x="642" y="46">TORRE 02 — 24.30 m</text>
       <text x="516" y="130" transform="rotate(90 516 130)">JUNTA</text>
@@ -219,5 +267,25 @@
 </div>
 
 </div>
+
+<script>
+  /* Selector de tema claro/oscuro compartido con el resto del proyecto */
+  (function () {
+    function aplicarTema(t) {
+      document.documentElement.dataset.tema = t;
+      try { localStorage.setItem('temaObra', t); } catch (e) {}
+      document.querySelectorAll('.btnTema').forEach(function (b) {
+        b.textContent = (t === 'oscuro') ? '◐ Fondo blanco' : '◑ Fondo negro';
+      });
+    }
+    window.alternarTema = function () {
+      aplicarTema(document.documentElement.dataset.tema === 'oscuro' ? 'claro' : 'oscuro');
+    };
+    document.querySelectorAll('.btnTema').forEach(function (b) {
+      b.addEventListener('click', window.alternarTema);
+    });
+    aplicarTema(document.documentElement.dataset.tema || 'claro');
+  })();
+</script>
 </body>
 </html>

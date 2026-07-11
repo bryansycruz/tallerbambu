@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <title>Bambú · Marinilla — Taller II · Plano 3D de Obra</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  /* aplica el tema guardado ANTES de cargar el CSS para evitar parpadeo */
+  document.documentElement.dataset.tema = localStorage.getItem('temaObra') || 'claro';
+</script>
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -45,6 +49,7 @@
     <button id="inicioBtn"><span class="playIc"></span>Ver la obra</button>
     <a id="inicioPiso5" href="piso5.html">Piso 5</a>
     <a id="inicioLibre" href="taller-libre.html" title="Arma tu propia obra desde cero: espacios, edificios, malacates y torres grúa">Crear proyecto libre</a>
+    <button class="btnTema" title="Alternar entre fondo blanco y negro"></button>
   </div>
 </div>
 <script>
@@ -61,8 +66,10 @@
 
 <!-- ============ BARRA DE HERRAMIENTAS (agrupada por temas) ============ -->
 <div id="ui">
+  <div id="uiMarca">Proyecto Bambú</div>
   <button id="btnMenu"><span class="ic" data-ic="menu"></span>Menú</button>
   <button id="btnMin" title="Minimizar el menú"><span class="ic" data-ic="menos"></span></button>
+  <button class="btnTema" title="Alternar entre fondo blanco y negro"></button>
   <div class="uiGrupo" data-nombre="Ver la obra">
     <button id="btnPiso4" title="Corte del piso 4 con sus apartamentos"><span class="ic" data-ic="edificio"></span>Ver Piso 4</button>
     <button id="btnSotanos" title="Corte de los sótanos S1-S3 con parqueaderos y rampa"><span class="ic" data-ic="bajar"></span>Sótanos</button>
@@ -215,6 +222,26 @@
         integrity="sha384-3wY11tldQ5+yWqAvmTN4XtQvnjoTva0cV15O/O/O5NTtp0ivVopSzLOzsVXWZse9"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
+<script>
+  /* Selector de tema claro/oscuro: guarda la elección y actualiza el texto
+     de todos los botones .btnTema (portada y sidebar) */
+  (function () {
+    function aplicarTema(t) {
+      document.documentElement.dataset.tema = t;
+      try { localStorage.setItem('temaObra', t); } catch (e) {}
+      document.querySelectorAll('.btnTema').forEach(function (b) {
+        b.textContent = (t === 'oscuro') ? '◐ Fondo blanco' : '◑ Fondo negro';
+      });
+    }
+    window.alternarTema = function () {
+      aplicarTema(document.documentElement.dataset.tema === 'oscuro' ? 'claro' : 'oscuro');
+    };
+    document.querySelectorAll('.btnTema').forEach(function (b) {
+      b.addEventListener('click', window.alternarTema);
+    });
+    aplicarTema(document.documentElement.dataset.tema || 'claro');
+  })();
+</script>
 <script src="js/config.js"></script>
 <script src="js/escena.js"></script>
 <script src="js/provisionales.js"></script>

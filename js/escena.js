@@ -677,7 +677,7 @@ function abrirApto(a){
     '<tr><td>Costado</td><td>' + (a.lado > 0 ? 'Norte' : 'Sur') + ' de la circulación central (105,55 m²), con balcón a fachada</td></tr>' +
     '<tr><td>Suministro</td><td>Materiales por malacate (1.000 kg) + distribución interna en carretillas buggy</td></tr>' +
     '</table>' +
-    '<div><b style="color:#6fb3c9">Actividades típicas:</b><br>' +
+    '<div><b class="txtAcento">Actividades típicas:</b><br>' +
     ['Replanteo', 'Mampostería', 'Instalaciones embebidas', 'Pañete / estuco', 'Enchapes', 'Pintura', 'Carpintería', 'Aparatos y remates']
       .map(s => '<span class="chipEspacio">' + s + '</span>').join('') +
     '</div>' +

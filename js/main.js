@@ -119,23 +119,14 @@ function togglePiso4(){
 document.getElementById('btnPiso4').onclick = togglePiso4;
 
 /* ---- Banner contextual: dice en qué vista de corte estás y cómo volver ----
-   Se ubica DEBAJO de la barra de herramientas real (no a una altura fija):
-   como la barra puede ocupar una o dos filas según cuántos grupos de
-   botones tenga, un top fijo terminaba tapando la segunda fila en
-   pantallas angostas o con varios grupos. En móvil manda el CSS (top fijo
-   bajo el botón "Menú" plegado), así que ahí no se toca el estilo. */
+   Con el layout de sidebar (la barra ocupa toda la altura a la izquierda)
+   la posición de los avisos la fija el CSS: arriba y centrados sobre el
+   lienzo. Esta función solo limpia cualquier top en línea que quedara de
+   la versión anterior (barra superior de una o dos filas). */
 function posicionarBanner(){
-  const ui = document.getElementById('ui');
-  if (!ui) return;
-  const bajoBarra = Math.round(ui.getBoundingClientRect().bottom + 10) + 'px';
-  const enMovil = innerWidth <= 820;
-  // los dos avisos flotantes que aparecen bajo la barra: el banner de las
-  // vistas de corte y el aviso de "Dibujar ruta". Ambos se sitúan justo bajo
-  // la barra real (que crece a dos filas al haber más grupos). En móvil manda
-  // el CSS (top fijo bajo el botón "Menú" plegado).
   ['vistaBanner', 'modoAviso'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.style.top = enMovil ? '' : bajoBarra;
+    if (el) el.style.top = '';
   });
 }
 addEventListener('resize', posicionarBanner);

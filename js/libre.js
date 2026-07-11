@@ -571,7 +571,7 @@ const pBody = document.getElementById('librePBody');
 function mostrarPanelVacio(){
   pTitulo.textContent = 'Constructor de obra';
   pBody.className = 'desc';
-  pBody.innerHTML = 'Pulsa <b style="color:#a0cf52">Agregar</b> para crear un elemento: espacio, edificio, ' +
+  pBody.innerHTML = 'Pulsa <b class="txtAcento">Agregar</b> para crear un elemento: espacio, edificio, ' +
     'malacate, torre grúa o grúa pluma. Luego haz clic sobre él para su ficha, arrástralo, gíralo o elimínalo.';
 }
 function seleccionar(g){
@@ -616,7 +616,7 @@ function renderVentana(){
         const d = g.userData.def;
         return '<div class="planoFila">' +
           '<span class="planoNom">' + ic(d.tipo === 'edificio' ? 'edificio' : (d.tipo === 'gruaTorre' || d.tipo === 'gruaPluma') ? 'grua' : 'caja') +
-            ' <b style="color:#e8ecf2">' + esc(d.nombre) + '</b> <small>· ' + NOMBRE_TIPO[d.tipo] + '</small></span>' +
+            ' <b class="txtFuerte">' + esc(d.nombre) + '</b> <small>· ' + NOMBRE_TIPO[d.tipo] + '</small></span>' +
           '<span>' +
             '<button class="planoBtn" title="Editar dimensiones" onclick="editarLibreIdx(' + i + ')">' + ic('editar') + '</button> ' +
             '<button class="planoBtn" title="Ir a este elemento" onclick="irAElemIdx(' + i + ')">' + ic('ojo') + '</button> ' +
@@ -743,7 +743,7 @@ function renderEditorLibre(d){
       num('edRadio','Radio de giro (m)',d.radio,4,80,0.5);
   }
   document.getElementById('libreBody').innerHTML =
-    '<div class="desc">Editando <b style="color:#a0cf52">' + esc(d.nombre) + '</b> (' + NOMBRE_TIPO[d.tipo] + '). ' +
+    '<div class="desc">Editando <b class="txtAcento">' + esc(d.nombre) + '</b> (' + NOMBRE_TIPO[d.tipo] + '). ' +
       'Cambia sus medidas y guarda; conserva su posición en la obra.</div>' +
     '<div style="margin-top:10px; display:flex; flex-direction:column; gap:8px">' +
       '<input id="edNombre" maxlength="40" value="' + esc(d.nombre) + '" placeholder="Nombre">' +
