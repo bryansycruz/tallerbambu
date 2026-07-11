@@ -81,6 +81,8 @@ function estadoActual(){
     overridesProvisionales: (typeof overridesProvisionales !== 'undefined') ? overridesProvisionales : {},
     rutas: rutas.map(r => r.puntos.map(p => [Math.round(p.x*100)/100, Math.round(p.z*100)/100])),
     cerramientoPos: [Math.round(cerramiento.position.x*100)/100, Math.round(cerramiento.position.z*100)/100],
+    cerramientoColor: cerramiento.userData.colorPersonalizado || null,
+    cerramientoBloqueado: !!cerramiento.userData.bloqueado,
     malacate: parseFloat(rangoMalacate.value),
     malacates: malacates.map(m => ({
       nombre: m.userData.info.nombre,
@@ -144,6 +146,8 @@ function aplicarEstado(d){
       isFinite(d.cerramientoPos[0]) && isFinite(d.cerramientoPos[1])){
     cerramiento.position.set(d.cerramientoPos[0], cerramiento.position.y, d.cerramientoPos[1]);
   }
+  if (typeof d.cerramientoColor === 'string' && d.cerramientoColor) pintarCerramiento(d.cerramientoColor);
+  cerramiento.userData.bloqueado = !!d.cerramientoBloqueado;
   if (d.malacate !== undefined) rangoMalacate.value = d.malacate;
   if (Array.isArray(d.malacates) && d.malacates.length){
     const listaMalacates = limitarArray(d.malacates, 30);

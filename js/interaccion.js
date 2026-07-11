@@ -96,9 +96,9 @@ renderer.domElement.addEventListener('pointerdown', e => {
     return;
   }
   const hitsC = raycaster.intersectObject(cerramiento, true);
-  if (hitsC.length){
-    // el cerramiento es una sola pieza fija: se arrastra completo, sin girar
-    // ni bloquear, guardando el desfase para que siga al cursor sin saltar
+  if (hitsC.length && !cerramiento.userData.bloqueado){
+    // el cerramiento es una sola pieza fija: se arrastra completo, sin girar,
+    // guardando el desfase para que siga al cursor sin saltar
     const p0 = interseccionSuelo();
     if (p0){
       offsetCerr.x = cerramiento.position.x - p0.x;
@@ -305,6 +305,12 @@ function renderModificar(obj){
     html += '<button class="btnBloqueo ' + (obj.userData.bloqueado ? 'bloqueado' : 'libre') + '" onclick="toggleBloqueo()">' + icono(obj.userData.bloqueado ? 'candadoAbierto' : 'candado') + (obj.userData.bloqueado ? 'Bloqueado — toca para desbloquear' : 'Libre — toca para bloquear') + '</button>' +
       '<div style="display:flex; gap:6px; margin-top:8px"><button style="flex:1" onclick="girarSeleccionado(-1)">' + icono('girarIzq') + 'Girar 45°</button><button style="flex:1" onclick="girarSeleccionado(1)">' + icono('girarDer') + 'Girar 45°</button></div>';
   }
+  if (obj === cerramiento){
+    html += '<button class="btnBloqueo ' + (obj.userData.bloqueado ? 'bloqueado' : 'libre') + '" onclick="toggleBloqueo()">' + icono(obj.userData.bloqueado ? 'candadoAbierto' : 'candado') + (obj.userData.bloqueado ? 'Bloqueado — toca para desbloquear' : 'Libre — toca para bloquear') + '</button>' +
+      '<label style="display:block; margin-top:10px">Color' +
+        '<div style="display:flex; gap:6px; margin-top:3px; align-items:center"><input type="color" id="modColorCerr" value="' + (colorActualHex(obj) || '#9fb3a8') + '"><button style="width:auto" title="Aplicar" onclick="recolorearCerramiento()">' + icono('check') + ' Aplicar</button></div>' +
+      '</label>';
+  }
   if (obj.userData.esMalacate){
     html += '<div style="display:flex; gap:6px; margin-top:8px">' +
       '<button style="flex:1" onclick="agregarMalacate()">' + icono('mas') + 'Agregar otro malacate</button>' +
@@ -340,7 +346,7 @@ function renderModificar(obj){
     '</div>' +
     '<button class="btnEliminar" style="margin-top:12px" onclick="eliminarSeleccionado()">' + icono('basura') + 'Eliminar de la obra</button>';
   } else if (obj === cerramiento){
-    html += '<div class="desc" style="margin-top:12px">El cerramiento perimetral es una sola pieza: arrástralo desde el lienzo (clic y arrastrar sobre cualquier tramo) para reubicarlo completo. No se puede girar, bloquear, renombrar, recolorear ni eliminar desde aquí.</div>';
+    html += '<div class="desc" style="margin-top:12px">El cerramiento perimetral es una sola pieza: arrástralo desde el lienzo (clic y arrastrar sobre cualquier tramo) para reubicarlo completo, bloquéalo con el botón de arriba para evitar moverlo sin querer, o cámbiale el color. No se puede girar, renombrar ni eliminar desde aquí.</div>';
   } else {
     html += '<div class="desc" style="margin-top:12px">Este elemento es parte de la estructura fija de la obra (torre o malacate) y no se puede renombrar, recolorear ni eliminar desde aquí.</div>';
   }

@@ -97,6 +97,16 @@ function recolorearSeleccionado(){
   guardarCompartido();
   avisoGuardado('Color actualizado');
 }
+/* recolorea solo los paneles de lámina del cerramiento perimetral (no los
+   postes ni el portón) — pintarCerramiento() vive en escena.js junto a su
+   construcción, y guarda el color elegido en userData para persistirlo */
+function recolorearCerramiento(){
+  const input = document.getElementById('modColorCerr');
+  if (!input) return;
+  pintarCerramiento(input.value);
+  guardarCompartido();
+  avisoGuardado('Color del cerramiento actualizado');
+}
 function eliminarSeleccionado(){
   if (!seleccionado) return;
   const id = seleccionado.userData.idEstable || '';

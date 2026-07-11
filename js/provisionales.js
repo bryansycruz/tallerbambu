@@ -97,21 +97,18 @@ function detalleCampamento(g, def){
   estanteriaFig(g, 2, 8.2, 3, 0);
   estanteriaFig(g, 4.5, 5.2, 3, Math.PI/2);
 }
-/* ---- Almacén central de acabados 37.5×13.9 ---- */
+/* ---- Almacén central de acabados 17.5×8 (140 m²) ---- */
 function detalleAlmacen(g, def){
-  estanteriaFig(g, -12, -def.d/2 + 0.5, 8, 0);
-  estanteriaFig(g, 0,   -def.d/2 + 0.5, 8, 0);
-  estanteriaFig(g, 12,  -def.d/2 + 0.5, 8, 0);
-  estanteriaFig(g, -def.w/2 + 0.5, 0, 8, Math.PI/2);
-  [[-13,1.5,0xc9b394],[-8,1.5,0xc9b394],[-3,1.5,0xd5d8da],[2,1.5,0xd5d8da],[7,1.5,0xb08f5a]].forEach(([x,z,c]) =>
-    arrumeFig(g, x, z, 1.8, 1.3, 2, c));
-  baldesFig(g, 12, 1.5); baldesFig(g, 15, 1.5);                          // pintura
-  [[-13,4.5],[-9,4.5],[-5,4.5]].forEach(([x,z]) => {
-    estibaFig(g, x, z);
-    sanitarioFig(g, x - 0.25, z, 0); sanitarioFig(g, x + 0.3, z + 0.1, 0);
-  });
-  caja(g, 2.4, 0.95, 0.6, 0x9a7a48, 15, 0.48, def.d/2 - 1.2);            // mostrador almacenista
-  textoLocal(g, 'CERÁMICA · ENCHAPES · PINTURA · GRIFERÍA · SANITARIOS', 20, 0, 5.5, '#5a5245');
+  const W = def.w, D = def.d;
+  const largoFondo = Math.max(2, Math.min(6, W/2 - 1.5));
+  estanteriaFig(g, -W/4, -D/2 + 0.6, largoFondo, 0);
+  estanteriaFig(g,  W/4, -D/2 + 0.6, largoFondo, 0);
+  estanteriaFig(g, -W/2 + 0.5, 0, Math.max(2, Math.min(5, D - 2)), Math.PI/2);
+  [[-W/5, D/6, 0xc9b394], [0, D/6, 0xd5d8da], [W/5, D/6, 0xb08f5a]].forEach(([x, z, c]) =>
+    arrumeFig(g, x, z, 1.6, 1.1, 2, c));
+  baldesFig(g, W/2 - 1.6, D/2 - 1.6);                                    // pintura
+  caja(g, 2.0, 0.9, 0.55, 0x9a7a48, W/2 - 1.5, 0.45, D/2 - 1);           // mostrador almacenista
+  textoLocal(g, 'CERÁMICA · PINTURA · GRIFERÍA', Math.min(12, W * 0.65), 0, D/2 - 2.9, '#5a5245');
 }
 /* ---- Acopio de materiales (antes "Paletizado") 21.4×16 ---- */
 function detallePaletizado(g, def){
@@ -219,30 +216,33 @@ function detalleComedor(g, def){
   caja(g, 0.6, 0.08, 0.5, 0x2e3236, -4.8, 0.94, -def.d/2 + 0.5);         // estufa
   for (let i=0; i<3; i++) lavamanosFig(g, def.w/2 - 0.55, -1 + i);
 }
-/* ---- Casilleros trabajadores 15.5×13.8 ---- */
+/* ---- Casilleros trabajadores 10×10 (100 m²) ---- */
 function detalleCasilleros(g, def){
-  [-4.5,-1.5,1.5,4.5].forEach(z => {
-    caja(g, 12, 1.8, 0.5, 0x5a6a7a, 0, 1.02, z);
-    bancaFig(g, 0, z + 1, 10);
+  const W = def.w, D = def.d;
+  const filaW = Math.min(8, W - 1.5);
+  [-D/2 + 1.3, 0, D/2 - 2.2].forEach(z => {
+    caja(g, filaW, 1.8, 0.5, 0x5a6a7a, 0, 1.02, z);
+    bancaFig(g, 0, z + 1, Math.min(6.5, filaW - 1));
   });
-  textoLocal(g, 'CASILLEROS — 305 TRABAJADORES', 10, 0, -6, '#5a5245');
+  textoLocal(g, 'CASILLEROS', Math.min(8, W * 0.7), 0, -D/2 + 0.3, '#5a5245');
 }
-/* ---- Baños + vestidores trabajadores ---- */
+/* ---- Baños + vestidores trabajadores 10×10 (100 m²) ---- */
 function detalleBanosVest(g, def){
-  for (let i=0; i<8; i++){
-    const x = -7 + i*2;
-    sanitarioFig(g, x, -def.d/2 + 0.6, Math.PI);
-    divisionFig(g, x + 0.9, -def.d/2 + 0.7, 1.4);
-  }
-  for (let i=0; i<5; i++) orinalFig(g, -def.w/2 + 0.16 + 0, -2 + i*1) ;
-  for (let i=0; i<6; i++) lavamanosFig(g, -6 + i*2, 0.5);
-  for (let i=0; i<6; i++){
-    caja(g, 1, 0.06, 1, 0x7fb2c9, -6 + i*2.2, 0.16, 3.5);                // platos de ducha
-    divisionFig(g, -6 + i*2.2 + 0.6, 3.5, 1.1);
-  }
-  bancaFig(g, -3, 6.5, 6); bancaFig(g, 4, 6.5, 5);
-  caja(g, 5, 1.8, 0.5, 0x5a6a7a, 2, 1.02, def.d/2 - 0.6);                // lockers vestier
-  textoLocal(g, 'BAÑOS + VESTIDORES (2 módulos de obra)', 11, 0, 7.8, '#5a5245');
+  const W = def.w, D = def.d;
+  const mx = W/2 - 1.3, mz = D/2 - 1.3;   // margen seguro contra las paredes
+  [-mx*0.6, -mx*0.2, mx*0.2, mx*0.6].forEach((x, i) => {
+    sanitarioFig(g, x, -mz, Math.PI);
+    if (i < 3) divisionFig(g, x + mx*0.2, -mz + 0.1, 1.1);
+  });
+  [-0.6, 0, 0.6].forEach(dz => orinalFig(g, -mx, dz));                   // orinales contra el lado
+  [-mx*0.6, -mx*0.2, mx*0.2, mx*0.6].forEach(x => lavamanosFig(g, x, 0));
+  [-mx*0.5, 0, mx*0.5].forEach(x => {
+    caja(g, 1, 0.06, 1, 0x7fb2c9, x, 0.16, mz*0.55);                     // platos de ducha
+    divisionFig(g, x + 0.55, mz*0.55, 1);
+  });
+  bancaFig(g, 0, mz, Math.min(6, W - 2.6));
+  caja(g, Math.min(4, W - 3), 1.6, 0.4, 0x5a6a7a, 0, 0.92, mz - 0.6);    // lockers vestier
+  textoLocal(g, 'BAÑOS + VESTIDORES', Math.min(9, W * 0.8), 0, mz - 1.8, '#5a5245');
 }
 /* ---- Acometidas ---- */
 function detalleAcomElec(g, def){
@@ -262,10 +262,10 @@ const PROVISIONALES = [
     material:'Contenedores / casetas prefabricadas — área total 341 m² (19.8×17.2)',
     cerramiento:'Panel metálico con ventanería; Interventoría con acceso independiente',
     descripcion:'Programa según organigrama: Dirección 5×6 (30 m²), Coordinación 5×6 (30 m²), Interventoría 6×6 (36 m², acceso independiente), Cocineta 4×6 (24 m²), Oficina técnica 14×7 (98 m², 10 puestos: Residentes Administrativo, Cerramientos, Acabados, Ambiental + SST y auxiliares), Baño H 3×7, WC M 3×7, Sala de reuniones 10×5 (50 m²), Archivo/planoteca 6×5 y Circulación 4×5. En el extremo opuesto al ingreso, lejos del polvo y ruido.' },
-  { aforo:'8 personas (almacenista y ayudantes)', nombre:'Almacén central', w:36.9, d:13.9, h:4, color:0xd9a521, muros:true, techo:true, pos:[38,-15], detalle:detalleAlmacen,
-    material:'Estructura metálica, cubierto y ventilado — 513 m²',
+  { aforo:'8 personas (almacenista y ayudantes)', nombre:'Almacén central', w:17.5, d:8, h:4, color:0xd9a521, muros:true, techo:true, pos:[38,-15], detalle:detalleAlmacen,
+    material:'Estructura metálica, cubierto y ventilado — 140 m²',
     cerramiento:'Cerrado con control de humedad (materiales delicados)',
-    descripcion:'Almacén de 36.9×13.9 ≈ 513 m² junto a la torre para minimizar la manipulación de cerámica, enchapes, pintura, grifería y aparatos sanitarios. Desde aquí el material va en carretillas buggy al pie del malacate (≈15-25 m).' },
+    descripcion:'Almacén de 17.5×8 = 140 m² junto a la torre para minimizar la manipulación de cerámica, enchapes, pintura, grifería y aparatos sanitarios. Desde aquí el material va en carretillas buggy al pie del malacate (≈15-25 m).' },
   { aforo:'6 personas en labores de acopio', nombre:'Acopio de materiales', w:20.9, d:16, h:1.6, color:0xb08f5a, pos:[38,14], detalle:detallePaletizado,
     material:'Superficie afirmada con estibas — 334 m²',
     cerramiento:'Demarcada, a cielo abierto',
@@ -286,12 +286,12 @@ const PROVISIONALES = [
     material:'Estructura metálica con cubierta — 77 m² (≈1.2 m²/comensal por turno)',
     cerramiento:'Semi-abierto con malla',
     descripcion:'Comedor y cocineta del personal en la zona de bienestar (extremo opuesto al ingreso), lejos del polvo y del tránsito de camiones.' },
-  { aforo:'40 personas', nombre:'Casilleros', w:14.9, d:13.8, h:2.5, color:0x8a6a3a, muros:true, techo:true, pos:[-68,13], detalle:detalleCasilleros,
-    material:'Módulos de casilleros metálicos — 206 m²',
+  { aforo:'40 personas', nombre:'Casilleros', w:10, d:10, h:2.5, color:0x8a6a3a, muros:true, techo:true, pos:[-68,13], detalle:detalleCasilleros,
+    material:'Módulos de casilleros metálicos — 100 m²',
     cerramiento:'Caseta cerrada con panel metálico',
-    descripcion:'Guardarropa del personal de obra (14.9×13.8 ≈ 206 m²) junto a baños y vestidores, en la zona de bienestar.' },
-  { aforo:'45 personas', nombre:'Baños y vestidores', w:15.3, d:17.5, h:2.5, color:0x4f66c9, muros:true, techo:true, pos:[-42,10], detalle:detalleBanosVest,
-    material:'Módulos sanitarios prefabricados — 268 m²',
+    descripcion:'Guardarropa del personal de obra (10×10 = 100 m²) junto a baños y vestidores, en la zona de bienestar.' },
+  { aforo:'45 personas', nombre:'Baños y vestidores', w:10, d:10, h:2.5, color:0x4f66c9, muros:true, techo:true, pos:[-42,10], detalle:detalleBanosVest,
+    material:'Módulos sanitarios prefabricados — 100 m²',
     cerramiento:'Panel metálico, conectado a acometidas provisionales',
     descripcion:'Batería de baños, duchas y vestidores para el personal (pico 305 trabajadores): 3 módulos en total según el informe (2 de obra + 1 administrativo dentro del campamento).' },
   { aforo:'1 técnico autorizado', nombre:'Acometida eléctrica', w:2, d:2, h:2, color:0xd9a521, pos:[78,14], detalle:detalleAcomElec,

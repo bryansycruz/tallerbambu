@@ -277,7 +277,18 @@ cerramiento.userData.info = {
   cerramiento: 'Franja inferior antisalpicadura + señalización de obra cada 20 m',
   descripcion: 'Cerramiento continuo sobre todo el lindero de propiedad (límite azul del plano base), envolviendo el lote completo y la zona de obra hasta la salida a la autopista. Único acceso: 1 portón vehicular corredizo de 6.00 m + 1 puerta peatonal independiente de 1.00 m, en el extremo de la vía junto a la salida de la autopista.'
 };
+cerramiento.userData.colorPersonalizado = null;   // null = color de fábrica (matLam); se puede editar desde "Modificar"
 scene.add(cerramiento);
+/* repinta solo los paneles de lámina del cerramiento (no los postes ni el
+   portón), y recuerda el color elegido para poder restaurarlo al cargar */
+function pintarCerramiento(hex){
+  let color;
+  try { color = new THREE.Color(hex); } catch (e) { return; }
+  cerramiento.traverse(n => {
+    if (n.isMesh && n.userData.esPanelCerr && n.material && n.material.color) n.material.color.copy(color);
+  });
+  cerramiento.userData.colorPersonalizado = hex;
+}
 {
   const matLam = new THREE.MeshLambertMaterial({ color:0x9fb3a8, transparent:true, opacity:0.55 });
   const matPoste = new THREE.MeshLambertMaterial({ color:0x4a5560 });
@@ -290,6 +301,7 @@ scene.add(cerramiento);
     m.position.set((x1+x2)/2, 1.2, (z1+z2)/2);
     m.rotation.y = -Math.atan2(dz, dx);
     m.material.userData = { op0: 0.55 };
+    m.userData.esPanelCerr = true;
     cerramiento.add(m);
     const n = Math.max(1, Math.floor(len/3));
     for (let i=0; i<=n; i++){
