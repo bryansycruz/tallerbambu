@@ -11,6 +11,13 @@ function numLim(v, defecto, min, max){
   if (!isFinite(v)) v = defecto;
   return Math.min(max, Math.max(min, v));
 }
+/* id estable para espacios/edificios/equipos personalizados: se genera una
+   sola vez al crearlos y nunca cambia, aunque el usuario renombre el elemento
+   después desde la pestaña "Modificar" (interaccion.js usa este id, no el
+   nombre, para saber a qué "def" aplicar el cambio) */
+function nuevoId(){
+  return 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
 /* nombre único: si ya existe una zona con ese nombre, se numera (Taller 2, 3…) */
 function nombreDisponible(base){
   base = String(base || '').trim().slice(0, 40) || 'Espacio';
@@ -120,6 +127,7 @@ function construirEspacio(def){
       'También aparece como destino en la programación de camiones.'
   });
   g.userData.personalizado = true;
+  g.userData.idEstable = 'c:' + def.id;
   return g;
 }
 
@@ -155,10 +163,17 @@ function construirEdificio(def){
       ' creado por el equipo. Arrástralo para ubicarlo, gíralo de a 45°, bloquéalo ' +
       'o elimínalo cuando ya no lo necesites en la obra.'
   };
-  const et = crearEtiqueta(def.nombre, Math.max(10, Math.min(26, def.w * 0.9)));
+  // mismo tope que en provisionales.js: rótulo de tamaño normal, sin crecer
+  // sin control con edificios anchos
+  const et = crearEtiqueta(def.nombre, Math.max(9, Math.min(20, def.w * 0.6)));
   et.position.y = alto + 2.2;
   g.add(et);
   g.position.set(def.pos[0], 0, def.pos[1]);
+  g.userData.idEstable = 'c:' + def.id;
+  // el sistema estructural define el color por defecto; si el usuario lo
+  // recoloreó a mano desde "Modificar", ese tono gana (aplicarColorATraves
+  // vive en js/modificar.js, cargado después de este archivo)
+  if (def.color && typeof aplicarColorATraves === 'function') aplicarColorATraves(g, def.color);
   scene.add(g);
   draggables.push(g);
   const opt = document.createElement('option');
@@ -197,8 +212,7 @@ function eliminarPersonalizado(nombre){
     const g = draggables[i];
     if (seleccionado === g){
       seleccionado = null;
-      pTitulo.textContent = 'Panel de obra';
-      pBody.innerHTML = '<b>' + esc(nombre) + '</b> se eliminó de la obra. Haz clic sobre cualquier elemento para ver su ficha.';
+      mostrarPanelSinSeleccion();
     }
     quitarGrupoEscena(g);
     draggables.splice(i, 1);
@@ -319,12 +333,14 @@ function aplicarPersonalizados(lista){
       d: numLim(def.d, 8, 2, 60),
       pos: Array.isArray(def.pos) ? [numLim(def.pos[0], 0, CFG.limites.xMin, CFG.limites.xMax),
                                      numLim(def.pos[1], -28, CFG.limites.zMin, CFG.limites.zMax)] : posicionLibre(),
-      descripcion: String(def.descripcion || '').slice(0, 400)
+      descripcion: String(def.descripcion || '').slice(0, 400),
+      id: (def.id && String(def.id)) || nuevoId()
     };
     if (d2.clase === 'edificio'){
       d2.pisos = Math.round(numLim(def.pisos, 5, 1, 30));
       d2.hPiso = numLim(def.hPiso, CFG.hPiso, 2, 5);
       d2.sistema = SISTEMAS_EDIF[def.sistema] ? def.sistema : 'aporticado';
+      d2.color = def.color || null;   // override opcional (recoloreado a mano)
     } else {
       d2.h = numLim(def.h, 2.5, 1, 12);
       d2.color = def.color || '#3f7fbf';
@@ -363,6 +379,11 @@ function renderEspacios(){
     '<b>Creados en la obra</b>' + filas +
     '<div style="margin-top:14px; display:flex; flex-direction:column; gap:8px">' +
       '<b>Crear nuevo</b>' +
+      '<label style="width:100%">Plantilla predeterminada ' +
+        '<select id="espPreset" onchange="aplicarPresetEspacio()" style="flex:1; min-width:180px">' +
+          '<option value="">Personalizado (definir medidas)</option>' +
+          opcionesPresetEspacio() +
+        '</select></label>' +
       '<div style="display:flex; gap:6px; flex-wrap:wrap">' +
         '<select id="espTipo" onchange="cambiarTipoEspacio()">' +
           '<option value="espacio">Espacio en obra</option>' +
@@ -390,6 +411,37 @@ function renderEspacios(){
         icono('mas') + 'Crear y ubicar en la obra</button>' +
     '</div>';
 }
+/* plantillas predeterminadas: mismas medidas y color que los provisionales
+   de fábrica (provisionales.js), para agregar otro igual sin volver a
+   escribir las medidas a mano */
+const PRESETS_ESPACIO = {
+  campamento: { nombre:'Campamento', w:19.8, d:17.6, h:2.5, color:'#3f7fbf', muros:true,  techo:true },
+  almacen:    { nombre:'Almacén',    w:37.5, d:13.9, h:4,   color:'#d9a521', muros:true,  techo:true },
+  acopio:     { nombre:'Acopio de materiales', w:21.4, d:16,   h:1.6, color:'#b08f5a', muros:false, techo:false },
+  maniobra:   { nombre:'Patio de maniobra',    w:14.8, d:17.5, h:2.4, color:'#e0c040', muros:false, techo:false },
+  lavado:     { nombre:'Lavado de llantas',    w:11.6, d:15.7, h:1,   color:'#4a9ec9', muros:false, techo:false },
+  porteria:   { nombre:'Portería', w:10,   d:4,    h:2.5, color:'#b8371f', muros:false, techo:false },
+  comedor:    { nombre:'Comedor',  w:12,   d:6.4,  h:2.7, color:'#5fae4a', muros:true,  techo:true },
+  casilleros: { nombre:'Casilleros', w:15.5, d:13.8, h:2.5, color:'#8a6a3a', muros:true,  techo:true },
+  banos:      { nombre:'Baños y vestidores', w:15.8, d:17.5, h:2.5, color:'#4f66c9', muros:true, techo:true }
+};
+function opcionesPresetEspacio(){
+  return Object.keys(PRESETS_ESPACIO).map(k => '<option value="' + k + '">' + esc(PRESETS_ESPACIO[k].nombre) + '</option>').join('');
+}
+function aplicarPresetEspacio(){
+  const k = document.getElementById('espPreset').value;
+  document.getElementById('espTipo').value = 'espacio';
+  cambiarTipoEspacio();
+  const p = PRESETS_ESPACIO[k];
+  if (!p) return;
+  document.getElementById('espNombre').value = p.nombre;
+  document.getElementById('espAncho').value = p.w;
+  document.getElementById('espFondo').value = p.d;
+  document.getElementById('espAlto').value = p.h;
+  document.getElementById('espColor').value = p.color;
+  document.getElementById('espMuros').checked = p.muros;
+  document.getElementById('espTecho').checked = p.techo;
+}
 function cambiarTipoEspacio(){
   const esEdificio = document.getElementById('espTipo').value === 'edificio';
   document.getElementById('espSoloEspacio').style.display = esEdificio ? 'none' : 'inline-flex';
@@ -407,7 +459,7 @@ function agregarPersonalizado(){
   const clase = document.getElementById('espTipo').value === 'edificio' ? 'edificio' : 'espacio';
   const nombre = nombreDisponible(document.getElementById('espNombre').value || (clase === 'edificio' ? 'Edificio' : 'Espacio'));
   const descripcion = (document.getElementById('espDescripcion').value || '').trim().slice(0, 400);
-  const def = { clase, nombre, descripcion, pos: posicionLibre() };
+  const def = { clase, nombre, descripcion, pos: posicionLibre(), id: nuevoId() };
   if (clase === 'edificio'){
     def.w = numLim(document.getElementById('espAncho').value, 20, 2, 80);
     def.d = numLim(document.getElementById('espFondo').value, 12, 2, 60);

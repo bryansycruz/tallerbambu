@@ -19,6 +19,8 @@ function estadoActual(){
     fecha: new Date().toISOString(),
     elementos,
     personalizados: (typeof personalizados !== 'undefined') ? personalizados : [],
+    equipos: (typeof equiposCreados !== 'undefined') ? equiposCreados : [],
+    overridesProvisionales: (typeof overridesProvisionales !== 'undefined') ? overridesProvisionales : {},
     rutas: rutas.map(r => r.puntos.map(p => [Math.round(p.x*100)/100, Math.round(p.z*100)/100])),
     malacate: parseFloat(rangoMalacate.value),
     malacates: malacates.map(m => ({
@@ -43,6 +45,15 @@ function aplicarEstado(d){
   if (typeof aplicarPersonalizados === 'function'){
     aplicarPersonalizados(Array.isArray(d.personalizados) ? d.personalizados : []);
   }
+  if (typeof aplicarEquipos === 'function'){
+    aplicarEquipos(Array.isArray(d.equipos) ? d.equipos : []);
+  }
+  // renombres/recoloreos/eliminaciones de provisionales de fábrica: se
+  // aplican DESPUÉS de reconstruir todo (arriba) y ANTES del bloque de abajo,
+  // que restaura posición/rotación por el nombre YA renombrado
+  if (typeof aplicarOverridesProvisionales === 'function'){
+    aplicarOverridesProvisionales(d.overridesProvisionales);
+  }
   if (d.elementos){
     // migración: la zona "Paletizado" pasó a llamarse "Acopio de materiales"
     if (d.elementos['Paletizado'] && !d.elementos['Acopio de materiales']){
@@ -52,12 +63,16 @@ function aplicarEstado(d){
       const p = d.elementos[g.userData.info.nombre];
       if (!p) return;
       const inf = g.userData.info;
+      // equipos con altura fija (p. ej. la pluma grúa montada sobre la
+      // cubierta) conservan su "y"; alturaApoyo es plana (siempre 0) y los
+      // haría caer al suelo al recargar el estado guardado
+      const yFija = g.userData.yFija;
       if (Array.isArray(p)){
-        g.position.set(p[0], alturaApoyo(p[0], p[1], inf.w, inf.d), p[1]);
+        g.position.set(p[0], yFija !== undefined ? yFija : alturaApoyo(p[0], p[1], inf.w, inf.d), p[1]);
         g.rotation.y = 0;
         g.userData.bloqueado = false;
       } else {
-        g.position.set(p.x, alturaApoyo(p.x, p.z, inf.w, inf.d), p.z);
+        g.position.set(p.x, yFija !== undefined ? yFija : alturaApoyo(p.x, p.z, inf.w, inf.d), p.z);
         g.rotation.y = (typeof p.rot === 'number' && isFinite(p.rot)) ? p.rot * Math.PI / 180 : 0;
         g.userData.bloqueado = !!p.bloqueado;
       }
@@ -130,10 +145,10 @@ function actualizarEstadoSync(estado, detalle){
   const txt = document.getElementById('syncTxt');
   if (!dot || !txt) return;
   const textos = {
-    local: 'Modo local (cambios solo en este dispositivo)',
-    cargando: 'Cargando distribución del equipo…',
+    local: 'Local',
+    cargando: 'Cargando…',
     ok: 'Sincronizado' + (detalle ? ' · ' + detalle : ''),
-    error: 'Sin conexión (usando copia local)'
+    error: 'Sin conexión'
   };
   dot.className = 'sDot' + (estado === 'ok' ? ' ok' : estado === 'error' ? ' error' : estado === 'cargando' ? ' cargando' : '');
   txt.textContent = textos[estado] || textos.local;

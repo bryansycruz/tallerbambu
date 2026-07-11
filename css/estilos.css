@@ -1,6 +1,6 @@
   /* ============ ESTILOS DE INTERFAZ ============
      Sistema visual "Bambú" con dos temas (claro por defecto y oscuro),
-     acento en VERDE OSCURO (nada brillante), tipografía Space Grotesk para
+     acento en VERDE OSCURO (nada brillante), tipografía JetBrains Mono para
      títulos y etiquetas en mayúsculas, esquinas rectas y retícula de puntos.
      Layout tipo dashboard: sidebar de herramientas a la izquierda y panel
      de obra a la derecha. Los datos y la lógica no cambian: solo la piel.
@@ -8,7 +8,7 @@
   :root {
     color-scheme:light;
     --fondo:#f4f6f1;               /* fondo base de páginas */
-    --puntos:rgba(46,107,36,.12);  /* retícula de puntos */
+    --puntos:rgba(5,150,105,.12);  /* retícula de puntos */
     --superficie:#ffffff;          /* tarjetas, ventanas y sidebars */
     --sup-baja:#f4f6f0;            /* celdas y cabeceras */
     --sup-alta:#eef1e9;            /* botones neutros */
@@ -18,10 +18,10 @@
     --texto-2:#6a7260;
     --borde:#d9ddd1;
     --borde-2:#c3c9b8;
-    --acento:#2e6b24;              /* verde oscuro principal (botones) */
-    --acento-hover:#245418;
-    --acento-texto:#2e6b24;        /* verde para textos acentuados */
-    --acento-suave:rgba(46,107,36,.08);
+    --acento:#059669;              /* verde esmeralda principal (botones) */
+    --acento-hover:#047857;
+    --acento-texto:#047857;        /* verde bosque para textos acentuados */
+    --acento-suave:rgba(5,150,105,.08);
     --sobre-acento:#ffffff;
     --rojo:#b3362a;
     --rojo-fondo:#fdecea;
@@ -32,7 +32,7 @@
   :root[data-tema="oscuro"] {
     color-scheme:dark;
     --fondo:#0a0a0a;
-    --puntos:rgba(110,160,70,.10);
+    --puntos:rgba(52,211,153,.10);
     --superficie:#111111;
     --sup-baja:#0d0d0d;
     --sup-alta:#1a1a1a;
@@ -42,10 +42,10 @@
     --texto-2:#999999;
     --borde:#333333;
     --borde-2:#444444;
-    --acento:#4f8f2c;              /* verde institucional apagado */
-    --acento-hover:#5aa233;
-    --acento-texto:#8cbf6b;        /* verde salvia legible sobre negro */
-    --acento-suave:rgba(140,191,107,.08);
+    --acento:#10b981;              /* verde esmeralda sobre fondo oscuro */
+    --acento-hover:#34d399;
+    --acento-texto:#34d399;        /* verde esmeralda claro, legible sobre negro */
+    --acento-suave:rgba(52,211,153,.08);
     --sobre-acento:#ffffff;
     --rojo:#ff5544;
     --rojo-fondo:#331111;
@@ -55,7 +55,7 @@
   }
   html, body {
     margin:0; padding:0; overflow:hidden; height:100%; background:var(--fondo);
-    font-family:'Inter', 'Helvetica Neue', Arial, sans-serif; color:var(--texto);
+    font-family:'IBM Plex Sans', Arial, ui-sans-serif, system-ui, sans-serif; color:var(--texto);
     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
   }
   canvas { display:block; touch-action:none; }
@@ -65,10 +65,10 @@
   ::-webkit-scrollbar-track { background:transparent; }
   ::-webkit-scrollbar-thumb { background:var(--borde-2); }
   ::-webkit-scrollbar-thumb:hover { background:var(--texto-2); }
-  /* títulos con tipografía Space Grotesk (distinta a la del texto) */
+  /* títulos con tipografía JetBrains Mono (distinta a la del texto) */
   h1, h2, h3, #panel h2, #pTitulo, #inicioMateria, .uiGrupo::before,
   #orgCabecera h3, #planosCabecera h3, #camCabecera h3, #aptoCabecera h3 {
-    font-family:'Space Grotesk', 'Inter', sans-serif; letter-spacing:.5px;
+    font-family:'JetBrains Mono', monospace; letter-spacing:.5px;
   }
   /* colores acentuados que el JS aplica por clase (así cambian con el tema) */
   .txtAcento { color:var(--acento-texto); }
@@ -103,7 +103,7 @@
   #inicioLogo img { width:100%; height:100%; object-fit:contain; }
   #inicioUni {
     font-size:11px; letter-spacing:2.4px; color:var(--texto-2); text-transform:uppercase;
-    font-weight:600; font-family:'Space Grotesk','Inter',sans-serif;
+    font-weight:600; font-family:'JetBrains Mono', monospace;
   }
   .inicioLinea { width:48px; height:2px; background:var(--acento); margin:14px auto; }
   #inicioMateria { font-size:50px; font-weight:700; color:var(--acento-texto); line-height:1; text-transform:uppercase; letter-spacing:1px; }
@@ -120,13 +120,13 @@
   }
   .infoItem span {
     display:block; font-size:9.5px; text-transform:uppercase; letter-spacing:1.2px;
-    color:var(--acento-texto); font-weight:600; font-family:'Space Grotesk','Inter',sans-serif;
+    color:var(--acento-texto); font-weight:600; font-family:'JetBrains Mono', monospace;
   }
   .infoItem b { font-size:13px; color:var(--texto); font-weight:600; }
   #inicioEquipo { margin:22px 0 24px; display:flex; flex-direction:column; gap:4px; }
   #inicioEquipo .eqTitulo {
     font-size:10px; text-transform:uppercase; letter-spacing:2px; color:var(--acento-texto);
-    margin-bottom:4px; font-weight:600; font-family:'Space Grotesk','Inter',sans-serif;
+    margin-bottom:4px; font-weight:600; font-family:'JetBrains Mono', monospace;
   }
   #inicioEquipo span { font-size:14.5px; color:var(--texto); }
   #inicioBtn {
@@ -134,7 +134,7 @@
     width:100%; box-sizing:border-box;
     background:var(--acento); color:var(--sobre-acento); border:1px solid var(--acento); border-radius:0;
     padding:17px 44px; font-size:16px; font-weight:700; cursor:pointer;
-    font-family:'Space Grotesk','Inter',sans-serif; letter-spacing:1px; text-transform:uppercase;
+    font-family:'JetBrains Mono', monospace; letter-spacing:1px; text-transform:uppercase;
     transition:background .2s, border-color .2s, transform .15s;
   }
   #inicioBtn:hover { background:var(--acento-hover); border-color:var(--acento-hover); transform:translateY(-1px); }
@@ -147,7 +147,7 @@
     display:inline-flex; align-items:center; margin:12px 5px 0; vertical-align:middle;
     padding:12px 24px; border:1px solid var(--borde-2); border-radius:0;
     background:transparent; color:var(--texto-2); font-size:13px; font-weight:600; text-decoration:none;
-    font-family:'Space Grotesk','Inter',sans-serif; letter-spacing:1px; text-transform:uppercase;
+    font-family:'JetBrains Mono', monospace; letter-spacing:1px; text-transform:uppercase;
     transition:background .15s, border-color .15s, color .15s;
   }
   #inicioPiso5:hover, #inicioLibre:hover { background:var(--acento-suave); border-color:var(--acento); color:var(--acento-texto); }
@@ -173,20 +173,41 @@
      En escritorio la barra es una columna fija a la izquierda con la marca
      arriba y los grupos apilados; en móvil vuelve a ser el cajón "Menú". */
   #ui {
-    position:absolute; top:0; left:0; bottom:0; z-index:10;
+    position:absolute; top:12px; left:12px; bottom:12px; z-index:10;
     display:flex; flex-direction:column; align-items:stretch; gap:2px;
     width:232px; box-sizing:border-box; overflow-y:auto;
-    background:var(--superficie); padding:14px 14px 18px; border-radius:0;
-    border-right:1px solid var(--borde);
+    background:var(--superficie); padding:14px 14px 18px; border-radius:20px;
+    border:1px solid var(--borde); box-shadow:var(--sombra);
   }
-  /* marca del proyecto como cabecera del sidebar */
+  /* marca del proyecto como cabecera del sidebar (solo título + subtítulo) */
   #uiMarca {
-    display:block; padding:4px 34px 12px 0; margin-bottom:8px;
+    display:flex; align-items:center;
+    padding:2px 30px 12px 0; margin-bottom:6px;
     border-bottom:2px solid var(--acento);
-    font-family:'Space Grotesk','Inter',sans-serif;
-    font-size:15px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
-    color:var(--acento-texto); white-space:nowrap;
   }
+  #uiMarca .marcaTxt { display:flex; flex-direction:column; min-width:0; }
+  #uiMarca .marcaTitulo {
+    font-family:'JetBrains Mono', monospace;
+    font-size:17px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+    color:var(--acento-texto); line-height:1.1;
+  }
+  #uiMarca .marcaSub {
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase;
+    color:var(--texto-2); margin-top:3px;
+  }
+  /* pie del sidebar: tarjeta con el equipo del proyecto */
+  #uiPie {
+    margin-top:auto; padding:12px 0 2px; border-top:1px solid var(--linea);
+    display:flex; flex-direction:column; gap:3px;
+  }
+  #uiPie .pieTitulo {
+    font-family:'JetBrains Mono', monospace;
+    font-size:9.5px; font-weight:600; letter-spacing:1.4px; text-transform:uppercase;
+    color:var(--acento-texto); margin-bottom:3px;
+  }
+  #uiPie .pieNom { font-size:12.5px; color:var(--texto); font-weight:500; }
+  #uiPie .pieUni { font-size:10px; color:var(--texto-2); margin-top:5px; }
   #ui button, #ui select {
     background:var(--sup-alta); color:var(--texto); border:1px solid var(--borde);
     padding:7px 10px; border-radius:0; cursor:pointer; font-size:12.5px;
@@ -213,23 +234,31 @@
   @media (min-width: 821px){
     #ui.minimizado {
       top:12px; left:12px; bottom:auto; width:auto; padding:7px 9px;
-      border:1px solid var(--borde); box-shadow:var(--sombra);
+      border:1px solid var(--borde); box-shadow:var(--sombra); border-radius:16px;
     }
     #ui.minimizado #uiMarca { display:none; }
+    #ui.minimizado #uiPie { display:none; }
     #ui.minimizado > .uiGrupo { display:none; }
-    #ui.minimizado #btnMin { position:static; }
+    /* minimizado: el botón deja de ser un cuadrado de ícono solo (26×26px,
+       pensado para el "−") y pasa a mostrar ícono + "Menú" — se agranda
+       para que la palabra quepa cómoda, no apretada */
+    #ui.minimizado #btnMin {
+      position:static; width:auto; height:auto;
+      padding:7px 12px; justify-content:flex-start;
+    }
   }
 
   /* ============ PANEL DE OBRA (sidebar derecho) ============ */
   #panel {
-    position:absolute; top:0; right:0; bottom:0; z-index:11; width:300px;
+    position:absolute; top:12px; right:12px; bottom:12px; z-index:11; width:300px;
     box-sizing:border-box;
-    background:var(--superficie); border:none; border-left:1px solid var(--borde); border-radius:0;
+    background:var(--superficie); border:1px solid var(--borde); border-radius:20px;
+    box-shadow:var(--sombra);
     padding:16px; color:var(--texto); max-height:none; overflow-y:auto;
   }
   #panel h2 {
-    margin:0 0 10px; font-size:13px; color:var(--acento-texto); padding:0 28px 10px 0;
-    text-transform:uppercase; letter-spacing:1.5px;
+    margin:0 0 10px; font-size:16px; font-weight:700; color:var(--acento-texto); padding:0 28px 10px 0;
+    text-transform:uppercase; letter-spacing:1px;
     border-bottom:2px solid var(--acento);
   }
   /* botón para ocultar/mostrar el panel (más específico que "#panel button"
@@ -242,7 +271,7 @@
   }
   #panel #panelToggle:hover { background:var(--acento); color:var(--sobre-acento); border-color:var(--acento); }
   /* plegado (escritorio): solo queda el título flotante + botón de reabrir */
-  #panel.plegado { top:12px; right:12px; bottom:auto; width:300px; border:1px solid var(--borde); box-shadow:var(--sombra); }
+  #panel.plegado { top:12px; right:12px; bottom:auto; width:300px; border:1px solid var(--borde); box-shadow:var(--sombra); border-radius:20px; }
   #panel.plegado #pBody { display:none; }
   #panel table { width:100%; border-collapse:collapse; font-size:12.5px; }
   #panel td { padding:4px 2px; border-bottom:1px solid var(--linea); vertical-align:top; }
@@ -265,6 +294,100 @@
   /* eliminar espacios/edificios creados por el usuario */
   #panel button.btnEliminar { background:var(--rojo-fondo); border-color:var(--rojo); color:var(--rojo-texto); }
   #panel button.btnEliminar:hover { background:var(--rojo); color:#fff; border-color:var(--rojo); }
+  /* controles de la pestaña "Modificar": renombrar y cambiar color */
+  #pModificar label { display:block; font-size:11px; color:var(--texto-2); font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
+  #pModificar input[type="text"], #pModificar input:not([type]) {
+    background:var(--campo); border:1px solid var(--borde); color:var(--texto);
+    border-radius:0; padding:7px 9px; font-size:13px; width:100%; box-sizing:border-box;
+  }
+  #pModificar input:focus { outline:none; border-color:var(--acento); }
+  #pModificar input[type="color"] { padding:2px 3px; width:42px; height:32px; cursor:pointer; flex:none; }
+  #pModificar button[style*="width:auto"] {
+    width:auto; margin-top:0; padding:7px 10px; white-space:nowrap;
+    display:inline-flex; align-items:center; gap:4px;
+  }
+
+  /* ---- Pestañas del panel (dashboard: Selección / Modificar / Ficha técnica) ---- */
+  #panelTabs {
+    display:flex; gap:0; margin:0 0 14px;
+    border-bottom:1px solid var(--borde);
+  }
+  #panelTabs .tabBtn {
+    flex:1; margin:0; padding:9px 4px; background:none; border:none;
+    border-bottom:2px solid transparent; cursor:pointer;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11.5px; font-weight:700; letter-spacing:.7px; text-transform:uppercase;
+    color:var(--texto-2); transition:color .15s, border-color .15s;
+  }
+  #panelTabs .tabBtn:hover { color:var(--acento-texto); }
+  #panelTabs .tabBtn.activo { color:var(--acento-texto); border-bottom-color:var(--acento); }
+  /* solo se muestra la pestaña activa */
+  #panel .panelTab { display:none; }
+  #panel .panelTab.activo { display:block; }
+
+  /* ---- Datos BIM: tarjetas de metadatos del proyecto (estilo bambuco) ---- */
+  .bimGrid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .bimCard {
+    background:var(--sup-baja); border:1px solid var(--borde);
+    border-left:3px solid var(--acento); padding:8px 10px;
+    display:flex; flex-direction:column; gap:3px; min-width:0;
+  }
+  .bimCard span {
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+    color:var(--acento-texto);
+  }
+  .bimCard b { font-size:13px; color:var(--texto); font-weight:600; line-height:1.25; }
+  .bimNota {
+    display:flex; gap:9px; align-items:flex-start; margin-top:10px;
+    background:var(--acento-suave); border:1px solid var(--acento);
+    padding:10px 12px;
+  }
+  .bimNota svg { width:16px; height:16px; flex:none; color:var(--acento-texto); margin-top:1px; }
+  .bimNota b { display:block; color:var(--acento-texto); font-size:12px; margin-bottom:3px; }
+  .bimNota > div { font-size:11.5px; color:var(--texto-2); line-height:1.45; }
+
+  /* ---- Equipo: lista de integrantes + acceso al organigrama ---- */
+  .equipoLista { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+  .equipoItem {
+    background:var(--sup-baja); border:1px solid var(--borde);
+    border-left:3px solid var(--acento); padding:8px 10px;
+    display:flex; flex-direction:column; gap:2px;
+  }
+  .equipoItem span {
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+    color:var(--acento-texto);
+  }
+  .equipoItem b { font-size:14px; color:var(--texto); font-weight:600; }
+  #panelOrg {
+    width:100%; display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    background:var(--acento); color:var(--sobre-acento); border:1px solid var(--acento);
+    padding:9px; border-radius:0; cursor:pointer;
+    font-size:12.5px; font-weight:700; transition:background .15s, border-color .15s;
+  }
+  #panelOrg:hover { background:var(--acento-hover); border-color:var(--acento-hover); }
+  #panelOrg svg { width:15px; height:15px; }
+
+  /* plegado (escritorio): ocultar pestañas y contenido, dejar solo el título */
+  #panel.plegado #panelTabs, #panel.plegado .panelTab { display:none; }
+
+  /* ---- Barra flotante de controles de vista (viewport, escritorio) ---- */
+  #viewCtrl {
+    position:absolute; bottom:16px; left:calc(50% + 116px); transform:translateX(-50%);
+    z-index:12; display:flex; align-items:center; gap:4px;
+    background:var(--superficie); border:1px solid var(--borde); box-shadow:var(--sombra);
+    padding:5px 8px; border-radius:26px;
+  }
+  #viewCtrl button {
+    width:34px; height:34px; padding:0; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:transparent; color:var(--texto); border:none; cursor:pointer;
+    transition:background .15s, color .15s;
+  }
+  #viewCtrl button:hover { background:var(--acento); color:var(--sobre-acento); }
+  #viewCtrl button svg { width:17px; height:17px; margin:0; }
+  #viewCtrl .vcSep { width:1px; height:20px; background:var(--borde); margin:0 2px; }
 
   #ayuda {
     position:absolute; bottom:12px; left:244px; z-index:10;
@@ -326,7 +449,7 @@
     background:var(--sup-baja); padding:12px 18px; border-radius:0;
     border-bottom:2px solid var(--acento);
   }
-  #aptoCabecera h3 { margin:0; font-size:14px; color:var(--acento-texto); text-transform:uppercase; letter-spacing:1.5px; }
+  #aptoCabecera h3 { margin:0; font-size:17px; font-weight:700; color:var(--acento-texto); text-transform:uppercase; letter-spacing:1px; }
   #aptoCerrar { background:none; border:none; color:var(--texto-2); font-size:22px; cursor:pointer; line-height:1; }
   #aptoCerrar:hover { color:var(--acento-texto); }
   #aptoBody { padding:16px 18px; font-size:13px; line-height:1.5; }
@@ -357,7 +480,7 @@
     background:var(--sup-baja); padding:12px 18px; border-radius:0;
     border-bottom:2px solid var(--acento); position:sticky; top:0; z-index:1;
   }
-  #orgCabecera h3 { margin:0; font-size:14px; color:var(--acento-texto); text-transform:uppercase; letter-spacing:1.5px; }
+  #orgCabecera h3 { margin:0; font-size:17px; font-weight:700; color:var(--acento-texto); text-transform:uppercase; letter-spacing:1px; }
   #orgCerrar { background:none; border:none; color:var(--texto-2); font-size:22px; cursor:pointer; line-height:1; }
   #orgCerrar:hover { color:var(--acento-texto); }
   #orgBody { padding:16px 18px; font-size:13px; line-height:1.5; }
@@ -395,6 +518,10 @@
   .ic svg { width:14px; height:14px; vertical-align:-2px; margin-right:5px; flex:none; }
   .ic.solo svg { margin-right:0; }
   #panel button svg, .orgAccion svg { width:14px; height:14px; vertical-align:-2px; margin-right:6px; }
+  /* red de seguridad: un svg de icono() sin envoltorio ".ic" (bug ya corregido
+     en btnPiso4/btnSotanos) no debe volver a dibujarse al tamaño por defecto
+     del navegador (300×150px) */
+  #ui button svg, #ui select svg { width:14px; height:14px; vertical-align:-2px; margin-right:5px; flex:none; }
 
   /* ---- Indicador de sincronización ---- */
   .sDot {
@@ -420,7 +547,7 @@
     background:var(--sup-baja); padding:12px 18px; border-radius:0;
     border-bottom:2px solid var(--acento); position:sticky; top:0; z-index:1;
   }
-  #planosCabecera h3 { margin:0; font-size:13px; color:var(--acento-texto); text-transform:uppercase; letter-spacing:1.5px; }
+  #planosCabecera h3 { margin:0; font-size:16px; font-weight:700; color:var(--acento-texto); text-transform:uppercase; letter-spacing:1px; }
   #planosCerrar { background:none; border:none; color:var(--texto-2); font-size:22px; cursor:pointer; line-height:1; }
   #planosCerrar:hover { color:var(--acento-texto); }
   #planosBody { padding:14px 18px; font-size:13px; line-height:1.5; }
@@ -429,6 +556,11 @@
     padding:7px 4px; border-bottom:1px solid var(--linea); font-size:12.5px;
   }
   .planoFila .planoNom { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* red de seguridad: un icono() suelto dentro de .planoNom (fuera de #camBody,
+     que ya tenía su propia regla) no debe dibujarse al tamaño por defecto del
+     navegador — mismo bug que btnPiso4/btnSotanos, encontrado en la lista de
+     "Creados en la obra" del panel Espacios */
+  .planoNom svg { width:13px; height:13px; vertical-align:-2px; margin-right:4px; flex:none; }
   .planoFila small { color:var(--texto-2); }
   .planoBtn {
     background:var(--sup-alta); color:var(--texto); border:1px solid var(--borde);
@@ -486,14 +618,15 @@
 .uiGrupo::before {
   content:attr(data-nombre);
   position:absolute; top:4px; left:0;
-  font-size:9px; letter-spacing:1.4px; text-transform:uppercase;
-  color:var(--acento-texto); font-weight:600; white-space:nowrap; opacity:.9;
+  font-family:'JetBrains Mono', monospace;
+  font-size:10px; letter-spacing:1.4px; text-transform:uppercase;
+  color:var(--acento-texto); font-weight:700; white-space:nowrap; opacity:.95;
 }
 #ui .uiGrupo:last-of-type { border-bottom:none; }
 #relojObra {
   background:var(--sup-baja); border:1px solid var(--borde); border-radius:0;
   padding:5px 10px; color:var(--acento-texto); font-size:13px;
-  font-family:'Space Grotesk','Inter',sans-serif;
+  font-family:'JetBrains Mono', monospace;
 }
 #relojObra b { font-variant-numeric:tabular-nums; }
 
@@ -512,7 +645,7 @@
   background:var(--sup-baja); padding:9px 16px; border-radius:0;
   border-bottom:2px solid var(--acento); position:sticky; top:0; z-index:1;
 }
-#camCabecera h3 { margin:0; font-size:12px; letter-spacing:1.5px; color:var(--acento-texto); text-transform:uppercase; }
+#camCabecera h3 { margin:0; font-size:15px; font-weight:700; letter-spacing:1px; color:var(--acento-texto); text-transform:uppercase; }
 #camCerrar { background:none; border:none; color:var(--texto-2); font-size:22px; cursor:pointer; line-height:1; }
 #camCerrar:hover { color:var(--acento-texto); }
 #camBody { padding:14px 18px; font-size:13px; line-height:1.5; }
@@ -551,7 +684,7 @@
   background:var(--sup-baja); padding:12px 18px; border-radius:0;
   border-bottom:2px solid var(--acento); position:sticky; top:0; z-index:1;
 }
-#espCabecera h3 { margin:0; font-size:13px; color:var(--acento-texto); text-transform:uppercase; letter-spacing:1.5px; }
+#espCabecera h3 { margin:0; font-size:16px; font-weight:700; color:var(--acento-texto); text-transform:uppercase; letter-spacing:1px; }
 #espCerrar { background:none; border:none; color:var(--texto-2); font-size:22px; cursor:pointer; line-height:1; }
 #espCerrar:hover { color:var(--acento-texto); }
 #espBody { padding:14px 18px; font-size:13px; line-height:1.5; }
@@ -565,6 +698,53 @@
 #espBody b { color:var(--acento-texto); font-size:13px; }
 #espBody label { color:var(--texto-2); font-size:12.5px; display:inline-flex; align-items:center; gap:5px; }
 
+/* ============ CREAR EQUIPOS Y MAQUINARIA ============ */
+#equipoOverlay {
+  position:fixed; inset:0; z-index:33; display:none;
+  align-items:center; justify-content:center; background:var(--velo);
+}
+#equipoVentana {
+  width:min(600px, 94vw); max-height:84vh; overflow-y:auto;
+  background:var(--superficie); border:1px solid var(--borde); border-radius:0;
+  color:var(--texto); box-shadow:var(--sombra);
+}
+#equipoCabecera {
+  display:flex; justify-content:space-between; align-items:center;
+  background:var(--sup-baja); padding:12px 18px; border-radius:0;
+  border-bottom:2px solid var(--acento); position:sticky; top:0; z-index:1;
+}
+#equipoCabecera h3 { margin:0; font-size:16px; font-weight:700; color:var(--acento-texto); text-transform:uppercase; letter-spacing:1px; }
+#equipoCerrar { background:none; border:none; color:var(--texto-2); font-size:22px; cursor:pointer; line-height:1; }
+#equipoCerrar:hover { color:var(--acento-texto); }
+#equipoBody { padding:14px 18px; font-size:13px; line-height:1.5; }
+#equipoBody input, #equipoBody select, #equipoBody textarea {
+  background:var(--campo); border:1px solid var(--borde); color:var(--texto);
+  border-radius:0; padding:7px 10px; font-size:13px;
+}
+#equipoBody input:focus, #equipoBody select:focus, #equipoBody textarea:focus { outline:none; border-color:var(--acento); }
+#equipoBody b { color:var(--acento-texto); font-size:13px; }
+#equipoBody label { color:var(--texto-2); font-size:12.5px; display:inline-flex; align-items:center; gap:5px; }
+
+/* ============ VER ZONAS: ÁREA Y AFORO ============ */
+#zonasOverlay {
+  position:fixed; inset:0; z-index:33; display:none;
+  align-items:center; justify-content:center; background:var(--velo);
+}
+#zonasVentana {
+  width:min(560px, 94vw); max-height:84vh; overflow-y:auto;
+  background:var(--superficie); border:1px solid var(--borde); border-radius:0;
+  color:var(--texto); box-shadow:var(--sombra);
+}
+#zonasCabecera {
+  display:flex; justify-content:space-between; align-items:center;
+  background:var(--sup-baja); padding:12px 18px; border-radius:0;
+  border-bottom:2px solid var(--acento); position:sticky; top:0; z-index:1;
+}
+#zonasCabecera h3 { margin:0; font-size:16px; font-weight:700; color:var(--acento-texto); text-transform:uppercase; letter-spacing:1px; }
+#zonasCerrar { background:none; border:none; color:var(--texto-2); font-size:22px; cursor:pointer; line-height:1; }
+#zonasCerrar:hover { color:var(--acento-texto); }
+#zonasBody { padding:14px 18px; font-size:13px; line-height:1.5; }
+
 /* ============ RESPONSIVE (móvil y tablet) ============ */
 /* doble ID para ganarle en especificidad a "#ui button" (display:flex) */
 #ui #btnMenu { display:none; }
@@ -576,8 +756,9 @@
     top:8px; left:8px; right:8px; bottom:auto; width:auto;
     flex-direction:row; flex-wrap:wrap; align-items:center; overflow:visible;
     gap:5px; padding:7px 9px; border:1px solid var(--borde); box-shadow:var(--sombra);
+    border-radius:18px;
   }
-  #uiMarca { display:none; }
+  #uiMarca, #uiPie { display:none; }
   #ui:not(.abierto) > *:not(#btnMenu) { display:none; }
   #ui button, #ui select { width:auto; }
   #ui label { width:auto; }
@@ -602,7 +783,7 @@
   #ayuda { display:none; }
 
   /* textos de ventanas y panel, más compactos en celular */
-  #panel h2 { font-size:12px; }
+  #panel h2 { font-size:14px; }
   #panel .desc, #panel td, #pBody { font-size:11px; }
   #panel button, .orgAccion, .planoBtn { font-size:11px; }
   #orgBody, #planosBody, #camBody, #aptoBody { font-size:11px; }
@@ -626,14 +807,19 @@
     top:auto; bottom:0; left:8px; right:8px; width:auto;
     max-height:46px; overflow:hidden;
     border:1px solid var(--borde); border-bottom:none;
-    border-radius:0; padding:12px 16px;
+    border-radius:18px 18px 0 0; padding:12px 16px;
   }
   #panel.abierto { max-height:48vh; overflow-y:auto; }
   #panel.plegado { top:auto; bottom:0; left:8px; right:8px; width:auto; box-shadow:none; }
   /* en móvil el panel ya se pliega tocando el título (cajón inferior):
      el botón de escritorio sobra y se oculta para no chocar con ese gesto */
   #panel #panelToggle { display:none; }
-  #panel.plegado #pBody { display:block; }   /* anula el plegado de escritorio */
+  /* anula el plegado de escritorio: en el cajón móvil manda .abierto */
+  #panel.plegado #pBody { display:block; }
+  #panel.plegado #panelTabs { display:flex; }
+  #panel.plegado .panelTab.activo { display:block; }
+  /* la barra flotante de vista se reemplaza por el pad táctil en móvil */
+  #viewCtrl { display:none; }
   #panel h2 { cursor:pointer; user-select:none; padding-right:0; }
   #panel h2::after { content:' ▾'; color:var(--texto-2); font-size:13px; }
   #panel.abierto h2::after { content:' ▴'; }

@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/estilos.css">
 </head>
 <body>
@@ -66,7 +66,12 @@
 
 <!-- ============ BARRA DE HERRAMIENTAS (agrupada por temas) ============ -->
 <div id="ui">
-  <div id="uiMarca">Proyecto Bambú</div>
+  <div id="uiMarca">
+    <div class="marcaTxt">
+      <span class="marcaTitulo">Proyecto Bambú</span>
+      <span class="marcaSub">Plano 3D</span>
+    </div>
+  </div>
   <button id="btnMenu"><span class="ic" data-ic="menu"></span>Menú</button>
   <button id="btnMin" title="Minimizar el menú"><span class="ic" data-ic="menos"></span></button>
   <button class="btnTema" title="Alternar entre fondo blanco y negro"></button>
@@ -75,6 +80,7 @@
     <button id="btnSotanos" title="Corte de los sótanos S1-S3 con parqueaderos y rampa"><span class="ic" data-ic="bajar"></span>Sótanos</button>
     <button id="btnEtiquetas" title="Mostrar u ocultar los nombres flotantes de las zonas"><span class="ic" data-ic="etiqueta"></span>Etiquetas</button>
     <button id="btnOrg" title="Roles del equipo, funciones y zonas de riesgo"><span class="ic" data-ic="equipo"></span>Organigrama</button>
+    <button id="btnZonas" title="Ver todas las zonas creadas: área (m²) y aforo máximo"><span class="ic" data-ic="plano"></span>Zonas y aforo</button>
   </div>
   <div class="uiGrupo" data-nombre="Materiales y rutas">
     <button id="btnFlujo" title="Dibuja rutas de materiales con clics sobre el terreno"><span class="ic" data-ic="ruta"></span>Dibujar ruta</button>
@@ -84,6 +90,7 @@
   </div>
   <div class="uiGrupo" data-nombre="Crear en obra">
     <button id="btnEspacios" title="Crea espacios y edificios con sus medidas, y elimínalos cuando no los necesites"><span class="ic" data-ic="mas"></span>Espacios</button>
+    <button id="btnEquipos" title="Crea montacargas, carretillas, andamios colgantes y plumas grúa"><span class="ic" data-ic="herramienta"></span>Equipos</button>
   </div>
   <div class="uiGrupo" data-nombre="Guardar y cargar">
     <button id="btnGuardar" title="Guarda para el equipo y descarga un respaldo"><span class="ic" data-ic="guardar"></span>Guardar</button>
@@ -96,9 +103,18 @@
   </div>
   <div class="uiGrupo" data-nombre="Ubicar">
     <select id="selElem" title="Lleva la cámara hasta la zona elegida"><option value="">— Ir a elemento —</option></select>
-    <label id="estadoSync" title="Estado de sincronización con el equipo"><span class="sDot" id="syncDot"></span><span id="syncTxt">Modo local</span></label>
+    <label id="estadoSync" title="Estado de sincronización con el equipo"><span class="sDot" id="syncDot"></span><span id="syncTxt"></span></label>
   </div>
   <input type="file" id="fileCarga" accept=".json" style="display:none">
+
+  <!-- Pie del sidebar: equipo del proyecto (tarjeta tipo dashboard) -->
+  <div id="uiPie">
+    <span class="pieTitulo">Equipo · Taller II</span>
+    <span class="pieNom">Bryan Yamá Cruz</span>
+    <span class="pieNom">Manuela Gómez</span>
+    <span class="pieNom">Carlos Holguín</span>
+    <span class="pieUni">Universidad Nacional de Colombia</span>
+  </div>
 </div>
 
 <div id="modoAviso">Dibujando ruta: haz clic sobre el terreno para marcar el recorrido y termina con "Finalizar ruta"</div>
@@ -166,20 +182,55 @@
   </div>
 </div>
 
-<!-- ============ PANEL DE INFORMACIÓN ============ -->
+<!-- ============ CREAR EQUIPOS Y MAQUINARIA ============ -->
+<div id="equipoOverlay">
+  <div id="equipoVentana">
+    <div id="equipoCabecera">
+      <h3>Crear equipos y maquinaria</h3>
+      <button id="equipoCerrar" title="Cerrar">✕</button>
+    </div>
+    <div id="equipoBody"></div>
+  </div>
+</div>
+
+<!-- ============ VER ZONAS: ÁREA Y AFORO ============ -->
+<div id="zonasOverlay">
+  <div id="zonasVentana">
+    <div id="zonasCabecera">
+      <h3>Zonas y aforo</h3>
+      <button id="zonasCerrar" title="Cerrar">✕</button>
+    </div>
+    <div id="zonasBody"></div>
+  </div>
+</div>
+
+<!-- ============ PANEL DE INFORMACIÓN (dashboard con pestañas) ============ -->
 <div id="panel">
   <button id="panelToggle" title="Ocultar el panel">–</button>
   <h2 id="pTitulo">Panel de obra</h2>
-  <div id="pBody" class="desc">
-    Proyecto <b>Bambú</b> — Marinilla, Antioquia · Torres 01 y 02 (120 aptos). Fase de <b>cerramientos y acabados</b> (estructura existente).<br><br>
-    Haz clic sobre cualquier elemento (torre, malacate, cerramiento o provisionales) para ver su ficha:
-    materiales, altura, cerramiento y ubicación. Arrastra los provisionales para reubicarlos.<br><br>
-    Los cambios se guardan automáticamente y los ve todo el equipo (punto verde/naranja arriba).
-    Selecciona cualquier zona o maquinaria para <b>bloquearla</b> en su lugar o adjuntarle su
-    <b>ficha técnica, planos y enlaces de página</b>. Haz clic en el <b>piso 5</b> de la torre
-    para abrir su hoja de detalle.<br><br>
-    <b>Guardar</b> además descarga un <i>distribucion_obra.json</i> de respaldo:
-    otra persona puede abrirlo con <b>Cargar</b> si no hay conexión compartida.
+
+  <!-- Pestañas al estilo del inspector de bambuco: cada una muestra una
+       faceta distinta del elemento seleccionado (o el resumen del proyecto
+       si no hay nada seleccionado) -->
+  <div id="panelTabs">
+    <button class="tabBtn activo" data-tab="sel">Selección</button>
+    <button class="tabBtn" data-tab="bim">Modificar</button>
+    <button class="tabBtn" data-tab="equipo">Ficha técnica</button>
+  </div>
+
+  <!-- Pestaña Selección: información general (proyecto o del elemento elegido) -->
+  <div class="panelTab activo" data-tab="sel">
+    <div id="pInfoGeneral" class="desc"></div>
+  </div>
+
+  <!-- Pestaña Modificar: bloquear, girar, renombrar, cambiar color, eliminar -->
+  <div class="panelTab" data-tab="bim">
+    <div id="pModificar" class="desc"></div>
+  </div>
+
+  <!-- Pestaña Ficha técnica: dimensiones, material, cerramiento, aforo, planos -->
+  <div class="panelTab" data-tab="equipo">
+    <div id="pFichaTecnica" class="desc"></div>
   </div>
 </div>
 
@@ -197,6 +248,15 @@
     <button data-mover="alejar" aria-label="Alejar" class="ic solo" data-ic="menos"></button>
     <button id="padEtiquetas" aria-label="Mostrar u ocultar etiquetas" class="ic solo" data-ic="ojo"></button>
   </div>
+</div>
+
+<!-- Barra flotante de controles de vista (escritorio), como el viewport de bambuco -->
+<div id="viewCtrl">
+  <button data-vc="zin" title="Acercar"><span class="ic solo" data-ic="mas"></span></button>
+  <button data-vc="zout" title="Alejar"><span class="ic solo" data-ic="menos"></span></button>
+  <span class="vcSep"></span>
+  <button data-vc="rot" title="Rotar la vista"><span class="ic solo" data-ic="refrescar"></span></button>
+  <button data-vc="reset" title="Vista general de la obra"><span class="ic solo" data-ic="edificio"></span></button>
 </div>
 
 <div id="ayuda">
@@ -251,6 +311,45 @@
 <script src="js/planos.js"></script>
 <script src="js/camiones.js"></script>
 <script src="js/creador.js"></script>
+<script src="js/equipos.js"></script>
+<script src="js/modificar.js"></script>
 <script src="js/main.js"></script>
+<script>
+  /* ===== Dashboard: pestañas del panel + controles de vista =====
+     Se ejecuta al final, cuando ya existen camCtrl / irA / actualizarCamara
+     (definidos por los módulos anteriores). No toca la lógica 3D. */
+  (function () {
+    /* -- Pestañas del panel (Selección / Modificar / Ficha técnica) -- */
+    const tabs = document.querySelectorAll('#panelTabs .tabBtn');
+    const paneles = document.querySelectorAll('#panel .panelTab');
+    function mostrarTab(nombre) {
+      tabs.forEach(b => b.classList.toggle('activo', b.dataset.tab === nombre));
+      paneles.forEach(p => p.classList.toggle('activo', p.dataset.tab === nombre));
+    }
+    tabs.forEach(b => b.addEventListener('click', () => mostrarTab(b.dataset.tab)));
+
+    /* Al seleccionar un elemento en el 3D, el módulo de interacción reescribe
+       #pInfoGeneral. Observamos ese cambio para saltar automáticamente a
+       "Selección" y que la ficha del elemento quede a la vista. */
+    const pInfoGeneral = document.getElementById('pInfoGeneral');
+    if (pInfoGeneral && 'MutationObserver' in window) {
+      new MutationObserver(() => mostrarTab('sel')).observe(pInfoGeneral, { childList: true });
+    }
+
+    /* -- Controles de vista flotantes (usan la cámara orbital existente) -- */
+    const accionesVista = {
+      zin:   () => { camCtrl.radius = Math.max(12, camCtrl.radius * 0.88); },
+      zout:  () => { camCtrl.radius = Math.min(500, camCtrl.radius * 1.14); },
+      rot:   () => { camCtrl.theta += Math.PI / 6; },
+      reset: () => { if (typeof irA === 'function') irA(0, 6, -8, 170, 0.5, 1.22); }
+    };
+    document.querySelectorAll('#viewCtrl button[data-vc]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const fn = accionesVista[btn.dataset.vc];
+        if (fn) { fn(); if (typeof actualizarCamara === 'function') actualizarCamara(); }
+      });
+    });
+  })();
+</script>
 </body>
 </html>

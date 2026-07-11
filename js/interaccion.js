@@ -126,10 +126,16 @@ renderer.domElement.addEventListener('pointermove', e => {
     rayoDesdeEvento(e);
     const p = interseccionSuelo();
     if (p){
-      if (arrastrando.userData.esMalacate){
+      if (arrastrando.userData.esMalacate || arrastrando.userData.esAndamio){
+        // el andamio colgante se ancla a la fachada más cercana igual que el malacate
         const s = ajustarMalacate(p.x, p.z);
         arrastrando.position.set(s.x, 0, s.z);
         if (arrastrando === malacate) actualizarDescargue();
+      } else if (arrastrando.userData.yFija !== undefined){
+        // pluma grúa montada sobre la cubierta: conserva su altura fija al arrastrarla
+        const nx = Math.min(CFG.limites.xMax, Math.max(CFG.limites.xMin, p.x));
+        const nz = Math.min(CFG.limites.zMax, Math.max(CFG.limites.zMin, p.z));
+        arrastrando.position.set(nx, arrastrando.userData.yFija, nz);
       } else {
         const nx = Math.min(CFG.limites.xMax, Math.max(CFG.limites.xMin, p.x));
         const nz = Math.min(CFG.limites.zMax, Math.max(CFG.limites.zMin, p.z));
@@ -182,9 +188,45 @@ renderer.domElement.addEventListener('wheel', e => {
   camCtrl.radius = Math.min(500, Math.max(12, camCtrl.radius * (1 + e.deltaY * 0.001)));
 }, { passive:true });
 
-/* ---- Selección + panel ---- */
+/* ---- Selección + panel (3 pestañas: Selección / Modificar / Ficha técnica) ---- */
 const pTitulo = document.getElementById('pTitulo');
-const pBody   = document.getElementById('pBody');
+const pBody   = document.getElementById('pInfoGeneral');   // pestaña "Selección": info general
+const pModificar = document.getElementById('pModificar');  // pestaña "Modificar": acciones
+const pFicha  = document.getElementById('pFichaTecnica');  // pestaña "Ficha técnica": datos técnicos
+
+/* resumen del proyecto: es lo que se ve en "Selección" cuando no hay nada
+   elegido en el 3D (y también tras eliminar el elemento seleccionado) */
+function infoGeneralProyecto(){
+  return '<div class="bimGrid">' +
+      '<div class="bimCard"><span>Ubicación</span><b>Marinilla, Antioquia</b></div>' +
+      '<div class="bimCard"><span>Torres</span><b>2 (01 y 02), en línea</b></div>' +
+      '<div class="bimCard"><span>Apartamentos</span><b>120 (80 + 40) · A–L</b></div>' +
+      '<div class="bimCard"><span>Niveles</span><b>10 pisos + cubierta · 3 sótanos</b></div>' +
+      '<div class="bimCard"><span>Altura</span><b>26,50 m · entrepiso 2,65 m</b></div>' +
+      '<div class="bimCard"><span>Lote</span><b>163,00 × 47,00 m</b></div>' +
+      '<div class="bimCard"><span>Fase actual</span><b>Cerramientos y acabados</b></div>' +
+      '<div class="bimCard"><span>Personal en pico</span><b>305 trabajadores</b></div>' +
+    '</div>' +
+    '<div class="bimNota">' + icono('etiqueta') +
+      '<div><b>Arquitectura sostenible</b>Torre 02 en bambú estructural certificado; el bambú actúa como sumidero de CO₂ y compensa parte de las emisiones del hormigón de la Torre 01.</div>' +
+    '</div>' +
+    '<div class="desc" style="margin-top:12px">Haz clic sobre cualquier elemento (torre, malacate, cerramiento o provisionales) para ver su información, modificarlo en la pestaña <b>Modificar</b> o consultar su <b>ficha técnica</b>.</div>';
+}
+/* estado sin selección: se llama al arrancar y cada vez que se elimina el
+   elemento que estaba elegido (creador.js, equipos.js, escena.js) */
+function mostrarPanelSinSeleccion(){
+  pTitulo.textContent = 'Panel de obra';
+  pBody.innerHTML = infoGeneralProyecto();
+  pModificar.innerHTML = '<div class="desc">Selecciona un elemento en la obra para bloquearlo, girarlo, renombrarlo, cambiar su color o eliminarlo.</div>';
+  pFicha.innerHTML = '<div class="desc">Selecciona un elemento en la obra para ver su ficha técnica: dimensiones, material, cerramiento y aforo.</div>';
+}
+/* color "actual" de un elemento (para precargar el selector de color de la
+   pestaña Modificar): toma el color del primer material que encuentre */
+function colorActualHex(g){
+  let hex = null;
+  g.traverse(n => { if (!hex && n.isMesh && n.material && n.material.color) hex = '#' + n.material.color.getHexString(); });
+  return hex;
+}
 
 function actualizarTinte(obj){
   if (!obj) return;
@@ -220,6 +262,74 @@ function toggleBloqueo(){
   guardarCompartido();
   avisoGuardado(seleccionado.userData.bloqueado ? 'Objeto bloqueado' : 'Objeto desbloqueado');
 }
+/* pestaña "Selección": info general (qué es, para qué sirve) */
+function renderInfoGeneral(obj){
+  const d = obj.userData.info;
+  return '<div class="desc">' + (d.descripcion || 'Sin descripción.') + '</div>';
+}
+/* pestaña "Modificar": bloqueo, girar, renombrar, cambiar color, eliminar.
+   Renombrar/recolorear/eliminar solo aplican a elementos con idEstable
+   (provisionales de fábrica, espacios/edificios y equipos personalizados) —
+   la torre, el cerramiento y los malacates son estructura fija de la obra. */
+function renderModificar(obj){
+  const d = obj.userData.info;
+  const esProvisional = draggables.includes(obj);
+  const id = obj.userData.idEstable || '';
+  let html = '';
+  if (esProvisional){
+    html += '<button class="btnBloqueo ' + (obj.userData.bloqueado ? 'bloqueado' : 'libre') + '" onclick="toggleBloqueo()">' + icono(obj.userData.bloqueado ? 'candadoAbierto' : 'candado') + (obj.userData.bloqueado ? 'Bloqueado — toca para desbloquear' : 'Libre — toca para bloquear') + '</button>' +
+      '<div style="display:flex; gap:6px; margin-top:8px"><button style="flex:1" onclick="girarSeleccionado(-1)">' + icono('girarIzq') + 'Girar 45°</button><button style="flex:1" onclick="girarSeleccionado(1)">' + icono('girarDer') + 'Girar 45°</button></div>';
+  }
+  if (obj.userData.esMalacate){
+    html += '<div style="display:flex; gap:6px; margin-top:8px">' +
+      '<button style="flex:1" onclick="agregarMalacate()">' + icono('mas') + 'Agregar otro malacate</button>' +
+      (malacates.length > 1 ? '<button style="flex:1" class="btnEliminar" onclick="eliminarMalacate(seleccionado.userData.info.nombre)">' + icono('basura') + 'Eliminar este</button>' : '') +
+      '</div>';
+  }
+  if (obj.userData.esAndamio){
+    html += '<div class="desc" style="margin-top:8px">' +
+      '<b class="txtFuerte">Nivel actual: Piso ' + (obj.userData.pisoActual + 1) + '</b><br>' +
+      '<input type="range" style="width:100%; margin-top:4px" min="' + obj.userData.pisoDesde + '" max="' + obj.userData.pisoHasta + '" step="1" value="' + obj.userData.pisoActual + '" onchange="moverAndamio(this.value)">' +
+      '<small>Puede recorrer del piso ' + (obj.userData.pisoDesde + 1) + ' al piso ' + (obj.userData.pisoHasta + 1) + '</small>' +
+      '</div>';
+  }
+  if (id){
+    html += '<div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--borde)">' +
+      '<label style="display:block">Nombre' +
+        '<div style="display:flex; gap:6px; margin-top:3px"><input id="modNombre" maxlength="40" value="' + esc(d.nombre) + '" style="flex:1"><button style="width:auto" title="Aplicar" onclick="renombrarSeleccionado()">' + icono('check') + '</button></div>' +
+      '</label>' +
+      '<label style="display:block; margin-top:10px">Color' +
+        '<div style="display:flex; gap:6px; margin-top:3px; align-items:center"><input type="color" id="modColor" value="' + (colorActualHex(obj) || '#3f7fbf') + '"><button style="width:auto" title="Aplicar" onclick="recolorearSeleccionado()">' + icono('check') + ' Aplicar</button></div>' +
+      '</label>' +
+    '</div>' +
+    '<button class="btnEliminar" style="margin-top:12px" onclick="eliminarSeleccionado()">' + icono('basura') + 'Eliminar de la obra</button>';
+  } else {
+    html += '<div class="desc" style="margin-top:12px">Este elemento es parte de la estructura fija de la obra (torre, cerramiento o malacate) y no se puede renombrar, recolorear ni eliminar desde aquí.</div>';
+  }
+  if (esProvisional){
+    html += '<button style="margin-top:10px" onclick="programarCamionZona(seleccionado.userData.info.nombre)">' + icono('camion') + 'Programar camión a esta zona</button>';
+  }
+  return html;
+}
+/* pestaña "Ficha técnica": dimensiones, altura, material, cerramiento, aforo */
+function renderFichaTecnica(obj){
+  const d = obj.userData.info;
+  const dim = d.dimensiones || ((typeof d.w === 'number' && typeof d.d === 'number') ? (d.w + ' × ' + d.d + ' m') : '—');
+  const alt = d.altura || (d.h ? (d.h + ' m') : '—');
+  let html = '<table>' +
+    '<tr><td>Dimensiones</td><td>' + dim + '</td></tr>' +
+    '<tr><td>Altura</td><td>' + alt + '</td></tr>' +
+    '<tr><td>Material</td><td>' + (d.material || '—') + '</td></tr>' +
+    '<tr><td>Cerramiento</td><td>' + (d.cerramiento || '—') + '</td></tr>' +
+    '<tr><td>Aforo máximo</td><td>' + (d.aforo || '—') + '</td></tr>' +
+    '</table>' +
+    '<button style="margin-top:10px" onclick="abrirPlanos(seleccionado.userData.info.nombre)">' + icono('plano') + 'Ficha técnica, planos y enlaces</button>';
+  if (obj.userData.esEdificio){
+    html += '<button style="margin-top:8px" onclick="togglePiso4()">' + icono('edificio') + 'Ver Piso 4 en detalle</button>' +
+      '<button style="margin-top:8px" onclick="abrirHojaPiso5()">' + icono('abrir') + 'Abrir hoja del Piso 5</button>';
+  }
+  return html;
+}
 function seleccionar(obj){
   if (!obj) return;
   const anterior = seleccionado;
@@ -228,30 +338,9 @@ function seleccionar(obj){
   actualizarTinte(obj);
   const d = obj.userData.info;
   pTitulo.textContent = d.nombre;
-  const dim = d.dimensiones || (d.w + ' × ' + d.d + ' m');
-  const alt = d.altura || (d.h + ' m');
-  const esProvisional = draggables.includes(obj);
-  pBody.innerHTML =
-    '<table>' +
-    '<tr><td>Dimensiones</td><td>' + dim + '</td></tr>' +
-    '<tr><td>Altura</td><td>' + alt + '</td></tr>' +
-    '<tr><td>Material</td><td>' + d.material + '</td></tr>' +
-    '<tr><td>Cerramiento</td><td>' + d.cerramiento + '</td></tr>' +
-    '<tr><td>Aforo máximo</td><td>' + (d.aforo || '—') + '</td></tr>' +
-    '</table>' +
-    '<div class="desc">' + d.descripcion + '</div>' +
-    (esProvisional ? '<button class="btnBloqueo ' + (obj.userData.bloqueado ? 'bloqueado' : 'libre') + '" onclick="toggleBloqueo()">' + icono(obj.userData.bloqueado ? 'candadoAbierto' : 'candado') + (obj.userData.bloqueado ? 'Bloqueado — toca para desbloquear' : 'Libre — toca para bloquear') + '</button>' : '') +
-    (esProvisional ? '<div style="display:flex; gap:6px"><button style="flex:1" onclick="girarSeleccionado(-1)">' + icono('girarIzq') + 'Girar 45°</button><button style="flex:1" onclick="girarSeleccionado(1)">' + icono('girarDer') + 'Girar 45°</button></div>' : '') +
-    (esProvisional ? '<button onclick="programarCamionZona(seleccionado.userData.info.nombre)">' + icono('camion') + 'Programar camión a esta zona</button>' : '') +
-    (obj.userData.personalizado ? '<button onclick="abrirEditorPersonalizado(seleccionado.userData.info.nombre)">' + icono('editar') + 'Editar dimensiones</button>' : '') +
-    (obj.userData.personalizado ? '<button class="btnEliminar" onclick="eliminarPersonalizado(seleccionado.userData.info.nombre)">' + icono('basura') + 'Eliminar de la obra</button>' : '') +
-    (obj.userData.esMalacate ? '<div style="display:flex; gap:6px">' +
-      '<button style="flex:1" onclick="agregarMalacate()">' + icono('mas') + 'Agregar otro malacate</button>' +
-      (malacates.length > 1 ? '<button style="flex:1" class="btnEliminar" onclick="eliminarMalacate(seleccionado.userData.info.nombre)">' + icono('basura') + 'Eliminar este</button>' : '') +
-      '</div>' : '') +
-    '<button onclick="abrirPlanos(seleccionado.userData.info.nombre)">' + icono('plano') + 'Ficha técnica, planos y enlaces</button>' +
-    (obj.userData.esEdificio ? '<button onclick="togglePiso4()">' + icono('edificio') + 'Ver Piso 4 en detalle</button>' +
-      '<button onclick="abrirHojaPiso5()">' + icono('abrir') + 'Abrir hoja del Piso 5</button>' : '');
+  pBody.innerHTML = renderInfoGeneral(obj);
+  pModificar.innerHTML = renderModificar(obj);
+  pFicha.innerHTML = renderFichaTecnica(obj);
   // en móvil el cajón se muestra plegado (solo el nombre + flecha); el usuario
   // toca la flecha para desplegar toda la descripción
   posicionarPad();

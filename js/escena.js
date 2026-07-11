@@ -140,10 +140,10 @@ function crearEtiqueta(texto, ancho, colorFondo){
   ctx.scale(res, res);
   ctx.fillStyle = colorFondo || 'rgba(15,20,30,0.78)';
   ctx.beginPath(); ctx.rect(0,16,512,96); ctx.fill();
-  ctx.font = '600 44px Inter, Arial';
+  ctx.font = '600 44px IBM Plex Sans, Arial';
   // si el texto no cabe en el lienzo, se reduce la fuente para no recortarlo
   const anchoTexto = ctx.measureText(texto).width;
-  if (anchoTexto > 492) ctx.font = '600 ' + Math.max(16, Math.floor(44 * 492 / anchoTexto)) + 'px Inter, Arial';
+  if (anchoTexto > 492) ctx.font = '600 ' + Math.max(16, Math.floor(44 * 492 / anchoTexto)) + 'px IBM Plex Sans, Arial';
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(texto, 256, 66);
@@ -329,7 +329,7 @@ function nivelTag(texto){
   ctx.scale(2, 2);
   ctx.fillStyle = 'rgba(16,22,30,0.88)'; ctx.fillRect(0,0,128,64);
   ctx.strokeStyle = '#f2d21f'; ctx.lineWidth = 4; ctx.strokeRect(2,2,124,60);
-  ctx.font = '700 36px Inter, Arial'; ctx.fillStyle = '#ffd23e';
+  ctx.font = '700 36px IBM Plex Sans, Arial'; ctx.fillStyle = '#ffd23e';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(texto, 64, 34);
   const tex = new THREE.CanvasTexture(c);
@@ -554,8 +554,7 @@ function eliminarMalacate(nombre){
   const g = malacates[i];
   if (seleccionado === g){
     seleccionado = null;
-    pTitulo.textContent = 'Panel de obra';
-    pBody.innerHTML = '<b>' + esc(nombre) + '</b> se eliminó de la obra. Haz clic sobre cualquier elemento para ver su ficha.';
+    mostrarPanelSinSeleccion();
   }
   quitarGrupoEscena(g);
   malacates.splice(i, 1);
@@ -612,7 +611,7 @@ function textoPiso(texto, w, x, z, color, rot){
   c.width = ES_MOVIL ? 512 : 1024; c.height = ES_MOVIL ? 128 : 256;
   const ctx = c.getContext('2d');
   ctx.scale(c.width/640, c.height/160);
-  ctx.font = '700 66px Inter, Arial';
+  ctx.font = '700 66px IBM Plex Sans, Arial';
   ctx.fillStyle = color || '#1a6e2e';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(texto, 320, 84);
@@ -802,7 +801,7 @@ function textoLocal(g, texto, w, x, z, color){
   c.width = ES_MOVIL ? 512 : 1024; c.height = ES_MOVIL ? 128 : 256;
   const ctx = c.getContext('2d');
   ctx.scale(c.width/640, c.height/160);
-  ctx.font = '700 58px Inter, Arial';
+  ctx.font = '700 58px IBM Plex Sans, Arial';
   ctx.fillStyle = color || '#2c3342';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(texto, 320, 84);

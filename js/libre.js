@@ -91,9 +91,9 @@ function crearEtiqueta(texto, ancho){
   const c = document.createElement('canvas'); c.width = 512*res; c.height = 128*res;
   const ctx = c.getContext('2d'); ctx.scale(res, res);
   ctx.fillStyle = 'rgba(15,20,30,0.82)'; ctx.beginPath(); ctx.rect(0,16,512,96); ctx.fill();
-  ctx.font = '600 44px Inter, Arial';
+  ctx.font = '600 44px IBM Plex Sans, Arial';
   const at = ctx.measureText(texto).width;
-  if (at > 492) ctx.font = '600 ' + Math.max(16, Math.floor(44*492/at)) + 'px Inter, Arial';
+  if (at > 492) ctx.font = '600 ' + Math.max(16, Math.floor(44*492/at)) + 'px IBM Plex Sans, Arial';
   ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(texto, 256, 66);
   const tex = new THREE.CanvasTexture(c); tex.anisotropy = ANISO;

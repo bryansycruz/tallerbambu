@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
   /* aplica el tema guardado ANTES de pintar para evitar parpadeo */
   document.documentElement.dataset.tema = localStorage.getItem('temaObra') || 'claro';
@@ -14,33 +14,33 @@
 <style>
   /* Plancha técnica "Bambú" con dos temas (claro por defecto y oscuro):
      retícula de puntos, tarjetas planas, acento en verde oscuro y
-     Space Grotesk en los títulos. Comparte la elección de tema (localStorage
+     JetBrains Mono en los títulos. Comparte la elección de tema (localStorage
      "temaObra") con el resto del proyecto. */
   :root {
     color-scheme:light;
-    --fondo:#f4f6f1; --puntos:rgba(46,107,36,.12);
+    --fondo:#f4f6f1; --puntos:rgba(5,150,105,.12);
     --superficie:#ffffff; --sup-baja:#f4f6f0;
     --linea:#e4e8dd; --borde:#d9ddd1; --borde-2:#c3c9b8;
     --texto:#1f241b; --texto-2:#6a7260;
-    --acento:#2e6b24; --acento-hover:#245418; --acento-texto:#2e6b24;
-    --acento-suave:rgba(46,107,36,.08); --sobre-acento:#ffffff;
+    --acento:#059669; --acento-hover:#047857; --acento-texto:#047857;
+    --acento-suave:rgba(5,150,105,.08); --sobre-acento:#ffffff;
     --sombra:0 12px 34px rgba(30,40,20,.14);
   }
   :root[data-tema="oscuro"] {
     color-scheme:dark;
-    --fondo:#0a0a0a; --puntos:rgba(110,160,70,.10);
+    --fondo:#0a0a0a; --puntos:rgba(52,211,153,.10);
     --superficie:#111111; --sup-baja:#0d0d0d;
     --linea:#222222; --borde:#333333; --borde-2:#444444;
     --texto:#f2f2f2; --texto-2:#999999;
-    --acento:#4f8f2c; --acento-hover:#5aa233; --acento-texto:#8cbf6b;
-    --acento-suave:rgba(140,191,107,.08); --sobre-acento:#ffffff;
+    --acento:#10b981; --acento-hover:#34d399; --acento-texto:#34d399;
+    --acento-suave:rgba(52,211,153,.08); --sobre-acento:#ffffff;
     --sombra:0 20px 60px rgba(0,0,0,.6);
   }
   html, body {
     margin:0; padding:0; background-color:var(--fondo);
     background-image:radial-gradient(var(--puntos) 1px, transparent 1px);
     background-size:40px 40px;
-    font-family:'Inter', 'Helvetica Neue', Arial, sans-serif; color:var(--texto);
+    font-family:'IBM Plex Sans', Arial, ui-sans-serif, system-ui, sans-serif; color:var(--texto);
   }
   ::selection { background:var(--acento); color:#fff; }
   .contenido { max-width:980px; margin:0 auto; padding:22px 18px 54px; }
@@ -49,7 +49,7 @@
     border-bottom:2px solid var(--acento); padding-bottom:12px; margin-bottom:18px;
   }
   h1 {
-    margin:0; font-size:22px; color:var(--acento-texto); font-family:'Space Grotesk','Inter',sans-serif;
+    margin:0; font-size:22px; color:var(--acento-texto); font-family:'JetBrains Mono', monospace;
     letter-spacing:1.5px; text-transform:uppercase;
   }
   header small { color:var(--texto-2); display:block; margin-top:3px; font-size:12.5px; }
@@ -57,7 +57,7 @@
     display:inline-flex; align-items:center; gap:6px; background:var(--acento); color:var(--sobre-acento);
     border:1px solid var(--acento); padding:10px 16px; border-radius:0; font-size:12px; font-weight:700;
     text-transform:uppercase; letter-spacing:1px; text-decoration:none; cursor:pointer;
-    font-family:'Space Grotesk','Inter',sans-serif;
+    font-family:'JetBrains Mono', monospace;
     transition:background .2s, border-color .2s;
   }
   .volver:hover { background:var(--acento-hover); border-color:var(--acento-hover); }
@@ -66,13 +66,13 @@
     display:inline-flex; align-items:center; background:transparent; color:var(--texto-2);
     border:1px solid var(--borde-2); padding:10px 14px; border-radius:0; font-size:11px; font-weight:600;
     text-transform:uppercase; letter-spacing:1px; cursor:pointer;
-    font-family:'Space Grotesk','Inter',sans-serif;
+    font-family:'JetBrains Mono', monospace;
     transition:background .15s, color .15s, border-color .15s;
   }
   .btnTema:hover { background:var(--acento-suave); border-color:var(--acento); color:var(--acento-texto); }
   h2 {
     font-size:13px; color:var(--acento-texto); margin:26px 0 10px; display:flex; align-items:center; gap:7px;
-    font-family:'Space Grotesk','Inter',sans-serif; letter-spacing:1.5px; text-transform:uppercase;
+    font-family:'JetBrains Mono', monospace; letter-spacing:1.5px; text-transform:uppercase;
   }
   h2 svg { width:15px; height:15px; }
   .tarjeta {
@@ -154,7 +154,7 @@
       <rect x="66" y="188" width="106" height="14"/><rect x="178" y="188" width="106" height="14"/>
       <rect x="290" y="188" width="106" height="14"/><rect x="402" y="188" width="106" height="14"/>
     </g>
-    <g font-family="Inter, Segoe UI, Arial" font-size="8.5" fill="#5a6a50" text-anchor="middle">
+    <g font-family="IBM Plex Sans, Segoe UI, Arial" font-size="8.5" fill="#5a6a50" text-anchor="middle">
       <text x="119" y="40">BALCÓN</text><text x="231" y="40">BALCÓN</text>
       <text x="343" y="40">BALCÓN</text><text x="455" y="40">BALCÓN</text>
       <text x="119" y="198">BALCÓN</text><text x="231" y="198">BALCÓN</text>
@@ -162,7 +162,7 @@
     </g>
     <!-- núcleo de escalas y ascensores (extremo occidental) -->
     <rect x="17" y="48" width="45" height="136" fill="#dc9ad9" stroke="#a860a4"/>
-    <text x="39" y="116" font-family="Inter, Segoe UI, Arial" font-size="9" fill="#6a2a66" text-anchor="middle" transform="rotate(-90 39 116)">ESCALAS Y ASCENSORES</text>
+    <text x="39" y="116" font-family="IBM Plex Sans, Segoe UI, Arial" font-size="9" fill="#6a2a66" text-anchor="middle" transform="rotate(-90 39 116)">ESCALAS Y ASCENSORES</text>
     <!-- apartamentos: norte (arriba) L·K·J·I -->
     <g fill="#bde882" stroke="#88b84e" stroke-width="0.8">
       <rect x="66" y="48" width="106" height="52"/><rect x="178" y="48" width="106" height="52"/>
@@ -175,37 +175,37 @@
       <rect x="66" y="132" width="106" height="52"/><rect x="178" y="132" width="106" height="52"/>
       <rect x="290" y="132" width="106" height="52"/><rect x="402" y="132" width="106" height="52"/>
     </g>
-    <g font-family="Inter, Segoe UI, Arial" font-size="10.5" fill="#1c212b" text-anchor="middle" font-weight="600">
+    <g font-family="IBM Plex Sans, Segoe UI, Arial" font-size="10.5" fill="#1c212b" text-anchor="middle" font-weight="600">
       <text x="119" y="68">APTO L · 61,92 m²</text><text x="231" y="68">APTO K · 59,52 m²</text>
       <text x="343" y="68">APTO J · 67,05 m²</text><text x="455" y="68">APTO I · 67,05 m²</text>
       <text x="119" y="152">APTO A · 59,52 m²</text><text x="231" y="152">APTO B · 61,92 m²</text>
       <text x="343" y="152">APTO C · 67,05 m²</text><text x="455" y="152">APTO D · 72,30 m²</text>
     </g>
-    <g font-family="Inter, Segoe UI, Arial" font-size="8.5" fill="#33402a" text-anchor="middle">
+    <g font-family="IBM Plex Sans, Segoe UI, Arial" font-size="8.5" fill="#33402a" text-anchor="middle">
       <text x="119" y="84">2 alcobas + estudio</text><text x="231" y="84">2 alcobas + estudio</text>
       <text x="343" y="84">3 alcobas</text><text x="455" y="84">3 alcobas</text>
     </g>
-    <g font-family="Inter, Segoe UI, Arial" font-size="8.5" fill="#1e3a42" text-anchor="middle">
+    <g font-family="IBM Plex Sans, Segoe UI, Arial" font-size="8.5" fill="#1e3a42" text-anchor="middle">
       <text x="119" y="168">2 alcobas + estudio</text><text x="231" y="168">2 alcobas + estudio</text>
       <text x="343" y="168">3 alcobas</text><text x="455" y="168">3 alcobas</text>
     </g>
-    <text x="287" y="120" font-family="Inter, Segoe UI, Arial" font-size="10" fill="#6a2a66" text-anchor="middle" font-weight="600">CIRCULACIÓN · 105,55 m²</text>
+    <text x="287" y="120" font-family="IBM Plex Sans, Segoe UI, Arial" font-size="10" fill="#6a2a66" text-anchor="middle" font-weight="600">CIRCULACIÓN · 105,55 m²</text>
     <!-- Torre 02 (esquema simplificado) -->
     <rect x="531" y="110" width="223" height="24" fill="#e2a4dc" opacity="0.85"/>
     <g stroke="#3a4150" stroke-width="1">
       <line x1="642" y1="58" x2="642" y2="110"/>
       <line x1="642" y1="134" x2="642" y2="186"/>
     </g>
-    <g font-family="Inter, Segoe UI, Arial" font-size="11" fill="#1c212b" text-anchor="middle" font-weight="600">
+    <g font-family="IBM Plex Sans, Segoe UI, Arial" font-size="11" fill="#1c212b" text-anchor="middle" font-weight="600">
       <text x="581" y="88">E · 61,92</text><text x="703" y="88">F · 62,04</text>
       <text x="581" y="164">G · 72,30</text><text x="703" y="164">H · 61,92</text>
     </g>
-    <text x="642" y="125" font-family="Inter, Segoe UI, Arial" font-size="9" fill="#6a2a66" text-anchor="middle">CIRC. 51,38 m²</text>
+    <text x="642" y="125" font-family="IBM Plex Sans, Segoe UI, Arial" font-size="9" fill="#6a2a66" text-anchor="middle">CIRC. 51,38 m²</text>
     <!-- malacate en fachada sur T1 -->
     <rect x="252" y="204" width="22" height="14" fill="#d9a521" stroke="#8a6a10"/>
-    <text x="263" y="232" font-family="Inter, Segoe UI, Arial" font-size="10" fill="#d9a521" text-anchor="middle" font-weight="600">MALACATE</text>
+    <text x="263" y="232" font-family="IBM Plex Sans, Segoe UI, Arial" font-size="10" fill="#d9a521" text-anchor="middle" font-weight="600">MALACATE</text>
     <!-- cotas: el color lo pone el CSS (.svgCotas) según el tema -->
-    <g class="svgCotas" font-family="Inter, Segoe UI, Arial" font-size="11" text-anchor="middle" font-weight="600">
+    <g class="svgCotas" font-family="IBM Plex Sans, Segoe UI, Arial" font-size="11" text-anchor="middle" font-weight="600">
       <text x="263" y="16">TORRE 01 — 49.73 m</text>
       <text x="642" y="46">TORRE 02 — 24.30 m</text>
       <text x="516" y="130" transform="rotate(90 516 130)">JUNTA</text>

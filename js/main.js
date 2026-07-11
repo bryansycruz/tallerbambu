@@ -2,6 +2,7 @@
 
 aplicarIconos();
 repintarTodo();   // semáforo inicial: provisionales libres en verde, bloqueados en rojo
+mostrarPanelSinSeleccion();   // contenido inicial de las 3 pestañas del panel
 
 /* al pulsar "Ver la obra" (Play) en la portada: revela la obra con un
    barrido de cámara desde una vista alta y lejana hasta la vista normal */
@@ -105,7 +106,7 @@ function togglePiso4(){
   techoG.visible = !vistaPiso4;
   setFantasma(retrocesosG, vistaPiso4);
   piso4.visible = vistaPiso4;
-  document.getElementById('btnPiso4').innerHTML = icono('edificio') + (vistaPiso4 ? 'Ver torre completa' : 'Ver Piso 4');
+  document.getElementById('btnPiso4').innerHTML = '<span class="ic">' + icono('edificio') + '</span>' + (vistaPiso4 ? 'Ver torre completa' : 'Ver Piso 4');
   document.getElementById('btnPiso4').classList.toggle('activo', vistaPiso4);
   etiquetasTodas.forEach(s => { s.visible = vistaPiso4 ? false : etiquetasOn; });
   if (vistaPiso4){
@@ -157,7 +158,7 @@ function toggleSotanos(){
     m.material.opacity = vistaSotanos ? 0.18 : 1;
     m.material.depthWrite = !vistaSotanos;
   });
-  btnSotanos.innerHTML = icono('bajar') + (vistaSotanos ? 'Ocultar sótanos' : 'Sótanos');
+  btnSotanos.innerHTML = '<span class="ic">' + icono('bajar') + '</span>' + (vistaSotanos ? 'Ocultar sótanos' : 'Sótanos');
   btnSotanos.classList.toggle('activo', vistaSotanos);
   if (vistaSotanos) irA(12, -5, 1, 92, 0.35, 1.38);
   else irA(0, 6, -8, 170, 0.5, 1.22);

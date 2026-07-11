@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/estilos.css">
 <script>
   /* aplica el tema guardado ANTES de cargar el CSS para evitar parpadeo */
@@ -16,7 +16,7 @@
 <style>
   /* ====== Estilos propios del constructor libre (aislados, prefijo "libre") ======
      Usa las variables de tema de css/estilos.css (claro/oscuro, acento en
-     verde oscuro, Space Grotesk en títulos y esquinas rectas). */
+     verde oscuro, JetBrains Mono en títulos y esquinas rectas). */
   #libreUI {
     position:absolute; top:12px; left:12px; z-index:10;
     display:flex; flex-wrap:wrap; gap:8px; align-items:center;
@@ -25,8 +25,8 @@
     max-width:calc(100vw - 340px);
   }
   #libreUI .marca {
-    font-family:'Space Grotesk','Inter',sans-serif; color:var(--acento-texto); font-weight:700;
-    letter-spacing:1.5px; text-transform:uppercase; font-size:13px; margin-right:4px;
+    font-family:'JetBrains Mono', monospace; color:var(--acento-texto); font-weight:700;
+    letter-spacing:1px; text-transform:uppercase; font-size:15px; margin-right:4px;
   }
   #libreUI button, #libreUI a.btn {
     background:var(--sup-alta); color:var(--texto); border:1px solid var(--borde);
@@ -46,8 +46,8 @@
     padding:14px 16px; color:var(--texto); max-height:calc(100vh - 40px); overflow-y:auto;
   }
   #librePanel h2 {
-    margin:0 0 8px; font-size:13px; color:var(--acento-texto);
-    font-family:'Space Grotesk','Inter',sans-serif; text-transform:uppercase; letter-spacing:1.5px;
+    margin:0 0 8px; font-size:16px; font-weight:700; color:var(--acento-texto);
+    font-family:'JetBrains Mono', monospace; text-transform:uppercase; letter-spacing:1px;
   }
   #librePanel table { width:100%; border-collapse:collapse; font-size:12.5px; }
   #librePanel td { padding:4px 2px; border-bottom:1px solid var(--linea); vertical-align:top; }
@@ -88,8 +88,8 @@
     border-bottom:2px solid var(--acento); position:sticky; top:0; z-index:1;
   }
   #libreCabecera h3 {
-    margin:0; font-size:13px; color:var(--acento-texto);
-    font-family:'Space Grotesk','Inter',sans-serif; text-transform:uppercase; letter-spacing:1.5px;
+    margin:0; font-size:16px; font-weight:700; color:var(--acento-texto);
+    font-family:'JetBrains Mono', monospace; text-transform:uppercase; letter-spacing:1px;
   }
   #libreCerrar { background:none; border:none; color:var(--texto-2); font-size:22px; cursor:pointer; line-height:1; }
   #libreCerrar:hover { color:var(--acento-texto); }
@@ -118,14 +118,14 @@
     margin:auto; text-align:center; padding:38px 30px; max-width:540px;
     background:var(--superficie); border:1px solid var(--borde); box-shadow:var(--sombra);
   }
-  #libreInicioCard h1 { font-family:'Space Grotesk','Inter',sans-serif; color:var(--acento-texto); font-size:38px; margin:0 0 6px; text-transform:uppercase; letter-spacing:1px; }
+  #libreInicioCard h1 { font-family:'JetBrains Mono', monospace; color:var(--acento-texto); font-size:38px; margin:0 0 6px; text-transform:uppercase; letter-spacing:1px; }
   #libreInicioCard p { color:var(--texto); font-size:15px; line-height:1.6; }
   #libreInicioCard .chips { margin:16px 0 22px; }
   #libreComenzar {
     display:inline-flex; align-items:center; gap:11px; background:var(--acento); color:var(--sobre-acento);
     border:1px solid var(--acento); border-radius:0;
     padding:15px 40px; font-size:15px; font-weight:700; cursor:pointer;
-    font-family:'Space Grotesk','Inter',sans-serif; letter-spacing:1px; text-transform:uppercase;
+    font-family:'JetBrains Mono', monospace; letter-spacing:1px; text-transform:uppercase;
     transition:background .2s, border-color .2s;
   }
   #libreComenzar:hover { background:var(--acento-hover); border-color:var(--acento-hover); }

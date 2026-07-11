@@ -9,6 +9,13 @@ function crearProvisional(def){
   g.position.set(def.pos[0], alturaApoyo(def.pos[0], def.pos[1], def.w, def.d), def.pos[1]);
   g.userData.esProvisional = true;
   g.userData.info = def;
+  // identidad estable para los de fábrica (PROVISIONALES): permite renombrar,
+  // recolorear o eliminar cualquiera desde la pestaña "Modificar" y que el
+  // cambio persista por nombre original, no por el nombre visible actual.
+  // construirEspacio() (creador.js) sobrescribe esto con 'c:' + su propio id
+  // porque también reutiliza este mismo constructor para espacios creados.
+  g.userData.idEstable = 'p:' + def.nombre;
+  g.userData.nombreOriginal = def.nombre;
   caja(g, def.w, 0.12, def.d, 0xb5b8bc, 0, 0.06, 0);
   if (def.muros){
     const t = 0.12, h = def.h, cm = def.color;
@@ -23,7 +30,10 @@ function crearProvisional(def){
     caja(g, def.w + 0.6, 0.1, def.d + 0.6, 0x8a8f96, 0, def.h + 0.12, 0, 0.35);
   }
   if (def.detalle) def.detalle(g, def);
-  const et = crearEtiqueta(def.nombre, Math.max(9, def.w * 1.05));
+  // etiqueta de tamaño normal: crece un poco con el ancho del espacio pero
+  // con tope, para que un espacio grande (p. ej. el Almacén de 37.5 m) no
+  // muestre un rótulo desproporcionado sobre la escena
+  const et = crearEtiqueta(def.nombre, Math.max(9, Math.min(20, def.w * 0.6)));
   et.position.y = def.h + 1.8;
   g.add(et);
   scene.add(g);
