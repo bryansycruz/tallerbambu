@@ -187,6 +187,17 @@ function construirPlumaGrua(def){
   const H = enTecho ? 3.2 : (CFG.alto + 8);
   const L = def.brazo || 20;
   const R = def.radio || 25;
+  // radio de barrido visible en el piso (o sobre la cubierta si va en techo):
+  // ayuda a ubicar acopios dentro del alcance; validarObra() (analisis.js)
+  // usa el mismo radioGrua para alertar cuando un acopio queda por fuera
+  g.userData.radioGrua = R;
+  const anillo = new THREE.Mesh(
+    new THREE.RingGeometry(Math.max(0.5, R - 0.35), R, 48),
+    new THREE.MeshBasicMaterial({ color: 0xf0b429, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false })
+  );
+  anillo.rotation.x = -Math.PI / 2;
+  anillo.position.y = 0.06;
+  g.add(anillo);
   [[-0.9, -0.9], [0.9, -0.9], [-0.9, 0.9], [0.9, 0.9]].forEach(([x, z]) => {
     caja(g, 0.16, H, 0.16, MAT_AMARILLO_EQ, x, H / 2, z);
   });
@@ -519,7 +530,10 @@ function renderZonas(){
   document.getElementById('zonasBody').innerHTML =
     '<div class="desc">Todo lo creado en la obra: provisionales, espacios, edificios y equipos, con su área (cuando aplica) y aforo máximo.</div>' +
     filasHtml +
-    (filas.length ? '<div class="desc" style="margin-top:10px"><b class="txtFuerte">' + filas.length + ' elementos · ' + totalArea + ' m² en total</b></div>' : '');
+    (filas.length ? '<div class="desc" style="margin-top:10px"><b class="txtFuerte">' + filas.length + ' elementos · ' + totalArea + ' m² en total</b></div>' : '') +
+    // validaciones de implantación + calculadora de dotación (analisis.js)
+    ((typeof seccionesZonasExtra === 'function') ? seccionesZonasExtra() : '');
+  if (typeof calcularDotacion === 'function') calcularDotacion();
 }
 function abrirZonas(){
   renderZonas();

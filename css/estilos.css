@@ -744,6 +744,13 @@
 #zonasCerrar { background:none; border:none; color:var(--texto-2); font-size:22px; cursor:pointer; line-height:1; }
 #zonasCerrar:hover { color:var(--acento-texto); }
 #zonasBody { padding:14px 18px; font-size:13px; line-height:1.5; }
+/* calculadora de dotación (Res. 2400/79) dentro del modal de zonas */
+#zonasBody input, #zonasBody select {
+  background:var(--campo); border:1px solid var(--borde); color:var(--texto);
+  border-radius:0; padding:6px 9px; font-size:13px;
+}
+#zonasBody input:focus, #zonasBody select:focus { outline:none; border-color:var(--acento); }
+#zonasBody b { color:var(--acento-texto); font-size:13px; }
 
 /* ============ RESPONSIVE (móvil y tablet) ============ */
 /* doble ID para ganarle en especificidad a "#ui button" (display:flex) */

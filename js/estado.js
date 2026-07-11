@@ -3,7 +3,17 @@
 /* ============ 12. GUARDAR / CARGAR DISTRIBUCIÓN ============ */
 const rangoMalacate = document.getElementById('rangoMalacate');
 
-function estadoActual(){
+/* ---- Fases de obra: la MISMA obra con distinta implantación por etapa.
+   Cada fase guarda su propio mapa de posiciones (misma forma que "elementos");
+   al cambiar de fase se toma un snapshot de la actual y se aplican las
+   posiciones guardadas de la nueva (o se siembra con las actuales si es la
+   primera vez que se visita). Los elementos existen en todas las fases: solo
+   cambian posición, rotación y bloqueo. ---- */
+const NOMBRES_FASE = { excavacion: 'Excavación', estructura: 'Estructura', acabados: 'Acabados' };
+let faseActual = 'acabados';   // fase real del proyecto (cerramientos y acabados)
+let fases = {};                // { [fase]: mapaPosiciones }
+
+function posicionesActuales(){
   const elementos = {};
   draggables.forEach(g => {
     elementos[g.userData.info.nombre] = {
@@ -13,11 +23,59 @@ function estadoActual(){
       bloqueado: !!g.userData.bloqueado
     };
   });
+  return elementos;
+}
+/* aplica un mapa de posiciones sobre los draggables (por nombre); es el mismo
+   loop que usa aplicarEstado con d.elementos, extraído para que cambiarFase
+   lo reutilice. Respeta yFija (pluma grúa sobre cubierta). */
+function aplicarElementos(mapa){
+  draggables.forEach(g => {
+    const p = mapa[g.userData.info.nombre];
+    if (!p) return;
+    const inf = g.userData.info;
+    const yFija = g.userData.yFija;
+    if (Array.isArray(p)){
+      g.position.set(p[0], yFija !== undefined ? yFija : alturaApoyo(p[0], p[1], inf.w, inf.d), p[1]);
+      g.rotation.y = 0;
+      g.userData.bloqueado = false;
+    } else {
+      g.position.set(p.x, yFija !== undefined ? yFija : alturaApoyo(p.x, p.z, inf.w, inf.d), p.z);
+      g.rotation.y = (typeof p.rot === 'number' && isFinite(p.rot)) ? p.rot * Math.PI / 180 : 0;
+      g.userData.bloqueado = !!p.bloqueado;
+    }
+    actualizarTinte(g);
+  });
+}
+function sincronizarSelectorFase(){
+  const s = document.getElementById('selFase');
+  if (s) s.value = faseActual;
+}
+function cambiarFase(nueva){
+  if (!NOMBRES_FASE[nueva] || nueva === faseActual){ sincronizarSelectorFase(); return; }
+  fases[faseActual] = posicionesActuales();
+  const primeraVez = !fases[nueva];
+  faseActual = nueva;
+  if (primeraVez) fases[nueva] = posicionesActuales();   // arranca igual a la fase anterior
+  else aplicarElementos(fases[nueva]);
+  sincronizarSelectorFase();
+  if (seleccionado) actualizarUbicacion(seleccionado);
+  guardarCompartido();
+  avisoGuardado('Fase de obra: ' + NOMBRES_FASE[nueva] +
+    (primeraVez ? ' — reubica los provisionales para esta etapa' : ''));
+}
+
+function estadoActual(){
+  // el snapshot de la fase actual se refresca en cada guardado, así "fases"
+  // siempre lleva las posiciones vigentes de la fase en que se está trabajando
+  fases[faseActual] = posicionesActuales();
+  const elementos = fases[faseActual];
   return {
     version: 4,
     proyecto: 'Obras provisionales — Torre 5 pisos + 3 sótanos (cerramientos y acabados)',
     fecha: new Date().toISOString(),
     elementos,
+    fases,
+    faseActual,
     personalizados: (typeof personalizados !== 'undefined') ? personalizados : [],
     equipos: (typeof equiposCreados !== 'undefined') ? equiposCreados : [],
     overridesProvisionales: (typeof overridesProvisionales !== 'undefined') ? overridesProvisionales : {},
@@ -54,30 +112,17 @@ function aplicarEstado(d){
   if (typeof aplicarOverridesProvisionales === 'function'){
     aplicarOverridesProvisionales(d.overridesProvisionales);
   }
+  // fases de obra: restaurar los mapas de posiciones por etapa y la fase activa
+  if (d.fases && typeof d.fases === 'object' && !Array.isArray(d.fases)) fases = d.fases;
+  else fases = {};
+  if (typeof d.faseActual === 'string' && NOMBRES_FASE[d.faseActual]) faseActual = d.faseActual;
+  sincronizarSelectorFase();
   if (d.elementos){
     // migración: la zona "Paletizado" pasó a llamarse "Acopio de materiales"
     if (d.elementos['Paletizado'] && !d.elementos['Acopio de materiales']){
       d.elementos['Acopio de materiales'] = d.elementos['Paletizado'];
     }
-    draggables.forEach(g => {
-      const p = d.elementos[g.userData.info.nombre];
-      if (!p) return;
-      const inf = g.userData.info;
-      // equipos con altura fija (p. ej. la pluma grúa montada sobre la
-      // cubierta) conservan su "y"; alturaApoyo es plana (siempre 0) y los
-      // haría caer al suelo al recargar el estado guardado
-      const yFija = g.userData.yFija;
-      if (Array.isArray(p)){
-        g.position.set(p[0], yFija !== undefined ? yFija : alturaApoyo(p[0], p[1], inf.w, inf.d), p[1]);
-        g.rotation.y = 0;
-        g.userData.bloqueado = false;
-      } else {
-        g.position.set(p.x, yFija !== undefined ? yFija : alturaApoyo(p.x, p.z, inf.w, inf.d), p.z);
-        g.rotation.y = (typeof p.rot === 'number' && isFinite(p.rot)) ? p.rot * Math.PI / 180 : 0;
-        g.userData.bloqueado = !!p.bloqueado;
-      }
-      actualizarTinte(g);
-    });
+    aplicarElementos(d.elementos);
   }
   rutas.forEach(r => scene.remove(r.grupo));
   rutas.length = 0;
@@ -231,6 +276,11 @@ document.getElementById('btnGuardar').onclick = () => {
   avisoGuardado('Guardado para el equipo (+ respaldo distribucion_obra.json)');
 };
 document.getElementById('btnCargar').onclick = () => document.getElementById('fileCarga').click();
+/* selector de fase de obra (excavación → estructura → acabados) */
+(function(){
+  const s = document.getElementById('selFase');
+  if (s) s.onchange = () => cambiarFase(s.value);
+})();
 document.getElementById('fileCarga').onchange = e => {
   const f = e.target.files[0];
   if (!f) return;

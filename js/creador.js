@@ -415,15 +415,40 @@ function renderEspacios(){
    de fábrica (provisionales.js), para agregar otro igual sin volver a
    escribir las medidas a mano */
 const PRESETS_ESPACIO = {
-  campamento: { nombre:'Campamento', w:19.8, d:17.6, h:2.5, color:'#3f7fbf', muros:true,  techo:true },
-  almacen:    { nombre:'Almacén',    w:37.5, d:13.9, h:4,   color:'#d9a521', muros:true,  techo:true },
-  acopio:     { nombre:'Acopio de materiales', w:21.4, d:16,   h:1.6, color:'#b08f5a', muros:false, techo:false },
-  maniobra:   { nombre:'Patio de maniobra',    w:14.8, d:17.5, h:2.4, color:'#e0c040', muros:false, techo:false },
-  lavado:     { nombre:'Lavado de llantas',    w:11.6, d:15.7, h:1,   color:'#4a9ec9', muros:false, techo:false },
-  porteria:   { nombre:'Portería', w:10,   d:4,    h:2.5, color:'#b8371f', muros:false, techo:false },
-  comedor:    { nombre:'Comedor',  w:12,   d:6.4,  h:2.7, color:'#5fae4a', muros:true,  techo:true },
-  casilleros: { nombre:'Casilleros', w:15.5, d:13.8, h:2.5, color:'#8a6a3a', muros:true,  techo:true },
-  banos:      { nombre:'Baños y vestidores', w:15.8, d:17.5, h:2.5, color:'#4f66c9', muros:true, techo:true }
+  campamento: { nombre:'Campamento', w:19.8, d:17.6, h:2.5, color:'#3f7fbf', muros:true,  techo:true,
+    descripcion:'Campamento de oficinas en casetas prefabricadas: dirección, coordinación, interventoría, oficina técnica, sala de reuniones y archivo. Ubicarlo lejos del polvo y del tránsito de camiones.' },
+  almacen:    { nombre:'Almacén',    w:37.5, d:13.9, h:4,   color:'#d9a521', muros:true,  techo:true,
+    descripcion:'Almacén cubierto y ventilado para material delicado (cerámica, pintura, grifería, aparatos). Ubicarlo cerca de la torre para minimizar acarreos.' },
+  acopio:     { nombre:'Acopio de materiales', w:21.4, d:16,   h:1.6, color:'#b08f5a', muros:false, techo:false,
+    descripcion:'Superficie afirmada con estibas para recepción y organización de material a granel o paletizado. Debe quedar dentro del alcance de la grúa o junto al malacate.' },
+  maniobra:   { nombre:'Patio de maniobra',    w:14.8, d:17.5, h:2.4, color:'#e0c040', muros:false, techo:false,
+    descripcion:'Placa afirmada y señalizada con radio de giro suficiente para camión sencillo/turbo (radio mínimo ≈12 m).' },
+  lavado:     { nombre:'Lavado de llantas',    w:11.6, d:15.7, h:1,   color:'#4a9ec9', muros:false, techo:false,
+    descripcion:'Lavado obligatorio de llantas antes de salir a la vía pública, con poceta de sedimentación y trampa de grasas.' },
+  porteria:   { nombre:'Portería', w:10,   d:4,    h:2.5, color:'#b8371f', muros:false, techo:false,
+    descripcion:'Único punto de control de acceso vehicular y peatonal, con portón del ancho de la vía y puerta peatonal separada.' },
+  comedor:    { nombre:'Comedor',  w:12,   d:6.4,  h:2.7, color:'#5fae4a', muros:true,  techo:true,
+    descripcion:'Comedor/casino del personal: ≈1.2 m² por comensal por turno. Ubicarlo en la zona de bienestar, lejos del polvo y el ruido.' },
+  casilleros: { nombre:'Casilleros', w:15.5, d:13.8, h:2.5, color:'#8a6a3a', muros:true,  techo:true,
+    descripcion:'Guardarropa del personal: 1 casillero por trabajador, junto a baños y vestidores.' },
+  banos:      { nombre:'Baños y vestidores', w:15.8, d:17.5, h:2.5, color:'#4f66c9', muros:true, techo:true,
+    descripcion:'Batería de baños, duchas y vestidores. Res. 2400/79 art. 17: 1 inodoro, 1 lavamanos, 1 orinal y 1 ducha por cada 15 trabajadores.' },
+  contenedorOficina: { nombre:'Contenedor oficina 20 ft', w:6.06, d:2.44, h:2.59, color:'#2e6db8', muros:true, techo:true,
+    descripcion:'Contenedor marítimo estándar de 20 pies (6.06 × 2.44 × 2.59 m) adecuado como oficina, portería o cuarto técnico. Requiere apoyo nivelado.' },
+  bateriaSanitaria: { nombre:'Batería sanitaria (4 und)', w:5, d:1.5, h:2.4, color:'#4a9ec9', muros:true, techo:true,
+    descripcion:'Módulo de 4 unidades sanitarias portátiles (≈1.2 × 1.2 m c/u). Res. 2400/79: 1 inodoro por cada 15 trabajadores, separados por sexo; requiere mantenimiento y vaciado periódico.' },
+  patioHierros: { nombre:'Patio de hierros', w:24, d:10, h:1.2, color:'#8a5a3a', muros:false, techo:false,
+    descripcion:'Zona de figuración y almacenamiento de acero de refuerzo: bancos de corte/doblado y estibas por diámetro. Debe quedar dentro del alcance de la grúa y cerca del acceso de camiones.' },
+  zonaResiduos: { nombre:'Zona de residuos', w:8, d:6, h:1.8, color:'#6f7a2f', muros:true, techo:false,
+    descripcion:'Punto ecológico y acopio temporal de RCD con contención: separación por tipo (ordinarios, reciclables, peligrosos, escombro) según el plan de manejo ambiental.' },
+  parqueadero: { nombre:'Parqueadero (6 celdas)', w:15, d:11, h:1, color:'#6d7075', muros:false, techo:false,
+    descripcion:'Parqueadero interno de 6 celdas de 2.5 × 5 m con circulación central de 6 m. Ubicarlo sin interferir el patio de maniobra ni las rutas de material.' },
+  senalizacion: { nombre:'Punto de señalización', w:2, d:2, h:2, color:'#e0c040', muros:false, techo:false,
+    descripcion:'Punto de señalización SST: señales reflectivas de obligación, prevención y prohibición (casco, ruta de evacuación, riesgo eléctrico, velocidad máxima).' },
+  cerramientoTramo: { nombre:'Cerramiento provisional (tramo)', w:12, d:0.5, h:2.4, color:'#9aa0a6', muros:true, techo:false,
+    descripcion:'Tramo de cerramiento provisional de 12 m (teja galvanizada o polisombra sobre estructura), altura mínima 2.0 m. Repetir tramos para cerrar frentes o desviar circulaciones peatonales.' },
+  viaInterna: { nombre:'Vía interna (tramo)', w:30, d:6, h:1, color:'#55585e', muros:false, techo:false,
+    descripcion:'Tramo de vía interna afirmada de 6 m de ancho: mínimo recomendado 6 m para doble sentido o 3.5 m para un solo sentido, con radio de giro ≥12 m para camión sencillo. La validación de "Zonas y aforo" alerta si queda más angosta.' }
 };
 function opcionesPresetEspacio(){
   return Object.keys(PRESETS_ESPACIO).map(k => '<option value="' + k + '">' + esc(PRESETS_ESPACIO[k].nombre) + '</option>').join('');
@@ -441,6 +466,7 @@ function aplicarPresetEspacio(){
   document.getElementById('espColor').value = p.color;
   document.getElementById('espMuros').checked = p.muros;
   document.getElementById('espTecho').checked = p.techo;
+  document.getElementById('espDescripcion').value = p.descripcion || '';
 }
 function cambiarTipoEspacio(){
   const esEdificio = document.getElementById('espTipo').value === 'edificio';

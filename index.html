@@ -92,9 +92,17 @@
     <button id="btnEspacios" title="Crea espacios y edificios con sus medidas, y elimínalos cuando no los necesites"><span class="ic" data-ic="mas"></span>Espacios</button>
     <button id="btnEquipos" title="Crea montacargas, carretillas, andamios colgantes y plumas grúa"><span class="ic" data-ic="herramienta"></span>Equipos</button>
   </div>
+  <div class="uiGrupo" data-nombre="Fase de obra">
+    <select id="selFase" title="Cada fase recuerda su propia distribución de provisionales: reubícalos para cada etapa">
+      <option value="excavacion">Excavación</option>
+      <option value="estructura">Estructura</option>
+      <option value="acabados" selected>Acabados</option>
+    </select>
+  </div>
   <div class="uiGrupo" data-nombre="Guardar y cargar">
     <button id="btnGuardar" title="Guarda para el equipo y descarga un respaldo"><span class="ic" data-ic="guardar"></span>Guardar</button>
     <button id="btnCargar" title="Carga un respaldo descargado"><span class="ic" data-ic="carpeta"></span>Cargar</button>
+    <button id="btnExportar" title="Descarga el plano en PDF o imagen, con su cuadro de áreas y validaciones"><span class="ic" data-ic="abrir"></span>Exportar plano</button>
   </div>
   <div class="uiGrupo" data-nombre="Malacate y reloj">
     <label title="Nivel al que sube el malacate">Malacate <input type="range" id="rangoMalacate" min="0" max="9" step="0.05" value="0"> <span id="nivelTxt">P1</span></label>
@@ -313,6 +321,7 @@
 <script src="js/creador.js"></script>
 <script src="js/equipos.js"></script>
 <script src="js/modificar.js"></script>
+<script src="js/analisis.js"></script>
 <script src="js/main.js"></script>
 <script>
   /* ===== Dashboard: pestañas del panel + controles de vista =====

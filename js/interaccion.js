@@ -181,6 +181,14 @@ renderer.domElement.addEventListener('pointerup', e => {
   } else if (eraArrastre){
     if (seleccionado === eraArrastre) actualizarUbicacion(eraArrastre);
     guardarCompartido();
+    // validación visual al soltar: si el elemento movido (o la grúa) dejó
+    // algo fuera de alcance o una vía angosta, se avisa de inmediato
+    if (typeof validarObra === 'function'){
+      const n = eraArrastre.userData.info.nombre;
+      const esGrua = eraArrastre.userData.tipoEquipo === 'plumaGrua';
+      const alerta = validarObra().find(a => esGrua || a.indexOf('"' + n + '"') >= 0);
+      if (alerta) avisoGuardado('⚠ ' + alerta);
+    }
   }
 });
 
