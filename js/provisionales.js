@@ -258,22 +258,22 @@ function detalleAcomAgua(g, def){
 
 /* Catálogo — dimensiones reales del informe (m). w=x, d=z, h=altura. */
 const PROVISIONALES = [
-  { aforo:'25 personas (oficinas, técnica y sala de reuniones)', nombre:'Campamento', w:19.8, d:17.6, h:2.5, color:0x3f7fbf, techo:true, pos:[-68,-8], detalle:detalleCampamento,
-    material:'Contenedores / casetas prefabricadas — área total 348 m² (19.8×17.6)',
+  { aforo:'25 personas (oficinas, técnica y sala de reuniones)', nombre:'Campamento', w:19.8, d:17.2, h:2.5, color:0x3f7fbf, techo:true, pos:[-68,-8], detalle:detalleCampamento,
+    material:'Contenedores / casetas prefabricadas — área total 341 m² (19.8×17.2)',
     cerramiento:'Panel metálico con ventanería; Interventoría con acceso independiente',
     descripcion:'Programa según organigrama: Dirección 5×6 (30 m²), Coordinación 5×6 (30 m²), Interventoría 6×6 (36 m², acceso independiente), Cocineta 4×6 (24 m²), Oficina técnica 14×7 (98 m², 10 puestos: Residentes Administrativo, Cerramientos, Acabados, Ambiental + SST y auxiliares), Baño H 3×7, WC M 3×7, Sala de reuniones 10×5 (50 m²), Archivo/planoteca 6×5 y Circulación 4×5. En el extremo opuesto al ingreso, lejos del polvo y ruido.' },
-  { aforo:'8 personas (almacenista y ayudantes)', nombre:'Almacén central', w:37.5, d:13.9, h:4, color:0xd9a521, muros:true, techo:true, pos:[38,-15], detalle:detalleAlmacen,
-    material:'Estructura metálica, cubierto y ventilado — 521 m²',
+  { aforo:'8 personas (almacenista y ayudantes)', nombre:'Almacén central', w:36.9, d:13.9, h:4, color:0xd9a521, muros:true, techo:true, pos:[38,-15], detalle:detalleAlmacen,
+    material:'Estructura metálica, cubierto y ventilado — 513 m²',
     cerramiento:'Cerrado con control de humedad (materiales delicados)',
-    descripcion:'Almacén de 37.5×13.9 ≈ 521 m² junto a la torre para minimizar la manipulación de cerámica, enchapes, pintura, grifería y aparatos sanitarios. Desde aquí el material va en carretillas buggy al pie del malacate (≈15-25 m).' },
-  { aforo:'6 personas en labores de acopio', nombre:'Acopio de materiales', w:21.4, d:16, h:1.6, color:0xb08f5a, pos:[38,14], detalle:detallePaletizado,
-    material:'Superficie afirmada con estibas — 342 m²',
+    descripcion:'Almacén de 36.9×13.9 ≈ 513 m² junto a la torre para minimizar la manipulación de cerámica, enchapes, pintura, grifería y aparatos sanitarios. Desde aquí el material va en carretillas buggy al pie del malacate (≈15-25 m).' },
+  { aforo:'6 personas en labores de acopio', nombre:'Acopio de materiales', w:20.9, d:16, h:1.6, color:0xb08f5a, pos:[38,14], detalle:detallePaletizado,
+    material:'Superficie afirmada con estibas — 334 m²',
     cerramiento:'Demarcada, a cielo abierto',
-    descripcion:'Recepción y organización de estibas (21.4×16 ≈ 342 m²) antes de su ingreso al almacén o directamente al pie del malacate.' },
-  { aforo:'4 personas (conductor y señaleros)', nombre:'Patio de maniobra', w:14.8, d:17.5, h:2.4, color:0xe0c040, pos:[62,12], detalle:detalleManiobra,
-    material:'Placa afirmada señalizada — 259 m²',
+    descripcion:'Recepción y organización de estibas (20.9×16 ≈ 334 m²) antes de su ingreso al almacén o directamente al pie del malacate.' },
+  { aforo:'4 personas (conductor y señaleros)', nombre:'Patio de maniobra', w:14.3, d:17.5, h:2.4, color:0xe0c040, pos:[62,12], detalle:detalleManiobra,
+    material:'Placa afirmada señalizada — 250 m²',
     cerramiento:'Demarcación con franjas y conos',
-    descripcion:'Patio de 14.8×17.5 ≈ 259 m² con radio de giro suficiente para camión sencillo/turbo. El camión ingresa por portería → maniobra → descargue en la zona de acopio → salida por lavado de llantas.' },
+    descripcion:'Patio de 14.3×17.5 ≈ 250 m² con radio de giro suficiente para camión sencillo/turbo. El camión ingresa por portería → maniobra → descargue en la zona de acopio → salida por lavado de llantas.' },
   { aforo:'2 operarios', nombre:'Lavado de llantas', w:11.6, d:15.7, h:1, color:0x4a9ec9, pos:[76,-4], detalle:detalleLavadoInforme,
     material:'Rejilla metálica + cepillos giratorios y aspersores — 182 m²',
     cerramiento:'Poceta de sedimentación + trampa de grasas antes de descarga',
@@ -286,12 +286,12 @@ const PROVISIONALES = [
     material:'Estructura metálica con cubierta — 77 m² (≈1.2 m²/comensal por turno)',
     cerramiento:'Semi-abierto con malla',
     descripcion:'Comedor y cocineta del personal en la zona de bienestar (extremo opuesto al ingreso), lejos del polvo y del tránsito de camiones.' },
-  { aforo:'40 personas', nombre:'Casilleros', w:15.5, d:13.8, h:2.5, color:0x8a6a3a, muros:true, techo:true, pos:[-68,13], detalle:detalleCasilleros,
-    material:'Módulos de casilleros metálicos — 214 m²',
+  { aforo:'40 personas', nombre:'Casilleros', w:14.9, d:13.8, h:2.5, color:0x8a6a3a, muros:true, techo:true, pos:[-68,13], detalle:detalleCasilleros,
+    material:'Módulos de casilleros metálicos — 206 m²',
     cerramiento:'Caseta cerrada con panel metálico',
-    descripcion:'Guardarropa del personal de obra (15.5×13.8 ≈ 214 m²) junto a baños y vestidores, en la zona de bienestar.' },
-  { aforo:'45 personas', nombre:'Baños y vestidores', w:15.8, d:17.5, h:2.5, color:0x4f66c9, muros:true, techo:true, pos:[-42,10], detalle:detalleBanosVest,
-    material:'Módulos sanitarios prefabricados — 277 m²',
+    descripcion:'Guardarropa del personal de obra (14.9×13.8 ≈ 206 m²) junto a baños y vestidores, en la zona de bienestar.' },
+  { aforo:'45 personas', nombre:'Baños y vestidores', w:15.3, d:17.5, h:2.5, color:0x4f66c9, muros:true, techo:true, pos:[-42,10], detalle:detalleBanosVest,
+    material:'Módulos sanitarios prefabricados — 268 m²',
     cerramiento:'Panel metálico, conectado a acometidas provisionales',
     descripcion:'Batería de baños, duchas y vestidores para el personal (pico 305 trabajadores): 3 módulos en total según el informe (2 de obra + 1 administrativo dentro del campamento).' },
   { aforo:'1 técnico autorizado', nombre:'Acometida eléctrica', w:2, d:2, h:2, color:0xd9a521, pos:[78,14], detalle:detalleAcomElec,
@@ -317,14 +317,37 @@ function figuraTrabajador(colorCasco){
     new THREE.MeshLambertMaterial({ color: colorCasco })
   );
   casco.position.y = 0.99; p.add(casco);
+  // sin sombra propia: a más trabajadores en escena, cada uno proyectando
+  // sombra dinámica vuelve el modelo notablemente más lento
+  p.traverse(n => { if (n.isMesh) n.castShadow = false; });
   return p;
 }
 const CASCOS = [0xf2d21f, 0xffffff, 0x3f7fbf, 0xe06a1e];
 const personas = [];
+// focos de actividad real de la obra: pie de la torre/malacate, acopio,
+// almacén y patio de maniobra (camiones) — los trabajadores se agrupan
+// alrededor de estos puntos en vez de caminar al azar por terreno vacío,
+// para que la escena se lea como una obra activa
+const FOCOS_TRABAJO = [
+  [2, -8], [2, -8],   // pie de la torre / malacate (doble peso: es el punto con más movimiento)
+  [38, 14],           // acopio de materiales
+  [38, -15],          // almacén
+  [62, 12]            // patio de maniobra / camiones
+];
 function nuevoObjetivo(){
-  return new THREE.Vector3(-78 + Math.random()*156, 0, -36 + Math.random()*57);
+  const f = FOCOS_TRABAJO[Math.floor(Math.random() * FOCOS_TRABAJO.length)];
+  const radio = 8 + Math.random() * 8;
+  const ang = Math.random() * Math.PI * 2;
+  return new THREE.Vector3(
+    Math.max(CFG.limites.xMin, Math.min(CFG.limites.xMax, f[0] + Math.cos(ang) * radio)),
+    0,
+    Math.max(CFG.limites.zMin, Math.min(CFG.limites.zMax, f[1] + Math.sin(ang) * radio))
+  );
 }
-for (let i=0; i<10; i++){
+// máximo 150 trabajadores en escena (menos en celular, donde cada figura
+// adicional pesa más); sin sombra + geometría simple mantiene esto liviano
+const N_TRABAJADORES = ES_MOVIL ? 40 : 150;
+for (let i=0; i<N_TRABAJADORES; i++){
   const f = figuraTrabajador(CASCOS[i % CASCOS.length]);
   const o = nuevoObjetivo();
   f.position.set(o.x, alturaTerreno(o.x, o.z) + 0.1, o.z);

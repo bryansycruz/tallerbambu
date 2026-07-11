@@ -178,11 +178,22 @@ function crearEtiqueta(texto, ancho, colorFondo){
 let mostrarCotas = false;
 const gruposCotas = [];
 function lineaCota(pts){
-  const geo = new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(p[0], p[1], p[2])));
-  return new THREE.Line(geo, new THREE.LineBasicMaterial({ color:0xffcc33, depthTest:false, transparent:true, opacity:0.95 }));
+  // caja delgada en vez de THREE.Line: casi todos los navegadores ignoran
+  // el grosor de una Line en WebGL y la dejan en 1px, casi invisible —
+  // con una caja el grosor es geometría real y se ve nítido a cualquier zoom
+  const [a, b] = pts;
+  const dx = b[0]-a[0], dy = b[1]-a[1], dz = b[2]-a[2];
+  const len = Math.max(0.02, Math.sqrt(dx*dx + dy*dy + dz*dz));
+  const m = new THREE.Mesh(
+    new THREE.BoxGeometry(len, 0.06, 0.06),
+    new THREE.MeshBasicMaterial({ color:0x111111, depthTest:false, transparent:true, opacity:0.95 })
+  );
+  m.position.set((a[0]+b[0])/2, (a[1]+b[1])/2, (a[2]+b[2])/2);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0), new THREE.Vector3(dx,dy,dz).normalize());
+  return m;
 }
 function etiquetaCota(texto, ancho){
-  const et = crearEtiqueta(texto, ancho, 'rgba(40,35,10,0.85)');
+  const et = crearEtiqueta(texto, ancho, 'rgba(15,15,15,0.9)');
   // visibilidad propia (mostrarCotas), independiente del botón "Etiquetas"
   etiquetasTodas.splice(etiquetasTodas.indexOf(et), 1);
   return et;
