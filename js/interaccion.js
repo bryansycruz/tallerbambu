@@ -28,6 +28,7 @@ let arrastrando = null;
 let rotando = false, paneando = false;
 let x0=0, y0=0, movido=0;
 let seleccionado = null;
+let offsetCerr = { x: 0, z: 0 };   // desfase entre el punto tomado y el origen del cerramiento, para que lo siga sin "saltar"
 
 /* ---- soporte táctil: pellizco (zoom) y dos dedos (desplazar) ---- */
 const punterosTactiles = new Map();   // pointerId -> {x, y}
@@ -94,6 +95,18 @@ renderer.domElement.addEventListener('pointerdown', e => {
     arrastrando = buscarRaiz(hitsM[0].object) || malacate;
     return;
   }
+  const hitsC = raycaster.intersectObject(cerramiento, true);
+  if (hitsC.length){
+    // el cerramiento es una sola pieza fija: se arrastra completo, sin girar
+    // ni bloquear, guardando el desfase para que siga al cursor sin saltar
+    const p0 = interseccionSuelo();
+    if (p0){
+      offsetCerr.x = cerramiento.position.x - p0.x;
+      offsetCerr.z = cerramiento.position.z - p0.z;
+      arrastrando = cerramiento;
+      return;
+    }
+  }
   const hits = raycaster.intersectObjects(draggables, true);
   if (hits.length){
     const raiz = buscarRaiz(hits[0].object);
@@ -131,6 +144,10 @@ renderer.domElement.addEventListener('pointermove', e => {
         const s = ajustarMalacate(p.x, p.z);
         arrastrando.position.set(s.x, 0, s.z);
         if (arrastrando === malacate) actualizarDescargue();
+      } else if (arrastrando === cerramiento){
+        // sigue al cursor manteniendo el desfase con el que se tomó (no tiene
+        // límites de CFG.limites: es la cerca perimetral, puede salir del lote)
+        cerramiento.position.set(p.x + offsetCerr.x, cerramiento.position.y, p.z + offsetCerr.z);
       } else if (arrastrando.userData.yFija !== undefined){
         // pluma grúa montada sobre la cubierta: conserva su altura fija al arrastrarla
         const nx = Math.min(CFG.limites.xMax, Math.max(CFG.limites.xMin, p.x));
@@ -322,8 +339,10 @@ function renderModificar(obj){
       '</label>' +
     '</div>' +
     '<button class="btnEliminar" style="margin-top:12px" onclick="eliminarSeleccionado()">' + icono('basura') + 'Eliminar de la obra</button>';
+  } else if (obj === cerramiento){
+    html += '<div class="desc" style="margin-top:12px">El cerramiento perimetral es una sola pieza: arrástralo desde el lienzo (clic y arrastrar sobre cualquier tramo) para reubicarlo completo. No se puede girar, bloquear, renombrar, recolorear ni eliminar desde aquí.</div>';
   } else {
-    html += '<div class="desc" style="margin-top:12px">Este elemento es parte de la estructura fija de la obra (torre, cerramiento o malacate) y no se puede renombrar, recolorear ni eliminar desde aquí.</div>';
+    html += '<div class="desc" style="margin-top:12px">Este elemento es parte de la estructura fija de la obra (torre o malacate) y no se puede renombrar, recolorear ni eliminar desde aquí.</div>';
   }
   if (esProvisional){
     html += '<button style="margin-top:10px" onclick="programarCamionZona(seleccionado.userData.info.nombre)">' + icono('camion') + 'Programar camión a esta zona</button>';

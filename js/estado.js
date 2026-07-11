@@ -80,6 +80,7 @@ function estadoActual(){
     equipos: (typeof equiposCreados !== 'undefined') ? equiposCreados : [],
     overridesProvisionales: (typeof overridesProvisionales !== 'undefined') ? overridesProvisionales : {},
     rutas: rutas.map(r => r.puntos.map(p => [Math.round(p.x*100)/100, Math.round(p.z*100)/100])),
+    cerramientoPos: [Math.round(cerramiento.position.x*100)/100, Math.round(cerramiento.position.z*100)/100],
     malacate: parseFloat(rangoMalacate.value),
     malacates: malacates.map(m => ({
       nombre: m.userData.info.nombre,
@@ -139,6 +140,10 @@ function aplicarEstado(d){
     });
     finalizarRuta();
   });
+  if (Array.isArray(d.cerramientoPos) && d.cerramientoPos.length >= 2 &&
+      isFinite(d.cerramientoPos[0]) && isFinite(d.cerramientoPos[1])){
+    cerramiento.position.set(d.cerramientoPos[0], cerramiento.position.y, d.cerramientoPos[1]);
+  }
   if (d.malacate !== undefined) rangoMalacate.value = d.malacate;
   if (Array.isArray(d.malacates) && d.malacates.length){
     const listaMalacates = limitarArray(d.malacates, 30);
