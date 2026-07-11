@@ -128,7 +128,15 @@ lineaTerreno([
 /* ---- Límite norte de la vía (ROJO) ---- */
 lineaTerreno([[-78,18],[-28,18.5],[16,19],[54,18.5]], 0xc9302e, 0.7, false, false);
 
-/* ---- Etiquetas flotantes (sprites); el botón Etiquetas las oculta/muestra ---- */
+/* ---- Etiquetas flotantes (sprites); el botón Etiquetas las oculta/muestra.
+   El fondo se ajusta al ancho real del texto (con margen) y el tamaño final
+   en el mundo se escala según cuánto ocupa ese texto dentro del lienzo: antes
+   el rótulo SIEMPRE pintaba un bloque de color del "ancho" completo pedido
+   por quien llama, así que un nombre corto ("Grúa") quedaba metido en un
+   cartel enorme y vacío — desproporcionado y, con varias zonas juntas,
+   ilegible ("borroso" a simple vista por el amontonamiento). El factor tiene
+   un piso (55%) para que un texto muy corto no encoja demasiado y siga
+   siendo legible de lejos; "ancho" pasa a ser un techo máximo, no un tamaño fijo. ---- */
 const etiquetasTodas = [];
 function crearEtiqueta(texto, ancho, colorFondo){
   ancho = ancho || 14;
@@ -138,19 +146,26 @@ function crearEtiqueta(texto, ancho, colorFondo){
   const c = document.createElement('canvas'); c.width = 512*res; c.height = 128*res;
   const ctx = c.getContext('2d');
   ctx.scale(res, res);
-  ctx.fillStyle = colorFondo || 'rgba(15,20,30,0.78)';
-  ctx.beginPath(); ctx.rect(0,16,512,96); ctx.fill();
-  ctx.font = '600 44px IBM Plex Sans, Arial';
+  ctx.font = '600 40px IBM Plex Sans, Arial';
   // si el texto no cabe en el lienzo, se reduce la fuente para no recortarlo
-  const anchoTexto = ctx.measureText(texto).width;
-  if (anchoTexto > 492) ctx.font = '600 ' + Math.max(16, Math.floor(44 * 492 / anchoTexto)) + 'px IBM Plex Sans, Arial';
+  let anchoTexto = ctx.measureText(texto).width;
+  if (anchoTexto > 460){
+    ctx.font = '600 ' + Math.max(16, Math.floor(40 * 460 / anchoTexto)) + 'px IBM Plex Sans, Arial';
+    anchoTexto = ctx.measureText(texto).width;
+  }
+  const pad = 22;
+  const cajaW = Math.min(512, anchoTexto + pad * 2);
+  const x0 = (512 - cajaW) / 2;
+  ctx.fillStyle = colorFondo || 'rgba(15,20,30,0.78)';
+  ctx.beginPath(); ctx.rect(x0, 16, cajaW, 96); ctx.fill();
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(texto, 256, 66);
   const tex = new THREE.CanvasTexture(c);
   tex.anisotropy = ANISO;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map:tex, depthTest:false, transparent:true }));
-  sp.scale.set(ancho, ancho/4, 1);
+  const factor = Math.max(0.55, Math.min(1, cajaW / 512));
+  sp.scale.set(ancho * factor, (ancho / 4) * factor, 1);
   etiquetasTodas.push(sp);
   return sp;
 }

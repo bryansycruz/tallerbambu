@@ -37,6 +37,10 @@ function crearProvisional(def){
   et.position.y = def.h + 1.8;
   g.add(et);
   if (typeof agregarCotas === 'function') agregarCotas(g, def.w, def.d, def.h);
+  // sin sombra proyectada: a pedido del usuario, los provisionales no deben
+  // ensuciar el terreno con manchas de sombra dinámica (sí siguen recibiendo
+  // luz/sombra ambiente normalmente, solo se desactiva que ELLOS la proyecten)
+  g.traverse(n => { if (n.isMesh) n.castShadow = false; });
   scene.add(g);
   draggables.push(g);
   const opt = document.createElement('option');

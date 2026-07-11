@@ -451,6 +451,8 @@ const PRESETS_ESPACIO = {
     descripcion:'Zona de figuración y almacenamiento de acero de refuerzo: bancos de corte/doblado y estibas por diámetro. Debe quedar dentro del alcance de la grúa y cerca del acceso de camiones.' },
   zonaResiduos: { nombre:'Zona de residuos', w:8, d:6, h:1.8, color:'#6f7a2f', muros:true, techo:false,
     descripcion:'Punto ecológico y acopio temporal de RCD con contención: separación por tipo (ordinarios, reciclables, peligrosos, escombro) según el plan de manejo ambiental.' },
+  escombros: { nombre:'Zona de escombros', w:8, d:6, h:1.5, color:'#8f7d6b', muros:false, techo:false,
+    descripcion:'Acopio temporal de escombros (concreto, mampostería y material pétreo de demoliciones o sobrantes), separado de la basura ordinaria. Debe quedar accesible para el camión volqueta y evacuarse periódicamente a una escombrera autorizada.' },
   parqueadero: { nombre:'Parqueadero (6 celdas)', w:15, d:11, h:1, color:'#6d7075', muros:false, techo:false,
     descripcion:'Parqueadero interno de 6 celdas de 2.5 × 5 m con circulación central de 6 m. Ubicarlo sin interferir el patio de maniobra ni las rutas de material.' },
   senalizacion: { nombre:'Punto de señalización', w:2, d:2, h:2, color:'#e0c040', muros:false, techo:false,
