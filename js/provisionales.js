@@ -33,14 +33,8 @@ function crearProvisional(def){
   // etiqueta de tamaño normal: crece un poco con el ancho del espacio pero
   // con tope, para que un espacio grande (p. ej. el Almacén de 37.5 m) no
   // muestre un rótulo desproporcionado sobre la escena
-  // el nombre flotante de las zonas va OCULTO en la vista 3D (a pedido del
-  // usuario: solo la torre y los rótulos fijos de la escena conservan el
-  // suyo) — pero se sigue creando porque el plano exportado SÍ lo necesita:
-  // capturarPlanta() fuerza todas las etiquetas visibles para la captura
   const et = crearEtiqueta(def.nombre, Math.max(9, Math.min(20, def.w * 0.6)));
   et.position.y = def.h + 1.8;
-  et.userData.esNombreZona = true;
-  et.visible = false;
   g.add(et);
   if (typeof agregarCotas === 'function') agregarCotas(g, def.w, def.d, def.h);
   // sin sombra proyectada: a pedido del usuario, los provisionales no deben

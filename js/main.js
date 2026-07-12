@@ -108,7 +108,7 @@ function togglePiso4(){
   piso4.visible = vistaPiso4;
   document.getElementById('btnPiso4').innerHTML = '<span class="ic">' + icono('edificio') + '</span>' + (vistaPiso4 ? 'Ver torre completa' : 'Ver Piso 4');
   document.getElementById('btnPiso4').classList.toggle('activo', vistaPiso4);
-  etiquetasTodas.forEach(s => { s.visible = !s.userData.esNombreZona && (vistaPiso4 ? false : etiquetasOn); });
+  etiquetasTodas.forEach(s => { s.visible = vistaPiso4 ? false : etiquetasOn; });
   if (vistaPiso4){
     irA(2.3, y4 + 1, -1, 52, 0.3, 0.72);
     rangoMalacate.value = 3;
@@ -168,16 +168,35 @@ btnSotanos.onclick = toggleSotanos;
 
 const btnFlujo = document.getElementById('btnFlujo');
 const btnFin   = document.getElementById('btnFin');
+const btnVia    = document.getElementById('btnVia');
+const btnFinVia = document.getElementById('btnFinVia');
+const TXT_AVISO_RUTA = 'Dibujando ruta: haz clic sobre el terreno para marcar el recorrido y termina con "Finalizar ruta"';
+const TXT_AVISO_VIA  = 'Dibujando vía: haz clic sobre el terreno para marcar el tramo y termina con "Finalizar vía"';
 btnFlujo.onclick = () => {
   modoFlujo = !modoFlujo;
+  if (modoFlujo && modoVia){ modoVia = false; btnVia.classList.remove('activo'); btnFinVia.style.display = 'none'; finalizarVia(); }
   btnFlujo.classList.toggle('activo', modoFlujo);
   btnFin.style.display = modoFlujo ? '' : 'none';
+  document.getElementById('modoAviso').textContent = TXT_AVISO_RUTA;
   document.getElementById('modoAviso').style.display = modoFlujo ? 'block' : 'none';
   if (modoFlujo) posicionarBanner();   // ubica el aviso bajo la barra (no la tapa)
   if (!modoFlujo) finalizarRuta();
 };
 btnFin.onclick = () => { finalizarRuta(); };
 document.getElementById('btnBorrar').onclick = borrarRutas;
+
+btnVia.onclick = () => {
+  modoVia = !modoVia;
+  if (modoVia && modoFlujo){ modoFlujo = false; btnFlujo.classList.remove('activo'); btnFin.style.display = 'none'; finalizarRuta(); }
+  btnVia.classList.toggle('activo', modoVia);
+  btnFinVia.style.display = modoVia ? '' : 'none';
+  document.getElementById('modoAviso').textContent = TXT_AVISO_VIA;
+  document.getElementById('modoAviso').style.display = modoVia ? 'block' : 'none';
+  if (modoVia) posicionarBanner();
+  if (!modoVia) finalizarVia();
+};
+btnFinVia.onclick = () => { finalizarVia(); };
+document.getElementById('btnBorrarVias').onclick = borrarVias;
 
 /* ---- ayuda de controles: se puede ocultar (queda solo el botón redondo) ---- */
 (function(){
@@ -200,9 +219,7 @@ document.getElementById('btnBorrar').onclick = borrarRutas;
 let etiquetasOn = true;
 function setEtiquetas(on){
   etiquetasOn = on;
-  // los nombres de zona (esNombreZona) permanecen ocultos siempre: el botón
-  // "Etiquetas" solo gobierna los rótulos fijos (torre, vía, malacate, equipos)
-  etiquetasTodas.forEach(s => { s.visible = !s.userData.esNombreZona && etiquetasOn && !vistaPiso4; });
+  etiquetasTodas.forEach(s => { s.visible = etiquetasOn && !vistaPiso4; });
   document.getElementById('btnEtiquetas').classList.toggle('activo', !etiquetasOn);
   document.getElementById('padEtiquetas').classList.toggle('activo', !etiquetasOn);
 }

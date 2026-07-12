@@ -165,12 +165,8 @@ function construirEdificio(def){
   };
   // mismo tope que en provisionales.js: rótulo de tamaño normal, sin crecer
   // sin control con edificios anchos
-  // nombre oculto en la vista 3D, igual que en crearProvisional (el plano
-  // exportado sí lo muestra: capturarPlanta fuerza las etiquetas visibles)
   const et = crearEtiqueta(def.nombre, Math.max(9, Math.min(20, def.w * 0.6)));
   et.position.y = alto + 2.2;
-  et.userData.esNombreZona = true;
-  et.visible = false;
   g.add(et);
   if (typeof agregarCotas === 'function') agregarCotas(g, def.w, def.d, alto);
   g.position.set(def.pos[0], 0, def.pos[1]);

@@ -90,6 +90,11 @@ renderer.domElement.addEventListener('pointerdown', e => {
     if (p){ if (!rutaActual) iniciarRuta(); agregarPunto(p); }
     return;
   }
+  if (modoVia){
+    const p = interseccionSuelo();
+    if (p){ if (!viaActual) iniciarVia(); agregarPuntoVia(p); }
+    return;
+  }
   const hitsM = raycaster.intersectObjects(malacates, true);
   if (hitsM.length){
     arrastrando = buscarRaiz(hitsM[0].object) || malacate;

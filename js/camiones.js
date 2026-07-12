@@ -74,6 +74,19 @@ function curvaTerreno(paresXZ, altura){
   return new THREE.CatmullRomCurve3(pts);
 }
 
+/* une cada tramo consecutivo [puntos[i]→puntos[i+1]] siguiendo la red de
+   vías dibujada por el usuario (js/vias.js) si existe una que los conecte;
+   si no hay vías (o no llegan a esos puntos), queda la línea recta de
+   siempre — por eso un proyecto sin vías dibujadas se comporta idéntico */
+function encadenarConVias(puntos){
+  let out = [puntos[0]];
+  for (let i = 0; i < puntos.length - 1; i++){
+    const tramo = (typeof tramoConVias === 'function') ? tramoConVias(puntos[i], puntos[i + 1]) : [puntos[i], puntos[i + 1]];
+    out = out.concat(tramo.slice(1));
+  }
+  return out;
+}
+
 /* Recorrido completo de un camión hacia una zona: entrada → patio → zona → lavado → salida */
 function recorridoCamion(nombreZona){
   const zona = posicionZona(nombreZona);
@@ -85,13 +98,42 @@ function recorridoCamion(nombreZona){
   const port = buscarProv('Portería');
   const pPort = port ? [port.position.x, port.position.z] : [84, -24];
   const autop = [118, 33];   // ingreso desde la autopista (final de la vía corta)
-  // los camiones SIEMPRE entran y salen por la portería
-  const ida = [autop, pPort, pPatio, aprox];
-  const vuelta = [aprox, pLav, pPort, autop];
+  // los camiones SIEMPRE entran y salen por la portería; si el usuario dibujó
+  // vías que conectan estos puntos, el camión las recorre de verdad
+  const ida = encadenarConVias([autop, pPort, pPatio, aprox]);
+  const vuelta = encadenarConVias([aprox, pLav, pPort, autop]);
   return { ida, vuelta, descarga: aprox };
 }
 
+/* ---- Fila de acceso: los camiones NUNCA se chocan entre sí ----
+   Todos comparten el mismo tramo de vía (autopista → portería → patio) y,
+   si van a la misma zona, también el mismo punto de descargue. En vez de
+   moverlos y luego revisar distancias cuadro a cuadro (costoso y frágil),
+   se evita el choque desde el origen: un camión programado entra a una
+   cola y solo se despacha (aparece su modelo 3D) cuando (a) ya pasó un
+   tiempo mínimo desde el último despacho — así nunca hay dos ocupando la
+   vía compartida al mismo tiempo — y (b) ningún camión activo va HACIA
+   la misma zona todavía (si no, esperaría su turno ahí mismo). */
+const colaCamiones = [];       // pedidos esperando salir (aún sin modelo 3D en escena)
+let ultimoDespacho = -Infinity;
+const SEPARACION_CAMIONES = 8; // segundos reales mínimos entre salidas
+
 function lanzarCamion(c){
+  colaCamiones.push(c);
+}
+function zonaOcupada(nombreZona){
+  return camionesActivos.some(a => a.zona === nombreZona);
+}
+function procesarColaCamiones(){
+  if (!colaCamiones.length) return;
+  if (performance.now() - ultimoDespacho < SEPARACION_CAMIONES * 1000) return;
+  const idx = colaCamiones.findIndex(c => !zonaOcupada((c && c.zona) || 'Almacén central'));
+  if (idx === -1) return;   // todos los de la fila van a zonas con un camión adentro: esperan
+  const c = colaCamiones.splice(idx, 1)[0];
+  ultimoDespacho = performance.now();
+  despacharCamion(c);
+}
+function despacharCamion(c){
   const nombreZona = (c && c.zona) || 'Almacén central';
   const material = (c && c.material) || 'materiales';
   const rec = recorridoCamion(nombreZona);
@@ -193,6 +235,7 @@ function actualizarCamiones(dt){
     moverCamion(camionesActivos[i], dt);
     if (camionesActivos[i].terminado) camionesActivos.splice(i, 1);
   }
+  procesarColaCamiones();
 }
 
 /* ---- ventana de programación ---- */
@@ -234,16 +277,17 @@ function renderCamiones(){
           '<span class="planoNom">' + icono('camion') + ' <b class="txtFuerte">' + esc(c.fecha || fechaObra) + ' ' + esc(c.hora) + '</b> · ' +
             esc(c.material) + ' <small>→ ' + esc(c.zona || 'Almacén central') + '</small></span>' +
           '<span>' +
-            '<button class="planoBtn" title="Enviar el camión ahora mismo" onclick="lanzarCamion(camiones[' + i + '])">' + icono('ruta') + '</button> ' +
+            '<button class="planoBtn" title="Enviar el camión a la fila de acceso" onclick="lanzarCamion(camiones[' + i + '])">' + icono('ruta') + '</button> ' +
             '<button class="planoBtn peligro" title="Quitar de la programación" onclick="quitarCamion(' + i + ')">' + icono('basura') + '</button>' +
           '</span></div>';
       }).join('')
     : '<div class="desc">Aún no hay camiones programados.</div>';
   document.getElementById('camBody').innerHTML =
     '<div class="desc">Programa el día y la hora en que entra cada camión y a qué zona lleva el material. ' +
-      'Al llegar ese momento en el reloj de la obra, el camión entra por la vía, recorre la obra hasta esa zona ' +
-      '(se dibuja su recorrido), descarga y sale por el lavado de llantas. El reloj corre acelerado y avanza de ' +
-      'día para que se note la entrada de camiones programados a futuro.</div>' +
+      'Al llegar ese momento en el reloj de la obra, el camión entra por la portería, recorre la obra hasta esa zona ' +
+      '(se dibuja su recorrido), descarga y SIEMPRE sale por el lavado de llantas antes de salir por la portería. ' +
+      'Si dos camiones coinciden, esperan su turno en la fila de acceso: nunca se cruzan ni se encima uno con otro. ' +
+      'El reloj corre acelerado y avanza de día para que se note la entrada de camiones programados a futuro.</div>' +
     '<div style="display:flex; align-items:center; gap:8px; margin:12px 0; flex-wrap:wrap">' +
       '<b>Reloj de obra:</b> <span id="camFechaActual" class="txtSuave">' + fechaObra + '</span>' +
       '<span id="camHoraActual" style="font-variant-numeric:tabular-nums">' + minutosAHora(horaObra) + '</span>' +
