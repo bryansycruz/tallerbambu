@@ -181,14 +181,14 @@
   /* botones secundarios discretos: fantasma que se enciende en verde,
      en fila junto con "Crear proyecto libre" */
   #inicioOtras { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
-  #inicioLibre {
+  #inicioOtras a {
     display:inline-flex; align-items:center;
     padding:12px 24px; border:1px solid var(--borde-2); border-radius:var(--radio-boton);
     background:transparent; color:var(--texto-2); font-size:13px; font-weight:600; text-decoration:none;
     font-family:var(--fuente-display); letter-spacing:1px; text-transform:uppercase;
     transition:background .15s, border-color .15s, color .15s;
   }
-  #inicioLibre:hover { background:var(--acento-suave); border-color:var(--acento); color:var(--acento-texto); }
+  #inicioOtras a:hover { background:var(--acento-suave); border-color:var(--acento); color:var(--acento-texto); }
   /* selector de tema: ícono de sol/luna en vez de los círculos de texto
      ◐/◑ que había antes (ver aplicarTema() en cada página) */
   .btnTema svg { width:13px; height:13px; vertical-align:-2px; margin-right:5px; flex:none; }

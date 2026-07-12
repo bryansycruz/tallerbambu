@@ -19,7 +19,8 @@ const ICO = {
   grua:     '<path d="M4 21V4h3l12 3-2 3M7 4l-2 3M9 7v14M5 21h8"/>',
   edificio: '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8.5 7h2M13.5 7h2M8.5 11h2M13.5 11h2M10 21v-3h4v3"/>',
   caja:     '<path d="M3 8l9-5 9 5v8l-9 5-9-5z M3 8l9 5 9-5M12 13v8"/>',
-  editar:   '<path d="M4 20h4L18.5 9.5a2.1 2.1 0 00-3-3L5 17v3z M13.5 6.5l3 3"/>'
+  editar:   '<path d="M4 20h4L18.5 9.5a2.1 2.1 0 00-3-3L5 17v3z M13.5 6.5l3 3"/>',
+  silla:    '<path d="M6 4v9h12V4M6 13v3h12v-3M7 16v4M17 16v4"/>'
 };
 function ic(n){
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICO[n] || '') + '</svg>';
@@ -349,13 +350,146 @@ function construirGruaPluma(def){
   return g;
 }
 
+/* ============ CATÁLOGO DE MUEBLES ============
+   Piezas curadas por categoría; cada "dibujar" es una composición paramétrica
+   corta con caja()/cilindro() (igual que construirEspacio/pisoSistema) para
+   que cambiar ancho/fondo/alto al editar reproporcione la pieza de verdad,
+   no solo escale un modelo fijo. "color" tiñe la superficie principal; los
+   acabados secundarios quedan fijos (mismo criterio que MAT_AMARILLO/NARANJA
+   en las grúas). */
+const CATALOGO_MUEBLES = [
+  // ---- Sala ----
+  { id:'sofa', nombre:'Sofá', categoria:'Sala', w:2.0, d:0.9, h:0.85, color:'#5c7290',
+    dibujar(g, w, d, h, color){
+      caja(g, w, h*0.42, d, color, 0, h*0.21, 0);
+      caja(g, w, h*0.58, d*0.18, color, 0, h*0.5, -d/2 + d*0.09);
+      caja(g, w*0.14, h*0.65, d, color, -w/2 + w*0.07, h*0.32, 0);
+      caja(g, w*0.14, h*0.65, d, color,  w/2 - w*0.07, h*0.32, 0);
+    } },
+  { id:'mesaCentro', nombre:'Mesa de centro', categoria:'Sala', w:1.1, d:0.55, h:0.42, color:'#8a6642',
+    dibujar(g, w, d, h, color){
+      caja(g, w, h*0.12, d, color, 0, h - h*0.06, 0);
+      [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx,sz]) => {
+        caja(g, 0.06, h*0.88, 0.06, 0x2b2f36, sx*(w/2-0.08), h*0.44, sz*(d/2-0.08));
+      });
+    } },
+  { id:'tv', nombre:'Mueble de TV', categoria:'Sala', w:1.3, d:0.4, h:0.9, color:'#23262b',
+    dibujar(g, w, d, h, color){
+      caja(g, w, h*0.32, d, color, 0, h*0.16, 0);
+      caja(g, w*0.85, h*0.55, 0.06, 0x111318, 0, h*0.32 + h*0.28, -d/2 + 0.1);
+    } },
+  // ---- Comedor ----
+  { id:'mesaComedor', nombre:'Mesa de comedor', categoria:'Comedor', w:1.6, d:0.9, h:0.75, color:'#a97a4d',
+    dibujar(g, w, d, h, color){
+      caja(g, w, h*0.08, d, color, 0, h - h*0.04, 0);
+      [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx,sz]) => {
+        caja(g, 0.07, h*0.92, 0.07, color, sx*(w/2-0.1), h*0.46, sz*(d/2-0.1));
+      });
+    } },
+  { id:'sillaComedor', nombre:'Silla de comedor', categoria:'Comedor', w:0.45, d:0.45, h:0.9, color:'#a97a4d',
+    dibujar(g, w, d, h, color){
+      caja(g, w, h*0.06, d, color, 0, h*0.45, 0);
+      caja(g, w, h*0.5, 0.05, color, 0, h*0.75, -d/2 + 0.03);
+      [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx,sz]) => {
+        caja(g, 0.04, h*0.45, 0.04, 0x3a2c1e, sx*(w/2-0.03), h*0.225, sz*(d/2-0.03));
+      });
+    } },
+  // ---- Dormitorio ----
+  { id:'camaDoble', nombre:'Cama doble', categoria:'Dormitorio', w:1.6, d:2.0, h:0.55, color:'#eef1f5',
+    dibujar(g, w, d, h, color){
+      caja(g, w, h*0.35, d, 0x8a6642, 0, h*0.175, 0);
+      caja(g, w*0.96, h*0.45, d*0.94, color, 0, h*0.35 + h*0.225, 0.02);
+      caja(g, w, h*1.2, 0.1, 0x8a6642, 0, h*0.6, -d/2);
+    } },
+  { id:'mesaNoche', nombre:'Mesa de noche', categoria:'Dormitorio', w:0.45, d:0.4, h:0.55, color:'#a97a4d',
+    dibujar(g, w, d, h, color){ caja(g, w, h, d, color, 0, h/2, 0); } },
+  { id:'closet', nombre:'Closet', categoria:'Dormitorio', w:1.2, d:0.6, h:2.0, color:'#d8c8a8',
+    dibujar(g, w, d, h, color){
+      caja(g, w, h, d, color, 0, h/2, 0);
+      caja(g, 0.03, h*0.9, 0.02, 0x6b5b3d, -0.02, h*0.5, d/2);
+    } },
+  // ---- Cocina ----
+  { id:'nevera', nombre:'Nevera', categoria:'Cocina', w:0.7, d:0.7, h:1.8, color:'#d9dde0',
+    dibujar(g, w, d, h, color){
+      caja(g, w, h, d, color, 0, h/2, 0);
+      caja(g, w*0.06, h*0.55, 0.02, 0x8b9096, -w/2 + w*0.12, h*0.62, d/2);
+    } },
+  { id:'estufa', nombre:'Estufa', categoria:'Cocina', w:0.6, d:0.6, h:0.9, color:'#2b2f36',
+    dibujar(g, w, d, h, color){
+      caja(g, w, h, d, color, 0, h/2, 0);
+      [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx,sz]) => {
+        cilindro(g, w*0.13, 0.02, 0x111318, sx*w*0.22, h + 0.01, sz*d*0.22);
+      });
+    } },
+  { id:'meson', nombre:'Mesón de cocina', categoria:'Cocina', w:2.0, d:0.65, h:0.9, color:'#cfd3d8',
+    dibujar(g, w, d, h, color){
+      caja(g, w, h*0.9, d, 0xece7dc, 0, h*0.45, 0);
+      caja(g, w + 0.06, h*0.1, d + 0.06, color, 0, h - h*0.05, 0);
+    } },
+  // ---- Baño ----
+  { id:'inodoro', nombre:'Inodoro', categoria:'Baño', w:0.4, d:0.6, h:0.75, color:'#f2f2f2',
+    dibujar(g, w, d, h, color){
+      caja(g, w, h*0.3, d*0.6, color, 0, h*0.15, d*0.2);
+      caja(g, w*0.85, h*0.45, d*0.35, color, 0, h*0.55, -d*0.28);
+    } },
+  { id:'lavamanos', nombre:'Lavamanos', categoria:'Baño', w:0.55, d:0.45, h:0.85, color:'#f2f2f2',
+    dibujar(g, w, d, h, color){
+      caja(g, w, h*0.1, d, color, 0, h - h*0.05, 0);
+      cilindro(g, 0.04, h*0.85, 0xb7bcc2, 0, h*0.425, 0);
+    } },
+  { id:'ducha', nombre:'Ducha', categoria:'Baño', w:0.9, d:0.9, h:2.0, color:'#bcd6e0',
+    dibujar(g, w, d, h, color){
+      caja(g, w, 0.05, d, 0xe4e4e0, 0, 0.03, 0);
+      caja(g, 0.02, h, d, color, -w/2, h/2, 0, 0.35);
+      caja(g, w, h, 0.02, color, 0, h/2, -d/2, 0.35);
+    } },
+  // ---- Oficina ----
+  { id:'escritorio', nombre:'Escritorio', categoria:'Oficina', w:1.4, d:0.7, h:0.75, color:'#a97a4d',
+    dibujar(g, w, d, h, color){
+      caja(g, w, h*0.08, d, color, 0, h - h*0.04, 0);
+      [[-1],[1]].forEach(([sx]) => caja(g, 0.05, h*0.92, d*0.9, color, sx*(w/2-0.05), h*0.46, 0));
+    } },
+  { id:'sillaOficina', nombre:'Silla de oficina', categoria:'Oficina', w:0.55, d:0.55, h:1.0, color:'#2e6db8',
+    dibujar(g, w, d, h, color){
+      caja(g, w*0.85, h*0.08, d*0.85, color, 0, h*0.5, 0);
+      caja(g, w*0.85, h*0.45, 0.06, color, 0, h*0.75, -d/2 + 0.05);
+      cilindro(g, 0.04, h*0.45, 0x2b2f36, 0, h*0.27, 0);
+    } },
+  { id:'estanteria', nombre:'Estantería', categoria:'Oficina', w:0.9, d:0.35, h:1.9, color:'#a97a4d',
+    dibujar(g, w, d, h, color){
+      caja(g, w, h, 0.03, color, 0, h/2, -d/2 + 0.015);
+      [0.15, 0.4, 0.65, 0.9].forEach(f => caja(g, w, 0.03, d, color, 0, h*f, 0));
+      [[-1],[1]].forEach(([sx]) => caja(g, 0.03, h, 0.03, color, sx*(w/2-0.015), h/2, 0));
+    } }
+];
+function opcionesCatalogoMueble(sel){
+  const cats = {};
+  CATALOGO_MUEBLES.forEach(m => { (cats[m.categoria] = cats[m.categoria] || []).push(m); });
+  return Object.keys(cats).map(cat =>
+    '<optgroup label="' + esc(cat) + '">' +
+      cats[cat].map(m => '<option value="' + m.id + '"' + (m.id === sel ? ' selected' : '') + '>' + esc(m.nombre) + '</option>').join('') +
+    '</optgroup>'
+  ).join('');
+}
+function construirMueble(def){
+  const g = new THREE.Group();
+  const item = CATALOGO_MUEBLES.find(m => m.id === def.catalogoId) || CATALOGO_MUEBLES[0];
+  item.dibujar(g, def.w, def.d, def.h, def.color);
+  g.userData.info = {
+    dimensiones: def.w + ' × ' + def.d + ' m',
+    altura: def.h + ' m',
+    detalle: item.nombre + ' — categoría ' + item.categoria
+  };
+  return g;
+}
+
 const FABRICAS = {
   espacio: construirEspacio, edificio: construirEdificio, malacate: construirMalacate,
-  gruaTorre: construirGruaTorre, gruaPluma: construirGruaPluma
+  gruaTorre: construirGruaTorre, gruaPluma: construirGruaPluma, mueble: construirMueble
 };
 const NOMBRE_TIPO = {
   espacio:'Espacio', edificio:'Edificio', malacate:'Malacate',
-  gruaTorre:'Torre grúa', gruaPluma:'Grúa pluma'
+  gruaTorre:'Torre grúa', gruaPluma:'Grúa pluma', mueble:'Mueble'
 };
 
 /* ============ ELEMENTOS DE LA OBRA ============ */
@@ -403,6 +537,11 @@ function normalizarDef(raw){
     d.mastil = numLim(raw.mastil, 30, 8, 90); d.brazo = numLim(raw.brazo, 40, 8, 90); d.radio = numLim(raw.radio, 35, 4, 90);
   } else if (tipo === 'gruaPluma'){
     d.brazo = numLim(raw.brazo, 30, 6, 80); d.angulo = numLim(raw.angulo, 45, 10, 80); d.radio = numLim(raw.radio, 25, 4, 80);
+  } else if (tipo === 'mueble'){
+    const item = CATALOGO_MUEBLES.find(m => m.id === raw.catalogoId) || CATALOGO_MUEBLES[0];
+    d.catalogoId = item.id;
+    d.w = numLim(raw.w, item.w, 0.2, 6); d.d = numLim(raw.d, item.d, 0.2, 6); d.h = numLim(raw.h, item.h, 0.1, 3.5);
+    d.color = /^#[0-9a-f]{6}$/i.test(raw.color || '') ? raw.color : item.color;
   }
   return d;
 }
@@ -414,7 +553,8 @@ function crearElemento(raw){
   g.userData.info.nombre = def.nombre;
   const et = crearEtiqueta(def.nombre, 12);
   et.position.y = (def.tipo === 'gruaTorre' ? def.mastil : def.tipo === 'edificio' ? def.pisos*def.hPiso :
-                   def.tipo === 'malacate' ? def.mastil : def.tipo === 'gruaPluma' ? 6 : (def.h + 2)) + 3;
+                   def.tipo === 'malacate' ? def.mastil : def.tipo === 'gruaPluma' ? 6 :
+                   def.tipo === 'mueble' ? def.h + 0.6 : (def.h + 2)) + 3;
   g.add(et); g.userData.etiqueta = et;
   g.position.set(def.x, 0, def.z);
   g.rotation.y = def.rot;
@@ -615,7 +755,7 @@ function renderVentana(){
     ? elementos.map((g, i) => {
         const d = g.userData.def;
         return '<div class="planoFila">' +
-          '<span class="planoNom">' + ic(d.tipo === 'edificio' ? 'edificio' : (d.tipo === 'gruaTorre' || d.tipo === 'gruaPluma') ? 'grua' : 'caja') +
+          '<span class="planoNom">' + ic(d.tipo === 'edificio' ? 'edificio' : (d.tipo === 'gruaTorre' || d.tipo === 'gruaPluma') ? 'grua' : d.tipo === 'mueble' ? 'silla' : 'caja') +
             ' <b class="txtFuerte">' + esc(d.nombre) + '</b> <small>· ' + NOMBRE_TIPO[d.tipo] + '</small></span>' +
           '<span>' +
             '<button class="planoBtn" title="Editar dimensiones" onclick="editarLibreIdx(' + i + ')">' + ic('editar') + '</button> ' +
@@ -635,6 +775,7 @@ function renderVentana(){
           '<option value="malacate">Malacate</option>' +
           '<option value="gruaTorre">Torre grúa</option>' +
           '<option value="gruaPluma">Grúa pluma</option>' +
+          '<option value="mueble">Mueble</option>' +
         '</select>' +
         '<input id="libNombre" maxlength="40" placeholder="Nombre" style="flex:1; min-width:150px">' +
       '</div>' +
@@ -668,10 +809,22 @@ function cambiarTipo(){
   } else if (t === 'gruaPluma'){
     html = num('libBrazo','Largo de la pluma (m)',30,6,80,0.5) + num('libAngulo','Inclinación (°)',45,10,80,1) +
       num('libRadio','Radio de giro (m)',25,4,80,0.5);
+  } else if (t === 'mueble'){
+    const it0 = CATALOGO_MUEBLES[0];
+    html = '<label style="width:100%">Pieza <select id="libMuebleId" style="flex:1" onchange="rellenarCamposMueble()">' + opcionesCatalogoMueble(it0.id) + '</select></label>' +
+      num('libAncho','Ancho (m)',it0.w,0.2,6,0.05) + num('libFondo','Fondo (m)',it0.d,0.2,6,0.05) + num('libAlto','Altura (m)',it0.h,0.1,3.5,0.05) +
+      '<label>Color <input type="color" id="libColor" value="' + it0.color + '"></label>';
   }
   campos.innerHTML = html;
-  const ph = { espacio:'Espacio', edificio:'Edificio', malacate:'Malacate', gruaTorre:'Torre grúa', gruaPluma:'Grúa pluma' };
+  const ph = { espacio:'Espacio', edificio:'Edificio', malacate:'Malacate', gruaTorre:'Torre grúa', gruaPluma:'Grúa pluma', mueble:'Mueble' };
   document.getElementById('libNombre').placeholder = 'Nombre (ej: ' + ph[t] + ')';
+}
+function rellenarCamposMueble(){
+  const item = CATALOGO_MUEBLES.find(m => m.id === document.getElementById('libMuebleId').value) || CATALOGO_MUEBLES[0];
+  document.getElementById('libAncho').value = item.w;
+  document.getElementById('libFondo').value = item.d;
+  document.getElementById('libAlto').value = item.h;
+  document.getElementById('libColor').value = item.color;
 }
 function valNum(id){ const el = document.getElementById(id); return el ? el.value : undefined; }
 function agregarElemento(){
@@ -694,6 +847,9 @@ function agregarElemento(){
     raw.mastil = valNum('libMastil'); raw.brazo = valNum('libBrazo'); raw.radio = valNum('libRadio');
   } else if (tipo === 'gruaPluma'){
     raw.brazo = valNum('libBrazo'); raw.angulo = valNum('libAngulo'); raw.radio = valNum('libRadio');
+  } else if (tipo === 'mueble'){
+    raw.catalogoId = (document.getElementById('libMuebleId') || {}).value;
+    raw.w = valNum('libAncho'); raw.d = valNum('libFondo'); raw.h = valNum('libAlto'); raw.color = valNum('libColor');
   }
   const g = crearElemento(raw);
   guardar();
@@ -741,6 +897,10 @@ function renderEditorLibre(d){
   } else if (d.tipo === 'gruaPluma'){
     campos = num('edBrazo','Largo de la pluma (m)',d.brazo,6,80,0.5) + num('edAngulo','Inclinación (°)',d.angulo,10,80,1) +
       num('edRadio','Radio de giro (m)',d.radio,4,80,0.5);
+  } else if (d.tipo === 'mueble'){
+    campos = '<label style="width:100%">Pieza <select id="edMuebleId" style="flex:1">' + opcionesCatalogoMueble(d.catalogoId) + '</select></label>' +
+      num('edAncho','Ancho (m)',d.w,0.2,6,0.05) + num('edFondo','Fondo (m)',d.d,0.2,6,0.05) + num('edAlto','Altura (m)',d.h,0.1,3.5,0.05) +
+      '<label>Color <input type="color" id="edColor" value="' + (d.color || '#5c7290') + '"></label>';
   }
   document.getElementById('libreBody').innerHTML =
     '<div class="desc">Editando <b class="txtAcento">' + esc(d.nombre) + '</b> (' + NOMBRE_TIPO[d.tipo] + '). ' +
@@ -775,6 +935,9 @@ function guardarEdicionLibre(){
     raw.mastil = valNum('edMastil'); raw.brazo = valNum('edBrazo'); raw.radio = valNum('edRadio');
   } else if (d.tipo === 'gruaPluma'){
     raw.brazo = valNum('edBrazo'); raw.angulo = valNum('edAngulo'); raw.radio = valNum('edRadio');
+  } else if (d.tipo === 'mueble'){
+    raw.catalogoId = (document.getElementById('edMuebleId') || {}).value;
+    raw.w = valNum('edAncho'); raw.d = valNum('edFondo'); raw.h = valNum('edAlto'); raw.color = valNum('edColor');
   }
   const i = elementos.indexOf(g);
   g.traverse(n => { if (n.geometry) n.geometry.dispose(); });
