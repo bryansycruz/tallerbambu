@@ -181,21 +181,21 @@ function exportarPlano(){
     '<title>Plano de obra — Proyecto Bambú</title>' +
     '<style>' +
       '@page { size: A4 landscape; margin: 12mm; }' +
-      'body { font-family: "IBM Plex Sans", Arial, sans-serif; color: #1f241b; margin: 24px; }' +
-      'header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #059669; padding-bottom: 8px; margin-bottom: 14px; }' +
-      'h1 { font-family: "JetBrains Mono", monospace; font-size: 19px; margin: 0; color: #047857; text-transform: uppercase; letter-spacing: 1px; }' +
-      'h2 { font-family: "JetBrains Mono", monospace; font-size: 13px; margin: 18px 0 6px; color: #047857; text-transform: uppercase; letter-spacing: 1px; }' +
+      'body { font-family: "Nunito", Arial, sans-serif; color: #1f241b; margin: 24px; }' +
+      'header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #3E8E5A; padding-bottom: 8px; margin-bottom: 14px; }' +
+      'h1 { font-family: "Fredoka", sans-serif; font-size: 19px; margin: 0; color: #2E6B44; text-transform: uppercase; letter-spacing: 1px; }' +
+      'h2 { font-family: "Fredoka", sans-serif; font-size: 13px; margin: 18px 0 6px; color: #2E6B44; text-transform: uppercase; letter-spacing: 1px; }' +
       'header small { color: #6a7260; font-size: 12px; }' +
       'img.planta { width: 100%; max-height: 58vh; object-fit: contain; border: 1px solid #d9ddd1; }' +
       'table { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-top: 4px; }' +
       'th { text-align: left; color: #6a7260; border-bottom: 2px solid #c3c9b8; padding: 4px 6px; text-transform: uppercase; font-size: 10px; letter-spacing: .6px; }' +
       'td { border-bottom: 1px solid #e4e8dd; padding: 4px 6px; }' +
       'td.num, th.num { text-align: right; }' +
-      'tr.total td { font-weight: bold; color: #047857; border-top: 2px solid #c3c9b8; }' +
+      'tr.total td { font-weight: bold; color: #2E6B44; border-top: 2px solid #c3c9b8; }' +
       'ul { font-size: 11.5px; color: #a12d22; margin: 4px 0; padding-left: 18px; }' +
       '.acciones { margin: 14px 0; display: flex; gap: 10px; }' +
-      '.acciones button, .acciones a { font-family: "JetBrains Mono", monospace; font-size: 12px; padding: 8px 16px; border: 1px solid #059669; background: #059669; color: #fff; cursor: pointer; text-decoration: none; text-transform: uppercase; letter-spacing: .5px; }' +
-      '.acciones a { background: transparent; color: #047857; }' +
+      '.acciones button, .acciones a { font-family: "Fredoka", sans-serif; font-size: 12px; padding: 8px 16px; border: 1px solid #3E8E5A; background: #3E8E5A; color: #fff; border-radius: 999px; cursor: pointer; text-decoration: none; text-transform: uppercase; letter-spacing: .5px; }' +
+      '.acciones a { background: transparent; color: #2E6B44; }' +
       '@media print { .acciones { display: none; } body { margin: 0; } }' +
     '</style></head><body>' +
     '<header><div><h1>Proyecto Bambú — Plano de obra</h1>' +

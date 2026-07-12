@@ -32,8 +32,16 @@ __pycache__/
 *.tmp
 *.bak
 
-# proyecto 
+# proyecto
 proyecto bambuco/
+
+# ============ SKILLS DE CLAUDE CODE Y MATERIAL DE REFERENCIA ============
+# (material de trabajo para el diseño, no son parte del sitio)
+tallerbambu-diseno.skill
+tallerbambu-diseno/
+logos-iconos-originales.zip
+logos-iconos-originales/
+beneficios e iconos.JPG
 
 # ============ SISTEMA ============
 .DS_Store

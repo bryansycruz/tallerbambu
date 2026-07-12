@@ -4,43 +4,49 @@
 <meta charset="UTF-8">
 <title>Piso 5 — Detalle · Taller II, Obras Provisionales</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <script>
   /* aplica el tema guardado ANTES de pintar para evitar parpadeo */
   document.documentElement.dataset.tema = localStorage.getItem('temaObra') || 'claro';
 </script>
 <style>
-  /* Plancha técnica "Bambú" con dos temas (claro por defecto y oscuro):
-     retícula de puntos, tarjetas planas, acento en verde oscuro y
-     JetBrains Mono en los títulos. Comparte la elección de tema (localStorage
-     "temaObra") con el resto del proyecto. */
+  /* Plancha técnica "Taller Bambú" (skill tallerbambu-diseno, variante bambú)
+     con dos temas (claro por defecto y oscuro): retícula de puntos, tarjetas
+     redondeadas, acento verde bambú + azul secundario en los íconos, Fredoka
+     en los títulos y Nunito en el cuerpo. Comparte la elección de tema
+     (localStorage "temaObra") con el resto del proyecto. */
   :root {
     color-scheme:light;
-    --fondo:#f4f6f1; --puntos:rgba(5,150,105,.12);
+    --fondo:#f4f6f1; --puntos:rgba(62,142,90,.12);
     --superficie:#ffffff; --sup-baja:#f4f6f0;
     --linea:#e4e8dd; --borde:#d9ddd1; --borde-2:#c3c9b8;
     --texto:#1f241b; --texto-2:#6a7260;
-    --acento:#059669; --acento-hover:#047857; --acento-texto:#047857;
-    --acento-suave:rgba(5,150,105,.08); --sobre-acento:#ffffff;
+    --acento:#3E8E5A; --acento-hover:#2E6B44; --acento-texto:#2E6B44;
+    --acento-suave:rgba(62,142,90,.08); --sobre-acento:#ffffff;
+    --acento-2:#0E85BD; --acento-2-hover:#0A648F;
     --sombra:0 12px 34px rgba(30,40,20,.14);
+    --fuente-display:'Fredoka', sans-serif; --fuente-cuerpo:'Nunito', sans-serif;
+    --radio-boton:999px; --radio-campo:12px;
   }
   :root[data-tema="oscuro"] {
     color-scheme:dark;
-    --fondo:#0a0a0a; --puntos:rgba(52,211,153,.10);
+    --fondo:#0a0a0a; --puntos:rgba(99,197,137,.10);
     --superficie:#111111; --sup-baja:#0d0d0d;
     --linea:#222222; --borde:#333333; --borde-2:#444444;
     --texto:#f2f2f2; --texto-2:#999999;
-    --acento:#10b981; --acento-hover:#34d399; --acento-texto:#34d399;
-    --acento-suave:rgba(52,211,153,.08); --sobre-acento:#ffffff;
+    --acento:#4CAE74; --acento-hover:#63C589; --acento-texto:#63C589;
+    --acento-suave:rgba(99,197,137,.08); --sobre-acento:#ffffff;
+    --acento-2:#38A9DE; --acento-2-hover:#5BBBE8;
     --sombra:0 20px 60px rgba(0,0,0,.6);
   }
   html, body {
     margin:0; padding:0; background-color:var(--fondo);
     background-image:radial-gradient(var(--puntos) 1px, transparent 1px);
     background-size:40px 40px;
-    font-family:'IBM Plex Sans', Arial, ui-sans-serif, system-ui, sans-serif; color:var(--texto);
+    font-family:var(--fuente-cuerpo), Arial, ui-sans-serif, system-ui, sans-serif; color:var(--texto);
   }
   ::selection { background:var(--acento); color:#fff; }
   .contenido { max-width:980px; margin:0 auto; padding:22px 18px 54px; }
@@ -49,34 +55,36 @@
     border-bottom:2px solid var(--acento); padding-bottom:12px; margin-bottom:18px;
   }
   h1 {
-    margin:0; font-size:22px; color:var(--acento-texto); font-family:'JetBrains Mono', monospace;
-    letter-spacing:1.5px; text-transform:uppercase;
+    margin:0; font-size:22px; color:var(--acento-texto); font-family:var(--fuente-display);
+    letter-spacing:1.5px; text-transform:uppercase; display:flex; align-items:center; gap:8px;
   }
+  h1 svg { width:24px; height:24px; color:var(--acento); flex:none; }
   header small { color:var(--texto-2); display:block; margin-top:3px; font-size:12.5px; }
   .volver {
     display:inline-flex; align-items:center; gap:6px; background:var(--acento); color:var(--sobre-acento);
-    border:1px solid var(--acento); padding:10px 16px; border-radius:0; font-size:12px; font-weight:700;
+    border:1px solid var(--acento); padding:10px 16px; border-radius:var(--radio-boton); font-size:12px; font-weight:700;
     text-transform:uppercase; letter-spacing:1px; text-decoration:none; cursor:pointer;
-    font-family:'JetBrains Mono', monospace;
+    font-family:var(--fuente-display);
     transition:background .2s, border-color .2s;
   }
   .volver:hover { background:var(--acento-hover); border-color:var(--acento-hover); }
   .volver svg { width:14px; height:14px; }
   .btnTema {
     display:inline-flex; align-items:center; background:transparent; color:var(--texto-2);
-    border:1px solid var(--borde-2); padding:10px 14px; border-radius:0; font-size:11px; font-weight:600;
+    border:1px solid var(--borde-2); padding:10px 14px; border-radius:var(--radio-boton); font-size:11px; font-weight:600;
     text-transform:uppercase; letter-spacing:1px; cursor:pointer;
-    font-family:'JetBrains Mono', monospace;
+    font-family:var(--fuente-display);
     transition:background .15s, color .15s, border-color .15s;
   }
   .btnTema:hover { background:var(--acento-suave); border-color:var(--acento); color:var(--acento-texto); }
+  .btnTema svg { width:13px; height:13px; margin-right:5px; flex:none; }
   h2 {
     font-size:13px; color:var(--acento-texto); margin:26px 0 10px; display:flex; align-items:center; gap:7px;
-    font-family:'JetBrains Mono', monospace; letter-spacing:1.5px; text-transform:uppercase;
+    font-family:var(--fuente-display); letter-spacing:1.5px; text-transform:uppercase;
   }
-  h2 svg { width:15px; height:15px; }
+  h2 svg { width:15px; height:15px; color:var(--acento-2); }
   .tarjeta {
-    background:var(--superficie); border:1px solid var(--borde); border-radius:0; padding:14px 16px;
+    background:var(--superficie); border:1px solid var(--borde); border-radius:18px; padding:14px 16px;
     box-shadow:var(--sombra);
   }
   table { width:100%; border-collapse:collapse; font-size:12.5px; }
@@ -94,9 +102,9 @@
   /* las cotas del plano (TORRE 01/02, JUNTA) siguen el acento del tema */
   .plano-svg .svgCotas { fill:var(--acento-texto); }
   .leyenda { display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; font-size:12px; color:var(--texto-2); }
-  .leyenda i { display:inline-block; width:11px; height:11px; border-radius:0; margin-right:5px; vertical-align:-1px; border:1px solid rgba(127,127,127,.35); }
+  .leyenda i { display:inline-block; width:11px; height:11px; border-radius:var(--radio-boton); margin-right:5px; vertical-align:-1px; border:1px solid rgba(127,127,127,.35); }
   .pendiente {
-    border:2px dashed var(--borde-2); border-radius:0; padding:26px 14px; background:var(--sup-baja);
+    border:2px dashed var(--borde-2); border-radius:var(--radio-campo); padding:26px 14px; background:var(--sup-baja);
     text-align:center; color:var(--texto-2); font-size:13px; line-height:1.6;
   }
   .nota { color:var(--texto-2); font-size:12px; margin-top:8px; line-height:1.5; }
@@ -107,7 +115,7 @@
 
 <header>
   <div>
-    <h1>Piso 5 — Hoja de detalle</h1>
+    <h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v18M16 3v18M6 9h12M6 15h12M18 9l2.5-2.5M18 15l2.5-2.5"/></svg>Piso 5 — Hoja de detalle</h1>
     <small>Proyecto Bambú · Marinilla, Antioquia — Torres 01 y 02 · Taller II</small>
   </div>
   <div>
@@ -154,7 +162,7 @@
       <rect x="66" y="188" width="106" height="14"/><rect x="178" y="188" width="106" height="14"/>
       <rect x="290" y="188" width="106" height="14"/><rect x="402" y="188" width="106" height="14"/>
     </g>
-    <g font-family="IBM Plex Sans, Segoe UI, Arial" font-size="8.5" fill="#5a6a50" text-anchor="middle">
+    <g font-family="Nunito, Segoe UI, Arial" font-size="8.5" fill="#5a6a50" text-anchor="middle">
       <text x="119" y="40">BALCÓN</text><text x="231" y="40">BALCÓN</text>
       <text x="343" y="40">BALCÓN</text><text x="455" y="40">BALCÓN</text>
       <text x="119" y="198">BALCÓN</text><text x="231" y="198">BALCÓN</text>
@@ -162,7 +170,7 @@
     </g>
     <!-- núcleo de escalas y ascensores (extremo occidental) -->
     <rect x="17" y="48" width="45" height="136" fill="#dc9ad9" stroke="#a860a4"/>
-    <text x="39" y="116" font-family="IBM Plex Sans, Segoe UI, Arial" font-size="9" fill="#6a2a66" text-anchor="middle" transform="rotate(-90 39 116)">ESCALAS Y ASCENSORES</text>
+    <text x="39" y="116" font-family="Nunito, Segoe UI, Arial" font-size="9" fill="#6a2a66" text-anchor="middle" transform="rotate(-90 39 116)">ESCALAS Y ASCENSORES</text>
     <!-- apartamentos: norte (arriba) L·K·J·I -->
     <g fill="#bde882" stroke="#88b84e" stroke-width="0.8">
       <rect x="66" y="48" width="106" height="52"/><rect x="178" y="48" width="106" height="52"/>
@@ -175,37 +183,37 @@
       <rect x="66" y="132" width="106" height="52"/><rect x="178" y="132" width="106" height="52"/>
       <rect x="290" y="132" width="106" height="52"/><rect x="402" y="132" width="106" height="52"/>
     </g>
-    <g font-family="IBM Plex Sans, Segoe UI, Arial" font-size="10.5" fill="#1c212b" text-anchor="middle" font-weight="600">
+    <g font-family="Nunito, Segoe UI, Arial" font-size="10.5" fill="#1c212b" text-anchor="middle" font-weight="600">
       <text x="119" y="68">APTO L · 61,92 m²</text><text x="231" y="68">APTO K · 59,52 m²</text>
       <text x="343" y="68">APTO J · 67,05 m²</text><text x="455" y="68">APTO I · 67,05 m²</text>
       <text x="119" y="152">APTO A · 59,52 m²</text><text x="231" y="152">APTO B · 61,92 m²</text>
       <text x="343" y="152">APTO C · 67,05 m²</text><text x="455" y="152">APTO D · 72,30 m²</text>
     </g>
-    <g font-family="IBM Plex Sans, Segoe UI, Arial" font-size="8.5" fill="#33402a" text-anchor="middle">
+    <g font-family="Nunito, Segoe UI, Arial" font-size="8.5" fill="#33402a" text-anchor="middle">
       <text x="119" y="84">2 alcobas + estudio</text><text x="231" y="84">2 alcobas + estudio</text>
       <text x="343" y="84">3 alcobas</text><text x="455" y="84">3 alcobas</text>
     </g>
-    <g font-family="IBM Plex Sans, Segoe UI, Arial" font-size="8.5" fill="#1e3a42" text-anchor="middle">
+    <g font-family="Nunito, Segoe UI, Arial" font-size="8.5" fill="#1e3a42" text-anchor="middle">
       <text x="119" y="168">2 alcobas + estudio</text><text x="231" y="168">2 alcobas + estudio</text>
       <text x="343" y="168">3 alcobas</text><text x="455" y="168">3 alcobas</text>
     </g>
-    <text x="287" y="120" font-family="IBM Plex Sans, Segoe UI, Arial" font-size="10" fill="#6a2a66" text-anchor="middle" font-weight="600">CIRCULACIÓN · 105,55 m²</text>
+    <text x="287" y="120" font-family="Nunito, Segoe UI, Arial" font-size="10" fill="#6a2a66" text-anchor="middle" font-weight="600">CIRCULACIÓN · 105,55 m²</text>
     <!-- Torre 02 (esquema simplificado) -->
     <rect x="531" y="110" width="223" height="24" fill="#e2a4dc" opacity="0.85"/>
     <g stroke="#3a4150" stroke-width="1">
       <line x1="642" y1="58" x2="642" y2="110"/>
       <line x1="642" y1="134" x2="642" y2="186"/>
     </g>
-    <g font-family="IBM Plex Sans, Segoe UI, Arial" font-size="11" fill="#1c212b" text-anchor="middle" font-weight="600">
+    <g font-family="Nunito, Segoe UI, Arial" font-size="11" fill="#1c212b" text-anchor="middle" font-weight="600">
       <text x="581" y="88">E · 61,92</text><text x="703" y="88">F · 62,04</text>
       <text x="581" y="164">G · 72,30</text><text x="703" y="164">H · 61,92</text>
     </g>
-    <text x="642" y="125" font-family="IBM Plex Sans, Segoe UI, Arial" font-size="9" fill="#6a2a66" text-anchor="middle">CIRC. 51,38 m²</text>
+    <text x="642" y="125" font-family="Nunito, Segoe UI, Arial" font-size="9" fill="#6a2a66" text-anchor="middle">CIRC. 51,38 m²</text>
     <!-- malacate en fachada sur T1 -->
     <rect x="252" y="204" width="22" height="14" fill="#d9a521" stroke="#8a6a10"/>
-    <text x="263" y="232" font-family="IBM Plex Sans, Segoe UI, Arial" font-size="10" fill="#d9a521" text-anchor="middle" font-weight="600">MALACATE</text>
+    <text x="263" y="232" font-family="Nunito, Segoe UI, Arial" font-size="10" fill="#d9a521" text-anchor="middle" font-weight="600">MALACATE</text>
     <!-- cotas: el color lo pone el CSS (.svgCotas) según el tema -->
-    <g class="svgCotas" font-family="IBM Plex Sans, Segoe UI, Arial" font-size="11" text-anchor="middle" font-weight="600">
+    <g class="svgCotas" font-family="Nunito, Segoe UI, Arial" font-size="11" text-anchor="middle" font-weight="600">
       <text x="263" y="16">TORRE 01 — 49.73 m</text>
       <text x="642" y="46">TORRE 02 — 24.30 m</text>
       <text x="516" y="130" transform="rotate(90 516 130)">JUNTA</text>
@@ -269,13 +277,17 @@
 </div>
 
 <script>
-  /* Selector de tema claro/oscuro compartido con el resto del proyecto */
+  /* Selector de tema claro/oscuro compartido con el resto del proyecto.
+     Sin config.js en esta página: los SVG de sol/luna van inline (mismos
+     paths que ICONOS.sol/ICONOS.luna). */
   (function () {
+    var SVG_SOL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/></svg>';
+    var SVG_LUNA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 119.5 4a6.5 6.5 0 0010.5 10.5z"/></svg>';
     function aplicarTema(t) {
       document.documentElement.dataset.tema = t;
       try { localStorage.setItem('temaObra', t); } catch (e) {}
       document.querySelectorAll('.btnTema').forEach(function (b) {
-        b.textContent = (t === 'oscuro') ? '◐ Fondo blanco' : '◑ Fondo negro';
+        b.innerHTML = (t === 'oscuro' ? SVG_SOL : SVG_LUNA) + (t === 'oscuro' ? 'Fondo blanco' : 'Fondo negro');
       });
     }
     window.alternarTema = function () {

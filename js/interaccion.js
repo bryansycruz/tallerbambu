@@ -231,11 +231,7 @@ function infoGeneralProyecto(){
       '<div class="bimCard"><span>Lote</span><b>163,00 × 47,00 m</b></div>' +
       '<div class="bimCard"><span>Fase actual</span><b>Cerramientos y acabados</b></div>' +
       '<div class="bimCard"><span>Personal en pico</span><b>305 trabajadores</b></div>' +
-    '</div>' +
-    '<div class="bimNota">' + icono('etiqueta') +
-      '<div><b>Arquitectura sostenible</b>Torre 02 en bambú estructural certificado; el bambú actúa como sumidero de CO₂ y compensa parte de las emisiones del hormigón de la Torre 01.</div>' +
-    '</div>' +
-    '<div class="desc" style="margin-top:12px">Haz clic sobre cualquier elemento (torre, malacate, cerramiento o provisionales) para ver su información, modificarlo en la pestaña <b>Modificar</b> o consultar su <b>ficha técnica</b>.</div>';
+    '</div>';
 }
 /* estado sin selección: se llama al arrancar y cada vez que se elimina el
    elemento que estaba elegido (creador.js, equipos.js, escena.js) */

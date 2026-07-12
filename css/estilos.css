@@ -1,14 +1,15 @@
   /* ============ ESTILOS DE INTERFAZ ============
-     Sistema visual "Bambú" con dos temas (claro por defecto y oscuro),
-     acento en VERDE OSCURO (nada brillante), tipografía JetBrains Mono para
-     títulos y etiquetas en mayúsculas, esquinas rectas y retícula de puntos.
+     Sistema de diseño "Taller Bambú" (skill tallerbambu-diseno, variante
+     bambú): acento verde bambú, tipografía Fredoka (titulares/etiquetas,
+     redonda y burbujeante) + Nunito (cuerpo y botones), botones tipo
+     píldora y tarjetas redondeadas, dos temas (claro por defecto y oscuro).
      Layout tipo dashboard: sidebar de herramientas a la izquierda y panel
      de obra a la derecha. Los datos y la lógica no cambian: solo la piel.
      El tema se alterna con [data-tema="oscuro"] en <html> (localStorage). */
   :root {
     color-scheme:light;
     --fondo:#f4f6f1;               /* fondo base de páginas */
-    --puntos:rgba(5,150,105,.12);  /* retícula de puntos */
+    --puntos:rgba(62,142,90,.12);  /* retícula de puntos */
     --superficie:#ffffff;          /* tarjetas, ventanas y sidebars */
     --sup-baja:#f4f6f0;            /* celdas y cabeceras */
     --sup-alta:#eef1e9;            /* botones neutros */
@@ -18,21 +19,27 @@
     --texto-2:#6a7260;
     --borde:#d9ddd1;
     --borde-2:#c3c9b8;
-    --acento:#059669;              /* verde esmeralda principal (botones) */
-    --acento-hover:#047857;
-    --acento-texto:#047857;        /* verde bosque para textos acentuados */
-    --acento-suave:rgba(5,150,105,.08);
+    --acento:#3E8E5A;              /* verde bambú (skill tallerbambu-diseno) */
+    --acento-hover:#2E6B44;
+    --acento-texto:#2E6B44;        /* verde bambú oscuro para textos acentuados */
+    --acento-suave:rgba(62,142,90,.08);
+    --acento-2:#0E85BD;             /* azul del skill, acento secundario (íconos) */
+    --acento-2-hover:#0A648F;
     --sobre-acento:#ffffff;
     --rojo:#b3362a;
     --rojo-fondo:#fdecea;
     --rojo-texto:#a12d22;
     --velo:rgba(20,25,15,.45);     /* fondo de overlays */
     --sombra:0 12px 34px rgba(30,40,20,.14);
+    --fuente-display:'Fredoka', sans-serif;
+    --fuente-cuerpo:'Nunito', sans-serif;
+    --radio-boton:999px;           /* botones tipo píldora (skill) */
+    --radio-campo:12px;            /* inputs, selects, celdas y filas */
   }
   :root[data-tema="oscuro"] {
     color-scheme:dark;
     --fondo:#0a0a0a;
-    --puntos:rgba(52,211,153,.10);
+    --puntos:rgba(99,197,137,.10);
     --superficie:#111111;
     --sup-baja:#0d0d0d;
     --sup-alta:#1a1a1a;
@@ -42,10 +49,12 @@
     --texto-2:#999999;
     --borde:#333333;
     --borde-2:#444444;
-    --acento:#10b981;              /* verde esmeralda sobre fondo oscuro */
-    --acento-hover:#34d399;
-    --acento-texto:#34d399;        /* verde esmeralda claro, legible sobre negro */
-    --acento-suave:rgba(52,211,153,.08);
+    --acento:#4CAE74;              /* verde bambú sobre fondo oscuro */
+    --acento-hover:#63C589;
+    --acento-texto:#63C589;        /* verde bambú claro, legible sobre negro */
+    --acento-suave:rgba(99,197,137,.08);
+    --acento-2:#38A9DE;              /* azul, más claro sobre fondo oscuro */
+    --acento-2-hover:#5BBBE8;
     --sobre-acento:#ffffff;
     --rojo:#ff5544;
     --rojo-fondo:#331111;
@@ -55,7 +64,7 @@
   }
   html, body {
     margin:0; padding:0; overflow:hidden; height:100%; background:var(--fondo);
-    font-family:'IBM Plex Sans', Arial, ui-sans-serif, system-ui, sans-serif; color:var(--texto);
+    font-family:var(--fuente-cuerpo), Arial, ui-sans-serif, system-ui, sans-serif; color:var(--texto);
     -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
   }
   canvas { display:block; touch-action:none; }
@@ -65,10 +74,10 @@
   ::-webkit-scrollbar-track { background:transparent; }
   ::-webkit-scrollbar-thumb { background:var(--borde-2); }
   ::-webkit-scrollbar-thumb:hover { background:var(--texto-2); }
-  /* títulos con tipografía JetBrains Mono (distinta a la del texto) */
+  /* títulos con tipografía Fredoka (distinta a la del texto) */
   h1, h2, h3, #panel h2, #pTitulo, #inicioMateria, .uiGrupo::before,
   #orgCabecera h3, #planosCabecera h3, #camCabecera h3, #aptoCabecera h3 {
-    font-family:'JetBrains Mono', monospace; letter-spacing:.5px;
+    font-family:var(--fuente-display); letter-spacing:.5px;
   }
   /* colores acentuados que el JS aplica por clase (así cambian con el tema) */
   .txtAcento { color:var(--acento-texto); }
@@ -76,8 +85,10 @@
   .txtSuave  { color:var(--texto-2); }
 
   /* ============ PANTALLA DE INICIO ============
-     Portada tipo "ficha técnica": tarjeta sobre retícula de puntos,
-     etiquetas en mayúsculas y botón principal verde oscuro. */
+     Portada tipo "ficha técnica": retícula de puntos sobre blanco, sin
+     manchas ni anillos decorativos (se probaron y se descartaron — quedaban
+     mal). El color entra por la tarjeta, los beneficios y los chips del
+     equipo, no por el fondo. */
   #inicio {
     position:fixed; inset:0; z-index:100;
     display:flex; overflow-y:auto;
@@ -90,9 +101,15 @@
   /* margin:auto centra la tarjeta y, si es más alta que la pantalla, permite
      desplazar sin cortar el botón (clave en celular) */
   #inicioCard {
-    margin:auto; text-align:center; padding:38px 34px; max-width:560px;
+    position:relative; overflow:hidden;
+    margin:auto; text-align:center; padding:38px 34px; padding-top:44px; max-width:560px;
     background:var(--superficie); border:1px solid var(--borde);
-    box-shadow:var(--sombra);
+    box-shadow:var(--sombra); border-radius:20px;
+  }
+  /* franja superior verde→azul: la tarjeta deja de ser un simple recuadro blanco */
+  #inicioCard::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:6px;
+    background:linear-gradient(90deg, var(--acento), var(--acento-2));
   }
   #inicioLogo {
     width:132px; height:132px; margin:0 auto 20px; padding:16px;
@@ -102,39 +119,65 @@
   }
   #inicioLogo img { width:100%; height:100%; object-fit:contain; }
   #inicioUni {
-    font-size:11px; letter-spacing:2.4px; color:var(--texto-2); text-transform:uppercase;
-    font-weight:600; font-family:'JetBrains Mono', monospace;
+    font-size:11px; letter-spacing:1.4px; color:var(--texto-2); text-transform:uppercase;
+    font-weight:600; font-family:var(--fuente-display);
   }
   .inicioLinea { width:48px; height:2px; background:var(--acento); margin:14px auto; }
   #inicioMateria { font-size:50px; font-weight:700; color:var(--acento-texto); line-height:1; text-transform:uppercase; letter-spacing:1px; }
   #inicioProyecto { font-size:17px; color:var(--texto); margin-top:10px; }
   #inicioProyecto b { color:var(--acento-texto); font-weight:700; }
   #inicioSub { font-size:12.5px; color:var(--texto-2); margin-top:5px; }
-  #inicioInfo {
-    display:grid; grid-template-columns:1fr 1fr; gap:8px;
-    max-width:460px; margin:24px auto 4px; text-align:left;
+  /* beneficios — rediseñado sobre la referencia real que pasó el usuario
+     ("beneficios e iconos.JPG"): título con una palabra en azul, tarjetas
+     BLANCAS flotando sobre un panel gris claro (no tarjetas grises sobre
+     blanco como el primer intento), ícono oscuro (no de color) centrado
+     arriba, frase corta con UNA parte en negrita abajo. */
+  .tituloBeneficios {
+    font-family:var(--fuente-display); font-weight:700; font-size:19px;
+    color:var(--texto); margin:26px 0 10px; text-align:center;
   }
-  .infoItem {
-    background:var(--sup-baja); border:1px solid var(--borde);
-    border-left:3px solid var(--acento); padding:8px 10px;
+  .tituloBeneficios .acento2 { color:var(--acento-2); }
+  #inicioBeneficios {
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;
+    background:var(--sup-baja); border-radius:16px; padding:14px;
+    margin:0 0 24px;
   }
-  .infoItem span {
-    display:block; font-size:9.5px; text-transform:uppercase; letter-spacing:1.2px;
-    color:var(--acento-texto); font-weight:600; font-family:'JetBrains Mono', monospace;
+  .beneficio {
+    background:var(--superficie); border-radius:14px; padding:20px 12px;
+    text-align:center; box-shadow:0 2px 10px rgba(20,30,15,.06);
   }
-  .infoItem b { font-size:13px; color:var(--texto); font-weight:600; }
-  #inicioEquipo { margin:22px 0 24px; display:flex; flex-direction:column; gap:4px; }
+  .beneficio .ic { display:flex; justify-content:center; margin:0 0 12px; }
+  .beneficio .ic svg { width:32px; height:32px; margin-right:0; color:var(--texto); }
+  .beneficio span:last-child { display:block; font-size:12px; color:var(--texto-2); line-height:1.5; }
+  .beneficio b { color:var(--texto); font-weight:700; }
+  /* flecha que señala el botón "Ver la obra" */
+  .flechaJuega { display:block; width:fit-content; margin:2px auto 4px; }
+  .flechaJuega svg { width:20px; height:20px; margin-right:0; color:var(--acento); }
+  @media (prefers-reduced-motion: no-preference){
+    .flechaJuega svg { animation:rebotePlay 1.6s ease-in-out infinite; }
+  }
+  @keyframes rebotePlay { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(5px); } }
+  /* equipo: título + chips en fila, alternando verde/azul — más "amigable"
+     que la lista plana de nombres apilados que había antes */
+  #inicioEquipo { margin:24px 0; }
   #inicioEquipo .eqTitulo {
-    font-size:10px; text-transform:uppercase; letter-spacing:2px; color:var(--acento-texto);
-    margin-bottom:4px; font-weight:600; font-family:'JetBrains Mono', monospace;
+    display:block; font-size:10px; text-transform:uppercase; letter-spacing:1.2px; color:var(--texto-2);
+    margin-bottom:8px; font-weight:600; font-family:var(--fuente-display);
   }
-  #inicioEquipo span { font-size:14.5px; color:var(--texto); }
+  .eqChips { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+  .eqChip {
+    display:inline-flex; align-items:center; font-family:var(--fuente-cuerpo);
+    background:var(--acento-suave); color:var(--acento-texto); border:1px solid var(--acento);
+    border-radius:var(--radio-boton); padding:7px 16px; font-size:13px; font-weight:600;
+  }
+  .eqChip:nth-child(2){ background:rgba(14,133,189,.08); color:var(--acento-2); border-color:var(--acento-2); }
+  #inicioOtras { margin-top:12px; }
   #inicioBtn {
     display:flex; align-items:center; justify-content:center; gap:11px;
     width:100%; box-sizing:border-box;
-    background:var(--acento); color:var(--sobre-acento); border:1px solid var(--acento); border-radius:0;
+    background:var(--acento); color:var(--sobre-acento); border:1px solid var(--acento); border-radius:var(--radio-boton);
     padding:17px 44px; font-size:16px; font-weight:700; cursor:pointer;
-    font-family:'JetBrains Mono', monospace; letter-spacing:1px; text-transform:uppercase;
+    font-family:var(--fuente-display); letter-spacing:1px; text-transform:uppercase;
     transition:background .2s, border-color .2s, transform .15s;
   }
   #inicioBtn:hover { background:var(--acento-hover); border-color:var(--acento-hover); transform:translateY(-1px); }
@@ -142,31 +185,34 @@
     width:0; height:0; border-style:solid;
     border-width:8px 0 8px 13px; border-color:transparent transparent transparent #fff;
   }
-  /* botones secundarios discretos: fantasma que se enciende en verde */
-  #inicioPiso5, #inicioLibre {
-    display:inline-flex; align-items:center; margin:12px 5px 0; vertical-align:middle;
-    padding:12px 24px; border:1px solid var(--borde-2); border-radius:0;
+  /* botones secundarios discretos: fantasma que se enciende en verde,
+     en fila junto con "Crear proyecto libre" */
+  #inicioOtras { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+  #inicioLibre {
+    display:inline-flex; align-items:center;
+    padding:12px 24px; border:1px solid var(--borde-2); border-radius:var(--radio-boton);
     background:transparent; color:var(--texto-2); font-size:13px; font-weight:600; text-decoration:none;
-    font-family:'JetBrains Mono', monospace; letter-spacing:1px; text-transform:uppercase;
+    font-family:var(--fuente-display); letter-spacing:1px; text-transform:uppercase;
     transition:background .15s, border-color .15s, color .15s;
   }
-  #inicioPiso5:hover, #inicioLibre:hover { background:var(--acento-suave); border-color:var(--acento); color:var(--acento-texto); }
-  /* selector de tema dentro de la portada (enlace discreto) */
+  #inicioLibre:hover { background:var(--acento-suave); border-color:var(--acento); color:var(--acento-texto); }
+  /* selector de tema: ícono de sol/luna en vez de los círculos de texto
+     ◐/◑ que había antes (ver aplicarTema() en cada página) */
+  .btnTema svg { width:13px; height:13px; vertical-align:-2px; margin-right:5px; flex:none; }
   #inicioCard .btnTema {
-    display:block; margin:18px auto 0; background:none; border:none;
-    color:var(--texto-2); font-size:12px; cursor:pointer;
-    text-decoration:underline dotted; letter-spacing:.3px;
+    display:inline-flex; align-items:center; margin-top:18px; background:none; border:none;
+    color:var(--texto-2); font-size:12px; cursor:pointer; letter-spacing:.3px;
   }
   #inicioCard .btnTema:hover { color:var(--acento-texto); }
   @media (max-width:600px){
-    #inicioCard { padding:28px 18px; }
+    #inicioCard { padding:28px 18px; padding-top:34px; }
     #inicioLogo { width:104px; height:104px; }
     #inicioUni { font-size:10px; }
     #inicioMateria { font-size:38px; }
     #inicioProyecto { font-size:15px; }
-    #inicioInfo { grid-template-columns:1fr; gap:6px; max-width:300px; }
-    #inicioEquipo span { font-size:13.5px; }
-    #inicioPiso5, #inicioLibre { margin:10px 0 0; }
+    #inicioBeneficios { grid-template-columns:1fr; }
+    .eqChip { font-size:12px; padding:6px 13px; }
+    #inicioOtras { flex-direction:column; align-items:stretch; }
   }
 
   /* ============ SIDEBAR DE HERRAMIENTAS (dashboard) ============
@@ -185,14 +231,19 @@
     padding:2px 30px 12px 0; margin-bottom:6px;
     border-bottom:2px solid var(--acento);
   }
+  /* símbolo de marca "nudo de bambú" (skill logos-iconos-originales), en
+     verde bambú — se distingue del azul de los íconos utilitarios porque
+     ESTE sí es la marca, no una acción */
+  #uiMarca .marcaIc { flex:none; margin-right:9px; }
+  #uiMarca .marcaIc svg { width:26px; height:26px; margin-right:0; color:var(--acento); }
   #uiMarca .marcaTxt { display:flex; flex-direction:column; min-width:0; }
   #uiMarca .marcaTitulo {
-    font-family:'JetBrains Mono', monospace;
+    font-family:var(--fuente-display);
     font-size:17px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
     color:var(--acento-texto); line-height:1.1;
   }
   #uiMarca .marcaSub {
-    font-family:'JetBrains Mono', monospace;
+    font-family:var(--fuente-display);
     font-size:10px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase;
     color:var(--texto-2); margin-top:3px;
   }
@@ -202,7 +253,7 @@
     display:flex; flex-direction:column; gap:3px;
   }
   #uiPie .pieTitulo {
-    font-family:'JetBrains Mono', monospace;
+    font-family:var(--fuente-display);
     font-size:9.5px; font-weight:600; letter-spacing:1.4px; text-transform:uppercase;
     color:var(--acento-texto); margin-bottom:3px;
   }
@@ -210,11 +261,17 @@
   #uiPie .pieUni { font-size:10px; color:var(--texto-2); margin-top:5px; }
   #ui button, #ui select {
     background:var(--sup-alta); color:var(--texto); border:1px solid var(--borde);
-    padding:7px 10px; border-radius:0; cursor:pointer; font-size:12.5px;
+    padding:7px 10px; border-radius:var(--radio-boton); cursor:pointer; font-size:12.5px;
     width:100%; box-sizing:border-box; text-align:left;
     transition:background .15s, color .15s, border-color .15s;
   }
-  #ui button { display:flex; align-items:center; }
+  /* etiquetas de botón: se ven distintas al texto de párrafo por la
+     TIPOGRAFÍA (Fredoka, la misma de los títulos) y el peso, no por
+     mayúsculas — el usuario pidió minúscula normal, no mayúscula sostenida */
+  #ui button {
+    display:flex; align-items:center;
+    font-family:var(--fuente-display); font-weight:600; font-size:12.5px;
+  }
   #ui button:hover { background:var(--acento); color:var(--sobre-acento); border-color:var(--acento); }
   #ui button.activo { background:var(--acento); color:var(--sobre-acento); border-color:var(--acento); font-weight:600; }
   #ui label {
@@ -266,7 +323,7 @@
   #panel #panelToggle {
     position:absolute; top:12px; right:12px; z-index:2;
     width:24px; height:24px; margin:0; padding:0; line-height:1;
-    background:var(--sup-alta); color:var(--texto-2); border:1px solid var(--borde); border-radius:0;
+    background:var(--sup-alta); color:var(--texto-2); border:1px solid var(--borde); border-radius:var(--radio-boton);
     cursor:pointer; font-size:16px; text-align:center;
   }
   #panel #panelToggle:hover { background:var(--acento); color:var(--sobre-acento); border-color:var(--acento); }
@@ -282,7 +339,7 @@
      (libre) y el rojo de error (bloqueado) */
   #panel button {
     margin-top:10px; width:100%; background:var(--sup-alta); color:var(--texto);
-    border:1px solid var(--borde); padding:8px; border-radius:0;
+    border:1px solid var(--borde); padding:8px; border-radius:var(--radio-boton);
     cursor:pointer; font-size:13px;
     transition:background .15s, color .15s, border-color .15s;
   }
@@ -298,7 +355,7 @@
   #pModificar label { display:block; font-size:11px; color:var(--texto-2); font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
   #pModificar input[type="text"], #pModificar input:not([type]) {
     background:var(--campo); border:1px solid var(--borde); color:var(--texto);
-    border-radius:0; padding:7px 9px; font-size:13px; width:100%; box-sizing:border-box;
+    border-radius:var(--radio-campo); padding:7px 9px; font-size:13px; width:100%; box-sizing:border-box;
   }
   #pModificar input:focus { outline:none; border-color:var(--acento); }
   #pModificar input[type="color"] { padding:2px 3px; width:42px; height:32px; cursor:pointer; flex:none; }
@@ -315,7 +372,7 @@
   #panelTabs .tabBtn {
     flex:1; margin:0; padding:9px 4px; background:none; border:none;
     border-bottom:2px solid transparent; cursor:pointer;
-    font-family:'JetBrains Mono', monospace;
+    font-family:var(--fuente-display);
     font-size:11.5px; font-weight:700; letter-spacing:.7px; text-transform:uppercase;
     color:var(--texto-2); transition:color .15s, border-color .15s;
   }
@@ -333,19 +390,11 @@
     display:flex; flex-direction:column; gap:3px; min-width:0;
   }
   .bimCard span {
-    font-family:'JetBrains Mono', monospace;
+    font-family:var(--fuente-display);
     font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
     color:var(--acento-texto);
   }
   .bimCard b { font-size:13px; color:var(--texto); font-weight:600; line-height:1.25; }
-  .bimNota {
-    display:flex; gap:9px; align-items:flex-start; margin-top:10px;
-    background:var(--acento-suave); border:1px solid var(--acento);
-    padding:10px 12px;
-  }
-  .bimNota svg { width:16px; height:16px; flex:none; color:var(--acento-texto); margin-top:1px; }
-  .bimNota b { display:block; color:var(--acento-texto); font-size:12px; margin-bottom:3px; }
-  .bimNota > div { font-size:11.5px; color:var(--texto-2); line-height:1.45; }
 
   /* ---- Equipo: lista de integrantes + acceso al organigrama ---- */
   .equipoLista { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
@@ -355,7 +404,7 @@
     display:flex; flex-direction:column; gap:2px;
   }
   .equipoItem span {
-    font-family:'JetBrains Mono', monospace;
+    font-family:var(--fuente-display);
     font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
     color:var(--acento-texto);
   }
@@ -363,8 +412,9 @@
   #panelOrg {
     width:100%; display:inline-flex; align-items:center; justify-content:center; gap:6px;
     background:var(--acento); color:var(--sobre-acento); border:1px solid var(--acento);
-    padding:9px; border-radius:0; cursor:pointer;
-    font-size:12.5px; font-weight:700; transition:background .15s, border-color .15s;
+    padding:9px; border-radius:var(--radio-boton); cursor:pointer;
+    font-family:var(--fuente-display); font-size:12.5px; font-weight:600;
+    transition:background .15s, border-color .15s;
   }
   #panelOrg:hover { background:var(--acento-hover); border-color:var(--acento-hover); }
   #panelOrg svg { width:15px; height:15px; }
@@ -391,7 +441,7 @@
 
   #ayuda {
     position:absolute; bottom:12px; left:244px; z-index:10;
-    background:var(--superficie); border:1px solid var(--borde); border-radius:0;
+    background:var(--superficie); border:1px solid var(--borde); border-radius:18px;
     box-shadow:var(--sombra);
     padding:8px 34px 8px 12px; color:var(--texto-2); font-size:11.5px; line-height:1.6; max-width:360px;
   }
@@ -410,13 +460,13 @@
   #modoAviso {
     pointer-events:none;
     position:absolute; top:16px; left:calc(50% + 116px); transform:translateX(-50%); z-index:10;
-    background:var(--acento); color:var(--sobre-acento); padding:7px 16px; border-radius:0;
+    background:var(--acento); color:var(--sobre-acento); padding:7px 16px; border-radius:var(--radio-boton);
     font-size:12.5px; font-weight:600; display:none;
   }
   #avisoGuardado {
     position:absolute; bottom:12px; right:312px; z-index:10;
     background:var(--superficie); color:var(--acento-texto); border:1px solid var(--acento);
-    padding:7px 14px; border-radius:0; font-size:11px; font-weight:700;
+    padding:7px 14px; border-radius:var(--radio-boton); font-size:11px; font-weight:700;
     text-transform:uppercase; letter-spacing:1px; display:none;
   }
   /* banner contextual de las vistas de corte (Piso 4 / Sótanos): píldora
@@ -441,12 +491,12 @@
   }
   #aptoVentana {
     width:min(560px, 92vw); max-height:86vh; overflow-y:auto;
-    background:var(--superficie); border:1px solid var(--borde); border-radius:0;
+    background:var(--superficie); border:1px solid var(--borde); border-radius:18px;
     color:var(--texto); box-shadow:var(--sombra);
   }
   #aptoCabecera {
     display:flex; justify-content:space-between; align-items:center;
-    background:var(--sup-baja); padding:12px 18px; border-radius:0;
+    background:var(--sup-baja); padding:12px 18px; border-radius:18px 18px 0 0;
     border-bottom:2px solid var(--acento);
   }
   #aptoCabecera h3 { margin:0; font-size:17px; font-weight:700; color:var(--acento-texto); text-transform:uppercase; letter-spacing:1px; }
@@ -458,10 +508,10 @@
   #aptoBody td:first-child { color:var(--texto-2); width:40%; }
   .chipEspacio {
     display:inline-block; background:var(--sup-alta); border:1px solid var(--borde);
-    border-radius:0; padding:4px 11px; margin:3px 4px 3px 0; font-size:12px; color:var(--texto);
+    border-radius:var(--radio-boton); padding:4px 11px; margin:3px 4px 3px 0; font-size:12px; color:var(--texto);
   }
   .zonaImg {
-    border:2px dashed var(--borde-2); border-radius:0; padding:22px 12px;
+    border:2px dashed var(--borde-2); border-radius:var(--radio-campo); padding:22px 12px;
     text-align:center; color:var(--texto-2); font-size:12.5px; margin-top:10px;
   }
 
@@ -472,12 +522,12 @@
   }
   #orgVentana {
     width:min(880px, 94vw); max-height:88vh; overflow-y:auto;
-    background:var(--superficie); border:1px solid var(--borde); border-radius:0;
+    background:var(--superficie); border:1px solid var(--borde); border-radius:18px;
     color:var(--texto); box-shadow:var(--sombra);
   }
   #orgCabecera {
     display:flex; justify-content:space-between; align-items:center;
-    background:var(--sup-baja); padding:12px 18px; border-radius:0;
+    background:var(--sup-baja); padding:12px 18px; border-radius:18px 18px 0 0;
     border-bottom:2px solid var(--acento); position:sticky; top:0; z-index:1;
   }
   #orgCabecera h3 { margin:0; font-size:17px; font-weight:700; color:var(--acento-texto); text-transform:uppercase; letter-spacing:1px; }
@@ -486,7 +536,7 @@
   #orgBody { padding:16px 18px; font-size:13px; line-height:1.5; }
   .orgNivel { display:flex; justify-content:center; gap:14px; flex-wrap:wrap; }
   .orgNodo {
-    background:var(--sup-baja); border:2px solid var(--borde-2); border-radius:0;
+    background:var(--sup-baja); border:2px solid var(--borde-2); border-radius:var(--radio-campo);
     padding:9px 13px; min-width:160px; max-width:210px; text-align:center; cursor:pointer;
     transition:background .15s;
   }
@@ -502,12 +552,13 @@
   #orgAgregar { display:flex; gap:6px; margin-top:12px; }
   #orgAgregar input {
     flex:1; background:var(--campo); border:1px solid var(--borde); color:var(--texto);
-    border-radius:0; padding:7px 10px; font-size:13px;
+    border-radius:12px; padding:7px 10px; font-size:13px;
   }
   #orgAgregar input:focus { outline:none; border-color:var(--acento); }
   .orgAccion {
     background:var(--sup-alta); color:var(--texto); border:1px solid var(--borde);
-    padding:8px 12px; border-radius:0; cursor:pointer; font-size:13px; margin:8px 6px 0 0;
+    padding:8px 12px; border-radius:var(--radio-boton); cursor:pointer; font-size:12.5px; margin:8px 6px 0 0;
+    font-family:var(--fuente-display); font-weight:600;
     transition:background .15s, color .15s, border-color .15s;
   }
   .orgAccion:hover { background:var(--acento); color:var(--sobre-acento); border-color:var(--acento); }
@@ -515,7 +566,7 @@
   .orgAccion.primario:hover { background:var(--acento-hover); border-color:var(--acento-hover); }
 
   /* ---- Iconos SVG ---- */
-  .ic svg { width:14px; height:14px; vertical-align:-2px; margin-right:5px; flex:none; }
+  .ic svg { width:14px; height:14px; vertical-align:-2px; margin-right:5px; flex:none; color:var(--acento-2); }
   .ic.solo svg { margin-right:0; }
   #panel button svg, .orgAccion svg { width:14px; height:14px; vertical-align:-2px; margin-right:6px; }
   /* red de seguridad: un svg de icono() sin envoltorio ".ic" (bug ya corregido
@@ -539,12 +590,12 @@
   }
   #planosVentana {
     width:min(640px, 94vw); max-height:84vh; overflow-y:auto;
-    background:var(--superficie); border:1px solid var(--borde); border-radius:0;
+    background:var(--superficie); border:1px solid var(--borde); border-radius:18px;
     color:var(--texto); box-shadow:var(--sombra);
   }
   #planosCabecera {
     display:flex; justify-content:space-between; align-items:center;
-    background:var(--sup-baja); padding:12px 18px; border-radius:0;
+    background:var(--sup-baja); padding:12px 18px; border-radius:18px 18px 0 0;
     border-bottom:2px solid var(--acento); position:sticky; top:0; z-index:1;
   }
   #planosCabecera h3 { margin:0; font-size:16px; font-weight:700; color:var(--acento-texto); text-transform:uppercase; letter-spacing:1px; }
@@ -564,7 +615,7 @@
   .planoFila small { color:var(--texto-2); }
   .planoBtn {
     background:var(--sup-alta); color:var(--texto); border:1px solid var(--borde);
-    padding:5px 8px; border-radius:0; cursor:pointer; font-size:12px;
+    padding:5px 8px; border-radius:var(--radio-boton); cursor:pointer; font-size:12px;
     transition:background .15s, color .15s, border-color .15s;
   }
   .planoBtn:hover { background:var(--acento); color:var(--sobre-acento); border-color:var(--acento); }
@@ -572,7 +623,7 @@
   .planoBtn svg { width:13px; height:13px; vertical-align:-2px; }
   #planosBody input {
     background:var(--campo); border:1px solid var(--borde); color:var(--texto);
-    border-radius:0; padding:7px 10px; font-size:13px;
+    border-radius:12px; padding:7px 10px; font-size:13px;
   }
   #planosBody input:focus { outline:none; border-color:var(--acento); }
   #planosBody b { color:var(--acento-texto); font-size:13px; }
@@ -618,15 +669,15 @@
 .uiGrupo::before {
   content:attr(data-nombre);
   position:absolute; top:4px; left:0;
-  font-family:'JetBrains Mono', monospace;
+  font-family:var(--fuente-display);
   font-size:10px; letter-spacing:1.4px; text-transform:uppercase;
   color:var(--acento-texto); font-weight:700; white-space:nowrap; opacity:.95;
 }
 #ui .uiGrupo:last-of-type { border-bottom:none; }
 #relojObra {
-  background:var(--sup-baja); border:1px solid var(--borde); border-radius:0;
+  background:var(--sup-baja); border:1px solid var(--borde); border-radius:var(--radio-boton);
   padding:5px 10px; color:var(--acento-texto); font-size:13px;
-  font-family:'JetBrains Mono', monospace;
+  font-family:var(--fuente-display);
 }
 #relojObra b { font-variant-numeric:tabular-nums; }
 
@@ -637,12 +688,12 @@
 }
 #camVentana {
   width:min(560px, 94vw); max-height:84vh; overflow-y:auto;
-  background:var(--superficie); border:1px solid var(--borde); border-radius:0;
+  background:var(--superficie); border:1px solid var(--borde); border-radius:18px;
   color:var(--texto); box-shadow:var(--sombra);
 }
 #camCabecera {
   display:flex; justify-content:space-between; align-items:center;
-  background:var(--sup-baja); padding:9px 16px; border-radius:0;
+  background:var(--sup-baja); padding:9px 16px; border-radius:18px 18px 0 0;
   border-bottom:2px solid var(--acento); position:sticky; top:0; z-index:1;
 }
 #camCabecera h3 { margin:0; font-size:15px; font-weight:700; letter-spacing:1px; color:var(--acento-texto); text-transform:uppercase; }
@@ -651,13 +702,13 @@
 #camBody { padding:14px 18px; font-size:13px; line-height:1.5; }
 #camBody input {
   background:var(--campo); border:1px solid var(--borde); color:var(--texto);
-  border-radius:0; padding:7px 10px; font-size:13px;
+  border-radius:12px; padding:7px 10px; font-size:13px;
 }
 #camBody input:focus { outline:none; border-color:var(--acento); }
 #camBody b { color:var(--acento-texto); font-size:13px; }
 #camBody select {
   background:var(--campo); border:1px solid var(--borde); color:var(--texto);
-  border-radius:0; padding:7px 10px; font-size:13px;
+  border-radius:12px; padding:7px 10px; font-size:13px;
 }
 /* iconos más pequeños en esta ventana: la fila de cada camión es angosta y
    los iconos a tamaño normal se veían desproporcionados. La regla general
@@ -676,12 +727,12 @@
 }
 #espVentana {
   width:min(600px, 94vw); max-height:84vh; overflow-y:auto;
-  background:var(--superficie); border:1px solid var(--borde); border-radius:0;
+  background:var(--superficie); border:1px solid var(--borde); border-radius:18px;
   color:var(--texto); box-shadow:var(--sombra);
 }
 #espCabecera {
   display:flex; justify-content:space-between; align-items:center;
-  background:var(--sup-baja); padding:12px 18px; border-radius:0;
+  background:var(--sup-baja); padding:12px 18px; border-radius:18px 18px 0 0;
   border-bottom:2px solid var(--acento); position:sticky; top:0; z-index:1;
 }
 #espCabecera h3 { margin:0; font-size:16px; font-weight:700; color:var(--acento-texto); text-transform:uppercase; letter-spacing:1px; }
@@ -690,7 +741,7 @@
 #espBody { padding:14px 18px; font-size:13px; line-height:1.5; }
 #espBody input, #espBody select, #espBody textarea {
   background:var(--campo); border:1px solid var(--borde); color:var(--texto);
-  border-radius:0; padding:7px 10px; font-size:13px;
+  border-radius:12px; padding:7px 10px; font-size:13px;
 }
 #espBody input:focus, #espBody select:focus, #espBody textarea:focus { outline:none; border-color:var(--acento); }
 #espBody input[type="color"] { padding:2px 3px; width:42px; height:31px; cursor:pointer; }
@@ -705,12 +756,12 @@
 }
 #equipoVentana {
   width:min(600px, 94vw); max-height:84vh; overflow-y:auto;
-  background:var(--superficie); border:1px solid var(--borde); border-radius:0;
+  background:var(--superficie); border:1px solid var(--borde); border-radius:18px;
   color:var(--texto); box-shadow:var(--sombra);
 }
 #equipoCabecera {
   display:flex; justify-content:space-between; align-items:center;
-  background:var(--sup-baja); padding:12px 18px; border-radius:0;
+  background:var(--sup-baja); padding:12px 18px; border-radius:18px 18px 0 0;
   border-bottom:2px solid var(--acento); position:sticky; top:0; z-index:1;
 }
 #equipoCabecera h3 { margin:0; font-size:16px; font-weight:700; color:var(--acento-texto); text-transform:uppercase; letter-spacing:1px; }
@@ -719,7 +770,7 @@
 #equipoBody { padding:14px 18px; font-size:13px; line-height:1.5; }
 #equipoBody input, #equipoBody select, #equipoBody textarea {
   background:var(--campo); border:1px solid var(--borde); color:var(--texto);
-  border-radius:0; padding:7px 10px; font-size:13px;
+  border-radius:12px; padding:7px 10px; font-size:13px;
 }
 #equipoBody input:focus, #equipoBody select:focus, #equipoBody textarea:focus { outline:none; border-color:var(--acento); }
 #equipoBody b { color:var(--acento-texto); font-size:13px; }
@@ -732,12 +783,12 @@
 }
 #zonasVentana {
   width:min(560px, 94vw); max-height:84vh; overflow-y:auto;
-  background:var(--superficie); border:1px solid var(--borde); border-radius:0;
+  background:var(--superficie); border:1px solid var(--borde); border-radius:18px;
   color:var(--texto); box-shadow:var(--sombra);
 }
 #zonasCabecera {
   display:flex; justify-content:space-between; align-items:center;
-  background:var(--sup-baja); padding:12px 18px; border-radius:0;
+  background:var(--sup-baja); padding:12px 18px; border-radius:18px 18px 0 0;
   border-bottom:2px solid var(--acento); position:sticky; top:0; z-index:1;
 }
 #zonasCabecera h3 { margin:0; font-size:16px; font-weight:700; color:var(--acento-texto); text-transform:uppercase; letter-spacing:1px; }
@@ -747,7 +798,7 @@
 /* calculadora de dotación (Res. 2400/79) dentro del modal de zonas */
 #zonasBody input, #zonasBody select {
   background:var(--campo); border:1px solid var(--borde); color:var(--texto);
-  border-radius:0; padding:6px 9px; font-size:13px;
+  border-radius:var(--radio-campo); padding:6px 9px; font-size:13px;
 }
 #zonasBody input:focus, #zonasBody select:focus { outline:none; border-color:var(--acento); }
 #zonasBody b { color:var(--acento-texto); font-size:13px; }

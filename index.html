@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Bambú · Marinilla — Taller II · Plano 3D de Obra</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <script>
   /* aplica el tema guardado ANTES de cargar el CSS para evitar parpadeo */
   document.documentElement.dataset.tema = localStorage.getItem('temaObra') || 'claro';
@@ -12,7 +13,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/estilos.css">
 </head>
 <body>
@@ -29,26 +30,35 @@
     <div id="inicioProyecto">Proyecto <b>Bambú</b> · Marinilla, Antioquia</div>
     <div id="inicioSub">Plano 3D de obra — Obras provisionales (cerramientos y acabados)</div>
 
-    <div id="inicioInfo">
-      <div class="infoItem"><span>Ubicación</span><b>Marinilla, Antioquia</b></div>
-      <div class="infoItem"><span>Torres</span><b>2 (01 y 02), en línea</b></div>
-      <div class="infoItem"><span>Apartamentos</span><b>120 (80 + 40) · tipos A–L</b></div>
-      <div class="infoItem"><span>Niveles</span><b>10 pisos + cubierta · 3 sótanos</b></div>
-      <div class="infoItem"><span>Altura</span><b>26,50 m (entrepiso 2,65 m)</b></div>
-      <div class="infoItem"><span>Lote</span><b>163,00 × 47,00 m</b></div>
-      <div class="infoItem"><span>Fase actual</span><b>Cerramientos y acabados</b></div>
-      <div class="infoItem"><span>Personal en pico</span><b>305 trabajadores</b></div>
+    <div class="tituloBeneficios"><span class="acento2">Beneficios</span> de este plano 3D</div>
+    <div id="inicioBeneficios">
+      <div class="beneficio">
+        <span class="ic" data-ic="ubicar"></span>
+        <span>Ubica cada elemento <b>arrastrándolo</b> directo en el plano.</span>
+      </div>
+      <div class="beneficio">
+        <span class="ic" data-ic="curva"></span>
+        <span>Se aprende <b>en minutos</b>, sin instalar nada.</span>
+      </div>
+      <div class="beneficio">
+        <span class="ic" data-ic="bim"></span>
+        <span>Compatible con tu flujo de trabajo <b>BIM</b>.</span>
+      </div>
     </div>
 
     <div id="inicioEquipo">
-      <span class="eqTitulo">Integrantes</span>
-      <span>Bryan Yamá Cruz</span>
-      <span>Manuela Gómez</span>
-      <span>Carlos Holguín</span>
+      <span class="eqTitulo">Equipo</span>
+      <div class="eqChips">
+        <span class="eqChip">Bryan Yamá Cruz</span>
+        <span class="eqChip">Manuela Gómez</span>
+        <span class="eqChip">Carlos Holguín</span>
+      </div>
     </div>
+    <span class="flechaJuega ic" data-ic="flechaAbajo" aria-hidden="true"></span>
     <button id="inicioBtn"><span class="playIc"></span>Ver la obra</button>
-    <a id="inicioPiso5" href="piso5.html">Piso 5</a>
-    <a id="inicioLibre" href="taller-libre.html" title="Arma tu propia obra desde cero: espacios, edificios, malacates y torres grúa">Crear proyecto libre</a>
+    <div id="inicioOtras">
+      <a id="inicioLibre" href="taller-libre.html" title="Arma tu propia obra desde cero: espacios, edificios, malacates y torres grúa">Crear proyecto libre</a>
+    </div>
     <button class="btnTema" title="Alternar entre fondo blanco y negro"></button>
   </div>
 </div>
@@ -67,6 +77,7 @@
 <!-- ============ BARRA DE HERRAMIENTAS (agrupada por temas) ============ -->
 <div id="ui">
   <div id="uiMarca">
+    <span class="marcaIc ic" data-ic="simboloBambu"></span>
     <div class="marcaTxt">
       <span class="marcaTitulo">Proyecto Bambú</span>
       <span class="marcaSub">Plano 3D</span>
@@ -299,7 +310,7 @@
       document.documentElement.dataset.tema = t;
       try { localStorage.setItem('temaObra', t); } catch (e) {}
       document.querySelectorAll('.btnTema').forEach(function (b) {
-        b.textContent = (t === 'oscuro') ? '◐ Fondo blanco' : '◑ Fondo negro';
+        b.innerHTML = icono(t === 'oscuro' ? 'sol' : 'luna') + (t === 'oscuro' ? 'Fondo blanco' : 'Fondo negro');
       });
     }
     window.alternarTema = function () {

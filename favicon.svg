@@ -1,0 +1,8 @@
+<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Favicon: símbolo "nudo de bambú" en blanco sobre contenedor verde
+       bambú redondeado, probado a tamaño mínimo (skill logos-iconos-originales). -->
+  <rect width="32" height="32" rx="8" fill="#3E8E5A"/>
+  <g transform="translate(4,4)" fill="none" stroke="#ffffff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 3v18M16 3v18M6 9h12M6 15h12M18 9l2.5-2.5M18 15l2.5-2.5"/>
+  </g>
+</svg>

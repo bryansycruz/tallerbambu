@@ -14,7 +14,7 @@ const CFG_SUPABASE = {
 
 /* ============ ICONOS SVG (sin emojis ni dependencias) ============ */
 const ICONOS = {
-  edificio:      '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8.5 7h2M13.5 7h2M8.5 11h2M13.5 11h2M8.5 15h2M13.5 15h2M10 21v-3h4v3"/>',
+  edificio:      '<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M8.5 7h2M13.5 7h2M8.5 11h2M13.5 11h2M8.5 15h2M13.5 15h2M10 21v-3h4v3"/>',
   ruta:          '<path d="M4 12h13M13 6l6 6-6 6"/>',
   check:         '<path d="M4 12.5l5 5L20 6.5"/>',
   basura:        '<path d="M4 7h16M9 7V4h6v3M6.5 7l1 13.5h9l1-13.5M10 11v6M14 11v6"/>',
@@ -49,7 +49,19 @@ const ICONOS = {
   mando:         '<rect x="2.5" y="6.5" width="19" height="11" rx="4.5"/><path d="M6.5 10v4M4.5 12h4"/><circle cx="15.5" cy="10.5" r="1.1"/><circle cx="18" cy="13" r="1.1"/>',
   grua:          '<path d="M5 21V3h12l4 4M17 7v14M9 7l-4.5 3.2M5 12h6M17 17h4"/>',
   herramienta:   '<path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.7 2.7-2-2z"/>',
-  cota:          '<path d="M4 12h16M4 8v8M20 8v8M9 12v-2M13 12v2"/>'
+  cota:          '<path d="M4 12h16M4 8v8M20 8v8M9 12v-2M13 12v2"/>',
+  /* símbolo de marca "nudo de bambú" (skill logos-iconos-originales):
+     dos cañas + dos nudos con la misma muesca diagonal de 45° repetida en
+     ambos — ver logo/simbolo-bambu.svg para la versión independiente */
+  simboloBambu:  '<path d="M8 3v18M16 3v18M6 9h12M6 15h12M18 9l2.5-2.5M18 15l2.5-2.5"/>',
+  /* selector de tema: sol/luna en vez de los círculos ◐/◑ de texto */
+  sol:           '<circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/>',
+  luna:          '<path d="M20 14.5A8 8 0 119.5 4a6.5 6.5 0 0010.5 10.5z"/>',
+  /* beneficios de la portada: geometría a propósito sin círculos (evitar
+     la sensación de "blob" que ya se descartó en el fondo de la portada) */
+  ubicar:        '<path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><rect x="9" y="9" width="6" height="6" rx="1.2"/>',
+  curva:         '<path d="M4 17l5-5 4 3 7-9"/><path d="M15 6h5v5"/>',
+  bim:           '<rect x="3" y="10" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><path d="M10 13.5h3a2 2 0 002-2V7"/>'
 };
 function icono(n){
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICONOS[n] || '') + '</svg>';

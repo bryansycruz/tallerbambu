@@ -4,10 +4,11 @@
 <meta charset="UTF-8">
 <title>Proyecto libre — Taller II · Constructor de obra 3D</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/estilos.css">
 <script>
   /* aplica el tema guardado ANTES de cargar el CSS para evitar parpadeo */
@@ -15,39 +16,41 @@
 </script>
 <style>
   /* ====== Estilos propios del constructor libre (aislados, prefijo "libre") ======
-     Usa las variables de tema de css/estilos.css (claro/oscuro, acento en
-     verde oscuro, JetBrains Mono en títulos y esquinas rectas). */
+     Usa las variables de tema de css/estilos.css (claro/oscuro, acento verde
+     bambú + azul secundario, Fredoka en títulos y esquinas redondeadas). */
   #libreUI {
     position:absolute; top:12px; left:12px; z-index:10;
     display:flex; flex-wrap:wrap; gap:8px; align-items:center;
-    background:var(--superficie); padding:10px 14px; border-radius:0;
+    background:var(--superficie); padding:10px 14px; border-radius:18px;
     border:1px solid var(--borde); box-shadow:var(--sombra);
     max-width:calc(100vw - 340px);
   }
   #libreUI .marca {
-    font-family:'JetBrains Mono', monospace; color:var(--acento-texto); font-weight:700;
+    font-family:var(--fuente-display); color:var(--acento-texto); font-weight:700;
     letter-spacing:1px; text-transform:uppercase; font-size:15px; margin-right:4px;
+    display:inline-flex; align-items:center; gap:6px;
   }
+  #libreUI .marca svg { width:18px; height:18px; color:var(--acento); flex:none; }
   #libreUI button, #libreUI a.btn {
     background:var(--sup-alta); color:var(--texto); border:1px solid var(--borde);
-    padding:7px 12px; border-radius:0; cursor:pointer; font-size:12.5px;
+    padding:7px 12px; border-radius:var(--radio-boton); cursor:pointer; font-size:12.5px;
     text-decoration:none; display:inline-flex; align-items:center; gap:6px;
     transition:background .15s, color .15s, border-color .15s;
   }
   #libreUI button:hover, #libreUI a.btn:hover { background:var(--acento); color:var(--sobre-acento); border-color:var(--acento); }
   #libreUI button.primario { background:var(--acento); border-color:var(--acento); color:var(--sobre-acento); font-weight:700; }
   #libreUI button.primario:hover { background:var(--acento-hover); border-color:var(--acento-hover); }
-  #libreUI svg { width:15px; height:15px; }
+  #libreUI svg { width:15px; height:15px; color:var(--acento-2); }
 
   #librePanel {
     position:absolute; top:12px; right:12px; z-index:10; width:300px;
-    background:var(--superficie); border:1px solid var(--borde); border-radius:0;
+    background:var(--superficie); border:1px solid var(--borde); border-radius:18px;
     box-shadow:var(--sombra);
     padding:14px 16px; color:var(--texto); max-height:calc(100vh - 40px); overflow-y:auto;
   }
   #librePanel h2 {
     margin:0 0 8px; font-size:16px; font-weight:700; color:var(--acento-texto);
-    font-family:'JetBrains Mono', monospace; text-transform:uppercase; letter-spacing:1px;
+    font-family:var(--fuente-display); text-transform:uppercase; letter-spacing:1px;
   }
   #librePanel table { width:100%; border-collapse:collapse; font-size:12.5px; }
   #librePanel td { padding:4px 2px; border-bottom:1px solid var(--linea); vertical-align:top; }
@@ -56,18 +59,18 @@
   #librePanel .desc b { color:var(--texto); }
   #librePanel button {
     margin-top:10px; width:100%; background:var(--sup-alta); color:var(--texto);
-    border:1px solid var(--borde); padding:8px; border-radius:0; cursor:pointer; font-size:13px;
+    border:1px solid var(--borde); padding:8px; border-radius:var(--radio-boton); cursor:pointer; font-size:13px;
     display:inline-flex; align-items:center; justify-content:center; gap:6px;
     transition:background .15s, color .15s, border-color .15s;
   }
   #librePanel button:hover { background:var(--acento); color:var(--sobre-acento); border-color:var(--acento); }
-  #librePanel button svg { width:14px; height:14px; }
+  #librePanel button svg { width:14px; height:14px; color:var(--acento-2); }
   #librePanel button.btnEliminar { background:var(--rojo-fondo); border-color:var(--rojo); color:var(--rojo-texto); }
   #librePanel button.btnEliminar:hover { background:var(--rojo); color:#fff; border-color:var(--rojo); }
 
   #libreAyuda {
     position:absolute; bottom:12px; left:12px; z-index:10;
-    background:var(--superficie); border:1px solid var(--borde); border-radius:0;
+    background:var(--superficie); border:1px solid var(--borde); border-radius:14px;
     box-shadow:var(--sombra);
     padding:8px 12px; color:var(--texto-2); font-size:11.5px; line-height:1.6; max-width:340px;
   }
@@ -79,24 +82,24 @@
   }
   #libreVentana {
     width:min(600px, 94vw); max-height:86vh; overflow-y:auto;
-    background:var(--superficie); border:1px solid var(--borde); border-radius:0;
+    background:var(--superficie); border:1px solid var(--borde); border-radius:18px;
     color:var(--texto); box-shadow:var(--sombra);
   }
   #libreCabecera {
     display:flex; justify-content:space-between; align-items:center;
-    background:var(--sup-baja); padding:12px 18px; border-radius:0;
+    background:var(--sup-baja); padding:12px 18px; border-radius:18px 18px 0 0;
     border-bottom:2px solid var(--acento); position:sticky; top:0; z-index:1;
   }
   #libreCabecera h3 {
     margin:0; font-size:16px; font-weight:700; color:var(--acento-texto);
-    font-family:'JetBrains Mono', monospace; text-transform:uppercase; letter-spacing:1px;
+    font-family:var(--fuente-display); text-transform:uppercase; letter-spacing:1px;
   }
   #libreCerrar { background:none; border:none; color:var(--texto-2); font-size:22px; cursor:pointer; line-height:1; }
   #libreCerrar:hover { color:var(--acento-texto); }
   #libreBody { padding:14px 18px; font-size:13px; line-height:1.5; }
   #libreBody input, #libreBody select, #libreBody textarea {
     background:var(--campo); border:1px solid var(--borde); color:var(--texto);
-    border-radius:0; padding:7px 10px; font-size:13px;
+    border-radius:var(--radio-campo); padding:7px 10px; font-size:13px;
   }
   #libreBody input:focus, #libreBody select:focus, #libreBody textarea:focus { outline:none; border-color:var(--acento); }
   #libreBody input[type="color"] { padding:2px 3px; width:42px; height:31px; cursor:pointer; }
@@ -118,24 +121,24 @@
     margin:auto; text-align:center; padding:38px 30px; max-width:540px;
     background:var(--superficie); border:1px solid var(--borde); box-shadow:var(--sombra);
   }
-  #libreInicioCard h1 { font-family:'JetBrains Mono', monospace; color:var(--acento-texto); font-size:38px; margin:0 0 6px; text-transform:uppercase; letter-spacing:1px; }
+  #libreInicioCard h1 { font-family:var(--fuente-display); color:var(--acento-texto); font-size:38px; margin:0 0 6px; text-transform:uppercase; letter-spacing:1px; }
   #libreInicioCard p { color:var(--texto); font-size:15px; line-height:1.6; }
   #libreInicioCard .chips { margin:16px 0 22px; }
   #libreComenzar {
     display:inline-flex; align-items:center; gap:11px; background:var(--acento); color:var(--sobre-acento);
-    border:1px solid var(--acento); border-radius:0;
+    border:1px solid var(--acento); border-radius:var(--radio-boton);
     padding:15px 40px; font-size:15px; font-weight:700; cursor:pointer;
-    font-family:'JetBrains Mono', monospace; letter-spacing:1px; text-transform:uppercase;
+    font-family:var(--fuente-display); letter-spacing:1px; text-transform:uppercase;
     transition:background .2s, border-color .2s;
   }
   #libreComenzar:hover { background:var(--acento-hover); border-color:var(--acento-hover); }
   #libreInicioCard a.volver { display:block; margin-top:16px; color:var(--texto-2); font-size:13px; text-decoration:none; }
   #libreInicioCard a.volver:hover { color:var(--acento-texto); }
-  /* selector de tema dentro de la tarjeta de bienvenida */
+  /* selector de tema dentro de la tarjeta de bienvenida (ícono sol/luna) */
+  .btnTema svg { width:13px; height:13px; margin-right:5px; flex:none; }
   #libreInicioCard .btnTema {
-    display:block; margin:12px auto 0; background:none; border:none;
-    color:var(--texto-2); font-size:12px; cursor:pointer;
-    text-decoration:underline dotted; letter-spacing:.3px;
+    display:inline-flex; align-items:center; margin-top:12px; background:none; border:none;
+    color:var(--texto-2); font-size:12px; cursor:pointer; letter-spacing:.3px;
   }
   #libreInicioCard .btnTema:hover { color:var(--acento-texto); }
   #libreAvisoGuardado {
@@ -175,7 +178,7 @@
 
 <!-- Barra de herramientas -->
 <div id="libreUI">
-  <span class="marca">Proyecto libre</span>
+  <span class="marca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v18M16 3v18M6 9h12M6 15h12M18 9l2.5-2.5M18 15l2.5-2.5"/></svg>Proyecto libre</span>
   <button id="libreBtnAgregar" class="primario"></button>
   <button id="libreBtnGuardar"></button>
   <button id="libreBtnCargar"></button>
@@ -214,13 +217,17 @@
 <div id="libreAvisoGuardado"></div>
 
 <script>
-  /* Selector de tema claro/oscuro compartido con el resto del proyecto */
+  /* Selector de tema claro/oscuro compartido con el resto del proyecto.
+     Sin config.js en esta página: los SVG de sol/luna van inline (mismos
+     paths que ICONOS.sol/ICONOS.luna). */
   (function () {
+    var SVG_SOL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/></svg>';
+    var SVG_LUNA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 119.5 4a6.5 6.5 0 0010.5 10.5z"/></svg>';
     function aplicarTema(t) {
       document.documentElement.dataset.tema = t;
       try { localStorage.setItem('temaObra', t); } catch (e) {}
       document.querySelectorAll('.btnTema').forEach(function (b) {
-        b.textContent = (t === 'oscuro') ? '◐ Fondo blanco' : '◑ Fondo negro';
+        b.innerHTML = (t === 'oscuro' ? SVG_SOL : SVG_LUNA) + (t === 'oscuro' ? 'Fondo blanco' : 'Fondo negro');
       });
     }
     window.alternarTema = function () {

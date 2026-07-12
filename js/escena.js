@@ -146,11 +146,11 @@ function crearEtiqueta(texto, ancho, colorFondo){
   const c = document.createElement('canvas'); c.width = 512*res; c.height = 128*res;
   const ctx = c.getContext('2d');
   ctx.scale(res, res);
-  ctx.font = '600 40px IBM Plex Sans, Arial';
+  ctx.font = '600 40px Nunito, Arial';
   // si el texto no cabe en el lienzo, se reduce la fuente para no recortarlo
   let anchoTexto = ctx.measureText(texto).width;
   if (anchoTexto > 460){
-    ctx.font = '600 ' + Math.max(16, Math.floor(40 * 460 / anchoTexto)) + 'px IBM Plex Sans, Arial';
+    ctx.font = '600 ' + Math.max(16, Math.floor(40 * 460 / anchoTexto)) + 'px Nunito, Arial';
     anchoTexto = ctx.measureText(texto).width;
   }
   const pad = 22;
@@ -414,7 +414,7 @@ function nivelTag(texto){
   ctx.scale(2, 2);
   ctx.fillStyle = 'rgba(16,22,30,0.88)'; ctx.fillRect(0,0,128,64);
   ctx.strokeStyle = '#f2d21f'; ctx.lineWidth = 4; ctx.strokeRect(2,2,124,60);
-  ctx.font = '700 36px IBM Plex Sans, Arial'; ctx.fillStyle = '#ffd23e';
+  ctx.font = '700 36px Nunito, Arial'; ctx.fillStyle = '#ffd23e';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(texto, 64, 34);
   const tex = new THREE.CanvasTexture(c);
@@ -696,7 +696,7 @@ function textoPiso(texto, w, x, z, color, rot){
   c.width = ES_MOVIL ? 512 : 1024; c.height = ES_MOVIL ? 128 : 256;
   const ctx = c.getContext('2d');
   ctx.scale(c.width/640, c.height/160);
-  ctx.font = '700 66px IBM Plex Sans, Arial';
+  ctx.font = '700 66px Nunito, Arial';
   ctx.fillStyle = color || '#1a6e2e';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(texto, 320, 84);
@@ -886,7 +886,7 @@ function textoLocal(g, texto, w, x, z, color){
   c.width = ES_MOVIL ? 512 : 1024; c.height = ES_MOVIL ? 128 : 256;
   const ctx = c.getContext('2d');
   ctx.scale(c.width/640, c.height/160);
-  ctx.font = '700 58px IBM Plex Sans, Arial';
+  ctx.font = '700 58px Nunito, Arial';
   ctx.fillStyle = color || '#2c3342';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(texto, 320, 84);
