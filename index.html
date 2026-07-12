@@ -348,14 +348,13 @@
       paneles.forEach(p => p.classList.toggle('activo', p.dataset.tab === nombre));
     }
     tabs.forEach(b => b.addEventListener('click', () => mostrarTab(b.dataset.tab)));
-
-    /* Al seleccionar un elemento en el 3D, el módulo de interacción reescribe
-       #pInfoGeneral. Observamos ese cambio para saltar automáticamente a
-       "Selección" y que la ficha del elemento quede a la vista. */
-    const pInfoGeneral = document.getElementById('pInfoGeneral');
-    if (pInfoGeneral && 'MutationObserver' in window) {
-      new MutationObserver(() => mostrarTab('sel')).observe(pInfoGeneral, { childList: true });
-    }
+    // global: seleccionar() (interaccion.js) la llama al elegir un objeto
+    // NUEVO en el 3D, para saltar a "Selección" solo en ese caso (antes se
+    // usaba un MutationObserver sobre #pInfoGeneral que saltaba con CUALQUIER
+    // refresco de esa pestaña, incluidos los que dispara "Modificar" al
+    // bloquear/girar/renombrar/recolorear — eso te devolvía a "Selección" de
+    // golpe cada vez que tocabas algo en Modificar o Ficha técnica).
+    window.mostrarTab = mostrarTab;
 
     /* -- Controles de vista flotantes (usan la cámara orbital existente) -- */
     const accionesVista = {

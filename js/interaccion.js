@@ -381,6 +381,15 @@ function seleccionar(obj){
   pBody.innerHTML = renderInfoGeneral(obj);
   pModificar.innerHTML = renderModificar(obj);
   pFicha.innerHTML = renderFichaTecnica(obj);
+  // salta a la pestaña "Selección" SOLO cuando cambia el objeto elegido (un
+  // clic nuevo en el 3D) — nunca cuando esta misma función se vuelve a
+  // llamar para refrescar las 3 pestañas tras una acción en "Modificar"
+  // (bloquear, girar, renombrar, recolorear), que también reescribe pBody.
+  // Antes esto se hacía con un MutationObserver sobre #pInfoGeneral que no
+  // podía distinguir un caso del otro: cualquier acción en "Modificar" o
+  // "Ficha técnica" te devolvía de golpe a "Selección", sintiéndose como
+  // que esas pestañas no respondían ("se queda tildado").
+  if (obj !== anterior && typeof mostrarTab === 'function') mostrarTab('sel');
   // en móvil el cajón se muestra plegado (solo el nombre + flecha); el usuario
   // toca la flecha para desplegar toda la descripción
   posicionarPad();
