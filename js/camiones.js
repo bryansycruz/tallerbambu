@@ -10,6 +10,7 @@ let relojCorriendo = true;
 let VEL_RELOJ = 12;           // minutos de obra por segundo real (ajustable: ver selector de velocidad)
 const camionesActivos = [];   // camiones circulando en la escena
 let zonaCamionSel = 'Almacén central';  // destino preseleccionado en la ventana
+let elHoraObraTxt = null;     // cache del nodo del reloj (se consulta en cada cuadro)
 
 function minutosAHora(m){
   m = ((Math.floor(m) % 1440) + 1440) % 1440;
@@ -176,7 +177,9 @@ function actualizarCamiones(dt){
       if (horaObra >= 1440){ horaObra -= 1440; fechaObra = sumarDiaISO(fechaObra); }
     }
     const hh = minutosAHora(horaObra);
-    const txt = document.getElementById('horaObraTxt');
+    // nodo cacheado: esto corre en cada cuadro (60/s) y buscarlo en el DOM
+    // cada vez es trabajo inútil — el elemento nunca cambia
+    const txt = elHoraObraTxt || (elHoraObraTxt = document.getElementById('horaObraTxt'));
     if (txt && txt.textContent !== hh){
       txt.textContent = hh;
       txt.parentElement.title = fechaObra;

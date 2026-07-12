@@ -345,14 +345,43 @@ function nuevoObjetivo(){
   );
 }
 // máximo 150 trabajadores en escena (menos en celular, donde cada figura
-// adicional pesa más); sin sombra + geometría simple mantiene esto liviano
+// adicional pesa más). INSTANCIADOS: si cada trabajador fuera un Group con
+// sus 4 mallas propias (como los 2 estáticos del piso 4), serían 600 draw
+// calls por cuadro solo en personas — el costo dominante en PC. Con un
+// InstancedMesh por parte del cuerpo (piernas, torso, cabeza, casco) son
+// 4 draw calls en total, con exactamente el mismo aspecto.
 const N_TRABAJADORES = ES_MOVIL ? 40 : 150;
+const partesTrabajador = [
+  // [geometría, color, altura local] — mismas medidas que figuraTrabajador
+  [new THREE.BoxGeometry(0.26, 0.3, 0.18), 0x3a4150, 0.15],
+  [new THREE.BoxGeometry(0.3, 0.55, 0.2), 0xe06a1e, 0.57],
+  [new THREE.SphereGeometry(0.13, 10, 10), 0xd9a06a, 0.97],
+  // casco: material blanco + color POR INSTANCIA (setColorAt multiplica)
+  [new THREE.SphereGeometry(0.15, 10, 8, 0, Math.PI*2, 0, Math.PI/2), 0xffffff, 0.99]
+].map(([geo, color, dy]) => {
+  const m = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color }), N_TRABAJADORES);
+  m.userData.dy = dy;
+  m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  m.castShadow = false;
+  // el culling de un InstancedMesh usa el bounding de la GEOMETRÍA base (no
+  // el de las instancias repartidas por todo el lote): sin esto, todos los
+  // trabajadores desaparecen cuando la cámara no mira el origen
+  m.frustumCulled = false;
+  scene.add(m);
+  return m;
+});
+{
+  const colTmp = new THREE.Color();
+  const casco = partesTrabajador[3];
+  for (let i = 0; i < N_TRABAJADORES; i++) casco.setColorAt(i, colTmp.setHex(CASCOS[i % CASCOS.length]));
+  casco.instanceColor.needsUpdate = true;
+}
 for (let i=0; i<N_TRABAJADORES; i++){
-  const f = figuraTrabajador(CASCOS[i % CASCOS.length]);
   const o = nuevoObjetivo();
-  f.position.set(o.x, alturaTerreno(o.x, o.z) + 0.1, o.z);
-  scene.add(f);
-  personas.push({ g:f, obj:nuevoObjetivo(), vel:0.9 + Math.random()*0.9 });
+  personas.push({
+    x: o.x, y: alturaTerreno(o.x, o.z) + 0.1, z: o.z, rot: 0,
+    obj: nuevoObjetivo(), vel: 0.9 + Math.random()*0.9
+  });
 }
 const t4a = figuraTrabajador(0xf2d21f); t4a.position.set(10, y4 + 0.15, -3); piso4.add(t4a);
 const t4b = figuraTrabajador(0xffffff); t4b.position.set(-6, y4 + 0.15, 2); t4b.rotation.y = 1.2; piso4.add(t4b);

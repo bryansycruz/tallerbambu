@@ -302,9 +302,14 @@
         integrity="sha384-3wY11tldQ5+yWqAvmTN4XtQvnjoTva0cV15O/O/O5NTtp0ivVopSzLOzsVXWZse9"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
+<script src="js/config.js"></script>
 <script>
   /* Selector de tema claro/oscuro: guarda la elección y actualiza el texto
-     de todos los botones .btnTema (portada y sidebar) */
+     de todos los botones .btnTema (portada y sidebar).
+     DEBE ir después de config.js: usa icono() para pintar el sol/la luna
+     (si corre antes, revienta con "icono is not defined" y los botones de
+     tema quedan vacíos — ya pasó una vez). El tema en sí ya quedó aplicado
+     sin parpadeo por el script del <head>; aquí solo se pintan los botones. */
   (function () {
     function aplicarTema(t) {
       document.documentElement.dataset.tema = t;
@@ -322,7 +327,6 @@
     aplicarTema(document.documentElement.dataset.tema || 'claro');
   })();
 </script>
-<script src="js/config.js"></script>
 <script src="js/escena.js"></script>
 <script src="js/provisionales.js"></script>
 <script src="js/interaccion.js"></script>

@@ -291,6 +291,11 @@ const dirTmp = new THREE.Vector3();
 const puntoTmp = new THREE.Vector3();
 const tangenteTmp = new THREE.Vector3();
 const ejeYTmp = new THREE.Vector3(0, 1, 0);
+// temporales para volcar las matrices de los trabajadores instanciados
+const posTmp = new THREE.Vector3();
+const quatTmp = new THREE.Quaternion();
+const sclTmp = new THREE.Vector3(1, 1, 1);
+const mtxTmp = new THREE.Matrix4();
 function animar(){
   requestAnimationFrame(animar);
   const dt = Math.min(reloj.getDelta(), 0.05);
@@ -324,17 +329,26 @@ function animar(){
   const nivelEtiqueta = 'P' + (Math.round(nivelMalacate) + 1);
   if (nivelTxt.textContent !== nivelEtiqueta) nivelTxt.textContent = nivelEtiqueta;
 
-  // personas
-  personas.forEach(p => {
-    dirTmp.subVectors(p.obj, p.g.position);
-    dirTmp.y = 0;
-    if (dirTmp.length() < 1.2){ p.obj = nuevoObjetivo(); return; }
-    dirTmp.normalize();
-    p.g.position.addScaledVector(dirTmp, p.vel * dt);
-    p.g.rotation.y = Math.atan2(dirTmp.x, dirTmp.z);
-    p.g.position.y = alturaTerreno(p.g.position.x, p.g.position.z)
-      + 0.1 + Math.abs(Math.sin(tiempo*8 + p.vel*10)) * 0.04;
-  });
+  // personas (instanciadas: 4 draw calls en total, ver provisionales.js §9)
+  for (let i = 0; i < personas.length; i++){
+    const p = personas[i];
+    dirTmp.set(p.obj.x - p.x, 0, p.obj.z - p.z);
+    if (dirTmp.length() < 1.2){ p.obj = nuevoObjetivo(); }
+    else {
+      dirTmp.normalize();
+      p.x += dirTmp.x * p.vel * dt;
+      p.z += dirTmp.z * p.vel * dt;
+      p.rot = Math.atan2(dirTmp.x, dirTmp.z);
+      p.y = alturaTerreno(p.x, p.z) + 0.1 + Math.abs(Math.sin(tiempo*8 + p.vel*10)) * 0.04;
+    }
+    quatTmp.setFromAxisAngle(ejeYTmp, p.rot);
+    for (let k = 0; k < partesTrabajador.length; k++){
+      posTmp.set(p.x, p.y + partesTrabajador[k].userData.dy, p.z);
+      mtxTmp.compose(posTmp, quatTmp, sclTmp);
+      partesTrabajador[k].setMatrixAt(i, mtxTmp);
+    }
+  }
+  for (let k = 0; k < partesTrabajador.length; k++) partesTrabajador[k].instanceMatrix.needsUpdate = true;
 
   // flechas de flujo
   rutas.forEach(r => {
