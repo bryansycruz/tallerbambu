@@ -291,7 +291,12 @@ document.getElementById('btnGuardar').onclick = () => {
   a.download = 'distribucion_obra.json';
   a.click();
   URL.revokeObjectURL(a.href);
-  avisoGuardado('Guardado para el equipo (+ respaldo distribucion_obra.json)');
+  // el JSON descargado lleva TODO (posiciones, zonas creadas, equipos, rutas,
+  // enlaces por zona, fases…): se comparte por WhatsApp/correo y en otro PC
+  // se abre con "Cargar" — es el mecanismo principal cuando no hay Supabase
+  avisoGuardado(supabaseClient
+    ? 'Guardado para el equipo (+ respaldo distribucion_obra.json)'
+    : 'Descargado distribucion_obra.json — compártelo y ábranlo con "Cargar"');
 };
 document.getElementById('btnCargar').onclick = () => document.getElementById('fileCarga').click();
 /* selector de fase de obra (excavación → estructura → acabados) */

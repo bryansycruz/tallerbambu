@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/estilos.css">
 </head>
 <body>
@@ -28,7 +28,6 @@
     <div class="inicioLinea"></div>
     <div id="inicioMateria">Taller II</div>
     <div id="inicioProyecto">Proyecto <b>Bambú</b> · Marinilla, Antioquia</div>
-    <div id="inicioSub">Plano 3D de obra — Obras provisionales (cerramientos y acabados)</div>
 
     <div class="tituloBeneficios"><span class="acento2">Beneficios</span> de este plano 3D</div>
     <div id="inicioBeneficios">
@@ -77,7 +76,6 @@
 <!-- ============ BARRA DE HERRAMIENTAS (agrupada por temas) ============ -->
 <div id="ui">
   <div id="uiMarca">
-    <span class="marcaIc ic" data-ic="simboloBambu"></span>
     <div class="marcaTxt">
       <span class="marcaTitulo">Proyecto Bambú</span>
       <span class="marcaSub">Plano 3D</span>
@@ -112,7 +110,7 @@
     </select>
   </div>
   <div class="uiGrupo" data-nombre="Guardar y cargar">
-    <button id="btnGuardar" title="Guarda para el equipo y descarga un respaldo"><span class="ic" data-ic="guardar"></span>Guardar</button>
+    <button id="btnGuardar" title="Descarga el archivo JSON con todos los cambios: compártelo por WhatsApp o correo y ábranlo con 'Cargar' en cualquier PC"><span class="ic" data-ic="guardar"></span>Guardar</button>
     <button id="btnCargar" title="Carga un respaldo descargado"><span class="ic" data-ic="carpeta"></span>Cargar</button>
     <button id="btnExportar" title="Descarga el plano en PDF o imagen, con su cuadro de áreas y validaciones"><span class="ic" data-ic="abrir"></span>Exportar plano</button>
   </div>
@@ -172,13 +170,12 @@
 <div id="planosOverlay">
   <div id="planosVentana">
     <div id="planosCabecera">
-      <h3 id="planosTitulo">Planos</h3>
+      <h3 id="planosTitulo">Enlaces</h3>
       <button id="planosCerrar" title="Cerrar">✕</button>
     </div>
     <div id="planosBody"></div>
   </div>
 </div>
-<input type="file" id="planoArchivo" accept=".dwg,.dxf,.pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" style="display:none">
 
 <!-- ============ CAMIONES DE MATERIALES (horarios) ============ -->
 <div id="camOverlay">

@@ -108,7 +108,7 @@ function togglePiso4(){
   piso4.visible = vistaPiso4;
   document.getElementById('btnPiso4').innerHTML = '<span class="ic">' + icono('edificio') + '</span>' + (vistaPiso4 ? 'Ver torre completa' : 'Ver Piso 4');
   document.getElementById('btnPiso4').classList.toggle('activo', vistaPiso4);
-  etiquetasTodas.forEach(s => { s.visible = vistaPiso4 ? false : etiquetasOn; });
+  etiquetasTodas.forEach(s => { s.visible = !s.userData.esNombreZona && (vistaPiso4 ? false : etiquetasOn); });
   if (vistaPiso4){
     irA(2.3, y4 + 1, -1, 52, 0.3, 0.72);
     rangoMalacate.value = 3;
@@ -200,7 +200,9 @@ document.getElementById('btnBorrar').onclick = borrarRutas;
 let etiquetasOn = true;
 function setEtiquetas(on){
   etiquetasOn = on;
-  etiquetasTodas.forEach(s => { s.visible = etiquetasOn && !vistaPiso4; });
+  // los nombres de zona (esNombreZona) permanecen ocultos siempre: el botón
+  // "Etiquetas" solo gobierna los rótulos fijos (torre, vía, malacate, equipos)
+  etiquetasTodas.forEach(s => { s.visible = !s.userData.esNombreZona && etiquetasOn && !vistaPiso4; });
   document.getElementById('btnEtiquetas').classList.toggle('activo', !etiquetasOn);
   document.getElementById('padEtiquetas').classList.toggle('activo', !etiquetasOn);
 }

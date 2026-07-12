@@ -33,8 +33,14 @@ function crearProvisional(def){
   // etiqueta de tamaño normal: crece un poco con el ancho del espacio pero
   // con tope, para que un espacio grande (p. ej. el Almacén de 37.5 m) no
   // muestre un rótulo desproporcionado sobre la escena
+  // el nombre flotante de las zonas va OCULTO en la vista 3D (a pedido del
+  // usuario: solo la torre y los rótulos fijos de la escena conservan el
+  // suyo) — pero se sigue creando porque el plano exportado SÍ lo necesita:
+  // capturarPlanta() fuerza todas las etiquetas visibles para la captura
   const et = crearEtiqueta(def.nombre, Math.max(9, Math.min(20, def.w * 0.6)));
   et.position.y = def.h + 1.8;
+  et.userData.esNombreZona = true;
+  et.visible = false;
   g.add(et);
   if (typeof agregarCotas === 'function') agregarCotas(g, def.w, def.d, def.h);
   // sin sombra proyectada: a pedido del usuario, los provisionales no deben
@@ -70,16 +76,6 @@ function detalleCampamento(g, def){
   caja(g, 0.1, 2.2, D/2 - 4, cm, 0, 1.1, (4 + D/2)/2, 0.95);
   caja(g, 0.1, 2.2, D/2 - 4, cm, 6, 1.1, (4 + D/2)/2, 0.95);
   // nombres pintados en piso
-  textoLocal(g, 'DIRECCIÓN 5×6', 4.4, -7.5, -6);
-  textoLocal(g, 'COORDINACIÓN 5×6', 4.6, -2.5, -6);
-  textoLocal(g, 'INTERVENTORÍA 6×6', 5, 3, -6);
-  textoLocal(g, 'COCINETA 4×6', 3.6, 8, -6);
-  textoLocal(g, 'OFICINA TÉCNICA 14×7 · 10 puestos', 8.5, -3, 0.5);
-  textoLocal(g, 'BAÑO H 3×7', 2.6, 5.5, 0.5);
-  textoLocal(g, 'WC M 3×7', 2.6, 8.5, 0.5);
-  textoLocal(g, 'SALA REUNIONES 10×5', 6, -5, 6.5);
-  textoLocal(g, 'ARCHIVO 6×5', 3.6, 3, 6.5);
-  textoLocal(g, 'ACCESO 4×5', 3, 8, 6.5);
   // dotación
   mesaFig(g, -7.5, -7, 1.6, 0.8); sillaFig(g, -7.5, -6.2);
   mesaFig(g, -2.5, -7, 1.6, 0.8); sillaFig(g, -2.5, -6.2);
@@ -108,7 +104,6 @@ function detalleAlmacen(g, def){
     arrumeFig(g, x, z, 1.6, 1.1, 2, c));
   baldesFig(g, W/2 - 1.6, D/2 - 1.6);                                    // pintura
   caja(g, 2.0, 0.9, 0.55, 0x9a7a48, W/2 - 1.5, 0.45, D/2 - 1);           // mostrador almacenista
-  textoLocal(g, 'CERÁMICA · PINTURA · GRIFERÍA', Math.min(12, W * 0.65), 0, D/2 - 2.9, '#5a5245');
 }
 /* ---- Acopio de materiales (antes "Paletizado") 21.4×16 ---- */
 function detallePaletizado(g, def){
@@ -118,7 +113,6 @@ function detallePaletizado(g, def){
     else if ((fx + fz) % 3 === 1) arrumeFig(g, x, z, 1.8, 1.3, 3, 0xd5d8da);
     else estibaFig(g, x, z);
   }
-  textoLocal(g, 'RECEPCIÓN Y ORGANIZACIÓN DE ESTIBAS', 13, 0, 7, '#5a5245');
 }
 /* ---- Patio de maniobra y descargue 14.8×17.5 ---- */
 function detalleManiobra(g, def){
@@ -151,7 +145,6 @@ function detalleManiobra(g, def){
     c.rotation.y = 0.5;
     c.castShadow = false;
   }
-  textoLocal(g, 'DESCARGUE', 4, 3.2, -D/2 + 5.1, '#7a2e00');
   // conos de señalización alrededor del giro
   [[-5,-6],[5,-6],[-5,6],[5,6],[-6.3,0],[6.3,0],[0,7.2],[0,-7.2]].forEach(([x,z]) => cono(g, 0.28, 0.65, 0xe06a1e, x, z));
   // señal de PARE a la salida
@@ -177,7 +170,6 @@ function detalleManiobra(g, def){
   cam.rotation.y = 0.5;
   cam.position.set(0.6, 0.1, 0.4);
   g.add(cam);
-  textoLocal(g, 'RADIO DE GIRO CAMIÓN SENCILLO / TURBO', 11, 0, -8, '#5a5245');
 }
 /* ---- Lavado de llantas 11.6×15.7 (Lupa 3) ---- */
 function detalleLavadoInforme(g, def){
@@ -188,9 +180,7 @@ function detalleLavadoInforme(g, def){
   const cep1 = cilindro(g, 0.35, 6, 0x3f7fbf, -1.5, 0.5, 0.5); cep1.rotation.x = Math.PI/2;
   const cep2 = cilindro(g, 0.35, 6, 0x3f7fbf, 1.5, 0.5, 0.5);  cep2.rotation.x = Math.PI/2;
   caja(g, 5, 0.4, 2.4, 0x2f5d8a, -1, 0.25, -4);                          // poceta sedimentación
-  textoLocal(g, 'POCETA + TRAMPA DE GRASAS', 6.5, -1, -4, '#dfe6ee');
   caja(g, 8, 0.06, 2, 0xc9ccd0, 0, 0.15, -6.8);                          // escurrido
-  textoLocal(g, 'SALIDA → PORTERÍA', 6, 0, -7.6, '#7a2e00');
 }
 /* ---- Portería / control de acceso — portón del ancho de la vía ---- */
 function detallePorteria(g, def){
@@ -224,7 +214,6 @@ function detalleCasilleros(g, def){
     caja(g, filaW, 1.8, 0.5, 0x5a6a7a, 0, 1.02, z);
     bancaFig(g, 0, z + 1, Math.min(6.5, filaW - 1));
   });
-  textoLocal(g, 'CASILLEROS', Math.min(8, W * 0.7), 0, -D/2 + 0.3, '#5a5245');
 }
 /* ---- Baños + vestidores trabajadores 10×10 (100 m²) ---- */
 function detalleBanosVest(g, def){
@@ -242,18 +231,15 @@ function detalleBanosVest(g, def){
   });
   bancaFig(g, 0, mz, Math.min(6, W - 2.6));
   caja(g, Math.min(4, W - 3), 1.6, 0.4, 0x5a6a7a, 0, 0.92, mz - 0.6);    // lockers vestier
-  textoLocal(g, 'BAÑOS + VESTIDORES', Math.min(9, W * 0.8), 0, mz - 1.8, '#5a5245');
 }
 /* ---- Acometidas ---- */
 function detalleAcomElec(g, def){
   cilindro(g, 0.1, 6, 0x6a4a2a, -0.5, 3, 0);
   caja(g, 0.8, 1.2, 0.3, 0x77808a, 0.5, 0.85, 0);
-  textoLocal(g, 'TABLERO', 2, 0, 1.2, '#a86a10');
 }
 function detalleAcomAgua(g, def){
   cilindro(g, 0.7, 1.2, 0x2f5d8a, -0.4, 0.72, 0);
   caja(g, 0.5, 0.5, 0.4, 0x9aa0a6, 0.8, 0.4, 0);
-  textoLocal(g, 'MEDIDOR', 2, 0.3, 1.2, '#2f5d8a');
 }
 
 /* Catálogo — dimensiones reales del informe (m). w=x, d=z, h=altura. */
@@ -324,33 +310,20 @@ function figuraTrabajador(colorCasco){
 }
 const CASCOS = [0xf2d21f, 0xffffff, 0x3f7fbf, 0xe06a1e];
 const personas = [];
-// focos de actividad real de la obra: pie de la torre/malacate, acopio,
-// almacén y patio de maniobra (camiones) — los trabajadores se agrupan
-// alrededor de estos puntos en vez de caminar al azar por terreno vacío,
-// para que la escena se lea como una obra activa
-const FOCOS_TRABAJO = [
-  [2, -8], [2, -8],   // pie de la torre / malacate (doble peso: es el punto con más movimiento)
-  [38, 14],           // acopio de materiales
-  [38, -15],          // almacén
-  [62, 12]            // patio de maniobra / camiones
-];
+// destino aleatorio en CUALQUIER punto del lote: los trabajadores recorren
+// toda la obra, no se agrupan en focos (a pedido del usuario)
 function nuevoObjetivo(){
-  const f = FOCOS_TRABAJO[Math.floor(Math.random() * FOCOS_TRABAJO.length)];
-  const radio = 8 + Math.random() * 8;
-  const ang = Math.random() * Math.PI * 2;
   return new THREE.Vector3(
-    Math.max(CFG.limites.xMin, Math.min(CFG.limites.xMax, f[0] + Math.cos(ang) * radio)),
+    CFG.limites.xMin + 4 + Math.random() * (CFG.limites.xMax - CFG.limites.xMin - 8),
     0,
-    Math.max(CFG.limites.zMin, Math.min(CFG.limites.zMax, f[1] + Math.sin(ang) * radio))
+    CFG.limites.zMin + 4 + Math.random() * (CFG.limites.zMax - CFG.limites.zMin - 8)
   );
 }
-// máximo 150 trabajadores en escena (menos en celular, donde cada figura
-// adicional pesa más). INSTANCIADOS: si cada trabajador fuera un Group con
-// sus 4 mallas propias (como los 2 estáticos del piso 4), serían 600 draw
-// calls por cuadro solo en personas — el costo dominante en PC. Con un
-// InstancedMesh por parte del cuerpo (piernas, torso, cabeza, casco) son
-// 4 draw calls en total, con exactamente el mismo aspecto.
-const N_TRABAJADORES = ES_MOVIL ? 40 : 150;
+// 30 trabajadores recorriendo la obra. INSTANCIADOS: si cada uno fuera un
+// Group con sus 4 mallas propias (como los 2 estáticos del piso 4), serían
+// 4 draw calls POR trabajador; con un InstancedMesh por parte del cuerpo
+// (piernas, torso, cabeza, casco) son 4 draw calls en total, mismo aspecto.
+const N_TRABAJADORES = 30;
 const partesTrabajador = [
   // [geometría, color, altura local] — mismas medidas que figuraTrabajador
   [new THREE.BoxGeometry(0.26, 0.3, 0.18), 0x3a4150, 0.15],

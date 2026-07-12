@@ -27,6 +27,9 @@ function regenerarEtiqueta(g, nuevoTexto){
   const nueva = crearEtiqueta(nuevoTexto, ancho, colorFondo);
   nueva.position.y = y;
   nueva.visible = visible;
+  // conservar la marca de "nombre de zona oculto": sin esto, el botón
+  // Etiquetas volvería a mostrar el rótulo de una zona renombrada
+  if (vieja && vieja.userData.esNombreZona){ nueva.userData.esNombreZona = true; nueva.visible = false; }
   g.add(nueva);
 }
 /* repinta TODOS los materiales del grupo con un único color (recoloreado

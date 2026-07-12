@@ -101,15 +101,9 @@
   /* margin:auto centra la tarjeta y, si es más alta que la pantalla, permite
      desplazar sin cortar el botón (clave en celular) */
   #inicioCard {
-    position:relative; overflow:hidden;
-    margin:auto; text-align:center; padding:38px 34px; padding-top:44px; max-width:560px;
+    margin:auto; text-align:center; padding:38px 34px; max-width:560px;
     background:var(--superficie); border:1px solid var(--borde);
     box-shadow:var(--sombra); border-radius:20px;
-  }
-  /* franja superior verde→azul: la tarjeta deja de ser un simple recuadro blanco */
-  #inicioCard::before {
-    content:''; position:absolute; top:0; left:0; right:0; height:6px;
-    background:linear-gradient(90deg, var(--acento), var(--acento-2));
   }
   #inicioLogo {
     width:132px; height:132px; margin:0 auto 20px; padding:16px;
@@ -126,7 +120,6 @@
   #inicioMateria { font-size:50px; font-weight:700; color:var(--acento-texto); line-height:1; text-transform:uppercase; letter-spacing:1px; }
   #inicioProyecto { font-size:17px; color:var(--texto); margin-top:10px; }
   #inicioProyecto b { color:var(--acento-texto); font-weight:700; }
-  #inicioSub { font-size:12.5px; color:var(--texto-2); margin-top:5px; }
   /* beneficios — rediseñado sobre la referencia real que pasó el usuario
      ("beneficios e iconos.JPG"): título con una palabra en azul, tarjetas
      BLANCAS flotando sobre un panel gris claro (no tarjetas grises sobre
@@ -205,7 +198,7 @@
   }
   #inicioCard .btnTema:hover { color:var(--acento-texto); }
   @media (max-width:600px){
-    #inicioCard { padding:28px 18px; padding-top:34px; }
+    #inicioCard { padding:28px 18px; }
     #inicioLogo { width:104px; height:104px; }
     #inicioUni { font-size:10px; }
     #inicioMateria { font-size:38px; }
@@ -231,11 +224,6 @@
     padding:2px 30px 12px 0; margin-bottom:6px;
     border-bottom:2px solid var(--acento);
   }
-  /* símbolo de marca "nudo de bambú" (skill logos-iconos-originales), en
-     verde bambú — se distingue del azul de los íconos utilitarios porque
-     ESTE sí es la marca, no una acción */
-  #uiMarca .marcaIc { flex:none; margin-right:9px; }
-  #uiMarca .marcaIc svg { width:26px; height:26px; margin-right:0; color:var(--acento); }
   #uiMarca .marcaTxt { display:flex; flex-direction:column; min-width:0; }
   #uiMarca .marcaTitulo {
     font-family:var(--fuente-display);
@@ -265,15 +253,15 @@
     width:100%; box-sizing:border-box; text-align:left;
     transition:background .15s, color .15s, border-color .15s;
   }
-  /* etiquetas de botón: se ven distintas al texto de párrafo por la
-     TIPOGRAFÍA (Fredoka, la misma de los títulos) y el peso, no por
-     mayúsculas — el usuario pidió minúscula normal, no mayúscula sostenida */
+  /* etiquetas de botón: se ven distintas al texto de párrafo solo por la
+     TIPOGRAFÍA (Fredoka, la misma de los títulos) — sin negrilla ni
+     mayúsculas, ambas descartadas por el usuario */
   #ui button {
     display:flex; align-items:center;
-    font-family:var(--fuente-display); font-weight:600; font-size:12.5px;
+    font-family:var(--fuente-display); font-weight:400; font-size:12.5px;
   }
   #ui button:hover { background:var(--acento); color:var(--sobre-acento); border-color:var(--acento); }
-  #ui button.activo { background:var(--acento); color:var(--sobre-acento); border-color:var(--acento); font-weight:600; }
+  #ui button.activo { background:var(--acento); color:var(--sobre-acento); border-color:var(--acento); }
   #ui label {
     color:var(--texto-2); font-size:12.5px; display:flex; align-items:center; gap:6px;
     width:100%; box-sizing:border-box;

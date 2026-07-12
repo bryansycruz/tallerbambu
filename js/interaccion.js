@@ -363,7 +363,7 @@ function renderFichaTecnica(obj){
     '<tr><td>Cerramiento</td><td>' + (d.cerramiento || '—') + '</td></tr>' +
     '<tr><td>Aforo máximo</td><td>' + (d.aforo || '—') + '</td></tr>' +
     '</table>' +
-    '<button style="margin-top:10px" onclick="abrirPlanos(seleccionado.userData.info.nombre)">' + icono('plano') + 'Ficha técnica, planos y enlaces</button>';
+    '<button style="margin-top:10px" onclick="abrirPlanos(seleccionado.userData.info.nombre)">' + icono('plano') + 'Enlaces de la zona (fichas y catálogos)</button>';
   if (obj.userData.esEdificio){
     html += '<button style="margin-top:8px" onclick="togglePiso4()">' + icono('edificio') + 'Ver Piso 4 en detalle</button>' +
       '<button style="margin-top:8px" onclick="abrirHojaPiso5()">' + icono('abrir') + 'Abrir hoja del Piso 5</button>';
