@@ -1163,7 +1163,7 @@ function mostrarPanelVacio(){
   const card = (k, v) => v ? '<div class="bimCard"><span>' + k + '</span><b>' + esc(v) + '</b></div>' : '';
   let selHtml;
   if (fichaCompleta){
-    const m2 = Math.round(ficha.loteLargo * ficha.loteAncho);
+    const m2 = Math.round(loteAreaM2());
     selHtml =
       '<div class="bimGrid">' +
         card('Ubicación', ficha.ubicacion) +
@@ -1171,7 +1171,7 @@ function mostrarPanelVacio(){
         card('Apartamentos', ficha.apartamentos) +
         card('Niveles', ficha.niveles) +
         card('Altura', ficha.alturaTxt) +
-        card('Lote', ficha.loteLargo + ' × ' + ficha.loteAncho + ' m ≈ ' + m2.toLocaleString('es-CO') + ' m²') +
+        card('Lote', (loteEsLibre() ? 'Perímetro libre' : ficha.loteLargo + ' × ' + ficha.loteAncho + ' m') + ' ≈ ' + m2.toLocaleString('es-CO') + ' m²') +
         card('Fase actual', ficha.fase) +
         card('Personal en pico', ficha.personal) +
         card('Cerramiento', cerrCfg.activo
@@ -1743,9 +1743,54 @@ function normalizarFicha(raw){
     personal: String(raw.personal || '').slice(0, 90),
     loteLargo: numLim(raw.loteLargo, 120, 20, 400),
     loteAncho: numLim(raw.loteAncho, 60, 20, 300),
+    loteModo: raw.loteModo === 'libre' ? 'libre' : 'rectangulo',
+    lotePoligono: (Array.isArray(raw.lotePoligono) ? raw.lotePoligono : [])
+      .filter(p => Array.isArray(p) && p.length === 2 && isFinite(p[0]) && isFinite(p[1]))
+      .map(p => [red2(p[0]), red2(p[1])]).slice(0, 60),
     taller: String(raw.taller || 'Taller II').slice(0, 40),
     equipo: (Array.isArray(raw.equipo) ? raw.equipo : []).map(n => String(n).slice(0, 40)).filter(Boolean).slice(0, 12)
   };
+}
+/* ============ LOTE GENÉRICO (rectángulo ancho×largo, o perímetro libre
+   dibujado a mano) ============ Toda el área/geometría del terreno pasa por
+   estas funciones, así el resto de la app (cotas, cámara 2D, camiones,
+   exportar, cuadro de áreas…) no necesita saber si el lote es un rectángulo
+   o un polígono irregular — muchos terrenos reales no son planos ni
+   rectangulares, tienen quiebres. */
+function areaPoligono(pts){
+  let a = 0;
+  for (let i = 0; i < pts.length; i++){
+    const [x1, z1] = pts[i], [x2, z2] = pts[(i + 1) % pts.length];
+    a += x1 * z2 - x2 * z1;
+  }
+  return Math.abs(a) / 2;
+}
+function loteEsLibre(){ return ficha.loteModo === 'libre' && ficha.lotePoligono && ficha.lotePoligono.length >= 3; }
+function loteEsquinas(){
+  if (loteEsLibre()) return ficha.lotePoligono;
+  const L = ficha.loteLargo, A = ficha.loteAncho;
+  return [[-L / 2, -A / 2], [L / 2, -A / 2], [L / 2, A / 2], [-L / 2, A / 2]];
+}
+function loteAreaM2(){
+  return loteEsLibre() ? areaPoligono(ficha.lotePoligono) : ficha.loteLargo * ficha.loteAncho;
+}
+function loteCentro(){
+  const pts = loteEsquinas();
+  const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+  const cz = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+  return [cx, cz];
+}
+/* tamaño de la "caja" que envuelve el lote (para encuadrar cámara/zoom
+   igual sea rectángulo o polígono libre) */
+function loteBoundingSize(){
+  const pts = loteEsquinas();
+  const xs = pts.map(p => p[0]), zs = pts.map(p => p[1]);
+  return { largo: Math.max(...xs) - Math.min(...xs), ancho: Math.max(...zs) - Math.min(...zs) };
+}
+/* nivel de zoom del Plano 2D que encuadra el lote completo, sea rectángulo o polígono libre */
+function zoomAjustadoLote(){
+  const b = loteBoundingSize();
+  return Math.max(b.ancho * 0.72, b.largo * 0.42, 55);
 }
 /* pie del sidebar: nombre del taller + integrantes definidos en la ficha
    técnica (reemplaza el equipo fijo de la plantilla original) */
@@ -1761,18 +1806,41 @@ function actualizarPieEquipo(){
 }
 function construirLote(){
   vaciarGrupo(loteGrupo);
-  const L = ficha.loteLargo, A = ficha.loteAncho;
-  const piso = new THREE.Mesh(new THREE.PlaneGeometry(L, A), new THREE.MeshLambertMaterial({ color: 0x8a9a55 }));
-  piso.rotation.x = -Math.PI / 2; piso.position.y = 0.02; piso.receiveShadow = true;
-  loteGrupo.add(piso);
-  [[0, -A/2, L, 0.3], [0, A/2, L, 0.3], [-L/2, 0, 0.3, A], [L/2, 0, 0.3, A]].forEach(([x, z, w, d]) => {
-    const b = new THREE.Mesh(new THREE.BoxGeometry(w, 0.05, d), new THREE.MeshBasicMaterial({ color: 0xe8e4d8 }));
-    b.position.set(x, 0.045, z);
-    loteGrupo.add(b);
-  });
-  const m2 = Math.round(L * A);
-  const et = crearEtiqueta('Lote ' + L + ' × ' + A + ' m ≈ ' + m2.toLocaleString('es-CO') + ' m²', 26, 'rgba(60,80,30,0.85)');
-  et.position.set(0, 3, -A/2 - 2);
+  const m2 = Math.round(loteAreaM2());
+  const centro = loteCentro();
+  if (loteEsLibre()){
+    const pts = ficha.lotePoligono;
+    // Shape vive en XY; al rotar -90° en X, Y termina siendo -Z del mundo —
+    // por eso se le pasa -z para que el polígono quede orientado igual que
+    // como se dibujó en el plano 2D (norte arriba, Z positivo hacia el sur)
+    const shape = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z)));
+    const piso = new THREE.Mesh(new THREE.ShapeGeometry(shape),
+      new THREE.MeshLambertMaterial({ color: 0x8a9a55, side: THREE.DoubleSide }));
+    piso.rotation.x = -Math.PI / 2; piso.position.y = 0.02; piso.receiveShadow = true;
+    loteGrupo.add(piso);
+    for (let i = 0; i < pts.length; i++){
+      const [x1, z1] = pts[i], [x2, z2] = pts[(i + 1) % pts.length];
+      const dx = x2 - x1, dz = z2 - z1, len = Math.hypot(dx, dz);
+      if (len < 0.1) continue;
+      const b = new THREE.Mesh(new THREE.BoxGeometry(len, 0.05, 0.3), new THREE.MeshBasicMaterial({ color: 0xe8e4d8 }));
+      b.position.set((x1 + x2) / 2, 0.045, (z1 + z2) / 2);
+      b.rotation.y = -Math.atan2(dz, dx);
+      loteGrupo.add(b);
+    }
+  } else {
+    const L = ficha.loteLargo, A = ficha.loteAncho;
+    const piso = new THREE.Mesh(new THREE.PlaneGeometry(L, A), new THREE.MeshLambertMaterial({ color: 0x8a9a55 }));
+    piso.rotation.x = -Math.PI / 2; piso.position.y = 0.02; piso.receiveShadow = true;
+    loteGrupo.add(piso);
+    [[0, -A/2, L, 0.3], [0, A/2, L, 0.3], [-L/2, 0, 0.3, A], [L/2, 0, 0.3, A]].forEach(([x, z, w, d]) => {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(w, 0.05, d), new THREE.MeshBasicMaterial({ color: 0xe8e4d8 }));
+      b.position.set(x, 0.045, z);
+      loteGrupo.add(b);
+    });
+  }
+  const et = crearEtiqueta((loteEsLibre() ? 'Lote (perímetro libre) ' : 'Lote ' + ficha.loteLargo + ' × ' + ficha.loteAncho + ' m ') +
+    '≈ ' + m2.toLocaleString('es-CO') + ' m²', 26, 'rgba(60,80,30,0.85)');
+  et.position.set(centro[0], 3, centro[1] - (loteEsLibre() ? loteBoundingSize().ancho / 2 + 2 : ficha.loteAncho / 2 + 2));
   loteGrupo.add(et);
   aplicarVisibilidadEtiquetas(loteGrupo);
 }
@@ -1789,12 +1857,37 @@ function opcionesMaterialCerr(sel){
   return Object.keys(MATERIALES_CERR).map(k =>
     '<option value="' + k + '"' + (k === sel ? ' selected' : '') + '>' + esc(MATERIALES_CERR[k].nombre) + '</option>').join('');
 }
+/* punto donde entran/salen camiones y el modo Caminar — se recalcula cada
+   vez que se reconstruye el cerramiento, siempre justo afuera del portón
+   (funciona igual para el lote rectangular y para el perímetro libre) */
+let puertaObraXZ = [0, 30];
 function construirCerramiento(){
   vaciarGrupo(cerrGrupo);
-  if (!cerrCfg.activo) return;
-  const L = ficha.loteLargo, A = ficha.loteAncho, H = cerrCfg.altura;
+  const esquinas = loteEsquinas();
+  const n = esquinas.length;
+  const centro = loteCentro();
+  if (!cerrCfg.activo){
+    // sin cerca, la entrada de referencia queda en el borde más al sur del lote
+    let mejorZ = -Infinity, pref = [centro[0], centro[1] + 30];
+    for (let i = 0; i < n; i++){ if (esquinas[i][1] > mejorZ){ mejorZ = esquinas[i][1]; pref = [esquinas[i][0], esquinas[i][1] + 8]; } }
+    puertaObraXZ = pref;
+    return;
+  }
+  const H = cerrCfg.altura;
   const mat = MATERIALES_CERR[cerrCfg.material] || MATERIALES_CERR.lona;
-  const esquinas = [[-L/2, -A/2], [L/2, -A/2], [L/2, A/2], [-L/2, A/2]];
+  // elige el lado del portón: en rectángulo siempre el costado sur (índice
+  // 2, igual que siempre); en el perímetro libre, el lado más al sur (mayor
+  // z promedio) que sea lo bastante largo para el portón
+  let idxGate = 2 % n;
+  if (loteEsLibre()){
+    let mejorZ = -Infinity;
+    for (let i = 0; i < n; i++){
+      const a = esquinas[i], b = esquinas[(i + 1) % n];
+      if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 8) continue;
+      const zProm = (a[1] + b[1]) / 2;
+      if (zProm > mejorZ){ mejorZ = zProm; idxGate = i; }
+    }
+  }
   const postes = [];
   function tramoCerrLibre(x1, z1, x2, z2){
     const dx = x2 - x1, dz = z2 - z1, len = Math.hypot(dx, dz);
@@ -1805,28 +1898,36 @@ function construirCerramiento(){
     m.rotation.y = -Math.atan2(dz, dx);
     m.castShadow = mat.op >= 0.9;
     cerrGrupo.add(m);
-    const n = Math.max(1, Math.floor(len / 3));
-    for (let i = 0; i <= n; i++) postes.push([x1 + dx * i / n, z1 + dz * i / n]);
+    const cant = Math.max(1, Math.floor(len / 3));
+    for (let i = 0; i <= cant; i++) postes.push([x1 + dx * i / cant, z1 + dz * i / cant]);
   }
-  for (let i = 0; i < 4; i++){
-    const a = esquinas[i], b = esquinas[(i + 1) % 4];
-    if (i === 2){
-      // lado sur: acceso con portón vehicular de 7 m centrado
-      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  for (let i = 0; i < n; i++){
+    const a = esquinas[i], b = esquinas[(i + 1) % n];
+    if (i === idxGate){
+      // acceso con portón vehicular de 7 m centrado en este lado
+      const len = Math.max(8, Math.hypot(b[0] - a[0], b[1] - a[1]));
       const f1 = Math.max(0.05, (len / 2 - 3.5) / len), f2 = Math.min(0.95, (len / 2 + 3.5) / len);
       const px = f => a[0] + (b[0] - a[0]) * f, pz = f => a[1] + (b[1] - a[1]) * f;
       tramoCerrLibre(a[0], a[1], px(f1), pz(f1));
       tramoCerrLibre(px(f2), pz(f2), b[0], b[1]);
       const hP = Math.min(H, 2.2);
+      // normal exterior del lado (perpendicular, apuntando lejos del centro
+      // del lote) — así el portón y la puerta de entrada quedan bien
+      // orientados sin importar hacia dónde mire este tramo del perímetro
+      const dx = b[0] - a[0], dz = b[1] - a[1];
+      let nx = -dz, nz = dx; const nlen = Math.hypot(nx, nz) || 1; nx /= nlen; nz /= nlen;
+      const mx = px(0.5), mz = pz(0.5);
+      if ((centro[0] - mx) * nx + (centro[1] - mz) * nz > 0){ nx = -nx; nz = -nz; }
       const porton = new THREE.Mesh(new THREE.BoxGeometry(6.4, hP, 0.1),
         new THREE.MeshLambertMaterial({ color: 0xc9581e }));
       const fPorton = Math.max(0.05, 0.5 - 3.2 / len);   // corrido: se ve semiabierto
-      porton.position.set(px(fPorton), hP / 2, pz(fPorton) + 0.35);
-      porton.rotation.y = -Math.atan2(b[1] - a[1], b[0] - a[0]);
+      porton.position.set(px(fPorton) + nx * 0.35, hP / 2, pz(fPorton) + nz * 0.35);
+      porton.rotation.y = -Math.atan2(dz, dx);
       cerrGrupo.add(porton);
       const et = crearEtiqueta('PORTÓN DE ACCESO', 13, 'rgba(120,60,15,0.88)');
-      et.position.set(px(0.5), H + 2, pz(0.5));
+      et.position.set(mx, H + 2, mz);
       cerrGrupo.add(et);
+      puertaObraXZ = [mx + nx * 8, mz + nz * 8];
     } else {
       tramoCerrLibre(a[0], a[1], b[0], b[1]);
     }
@@ -1845,7 +1946,8 @@ function abrirFicha(){
   const campo = (id, lbl, val, ph) =>
     '<label style="display:block; margin-top:8px">' + lbl +
     '<input id="' + id + '" maxlength="90" value="' + esc(val || '') + '" placeholder="' + esc(ph || '') + '" style="width:100%; margin-top:3px"></label>';
-  const m2 = Math.round(ficha.loteLargo * ficha.loteAncho);
+  const m2 = Math.round(loteAreaM2());
+  const esLibreAhora = ficha.loteModo === 'libre';
   document.getElementById('libreBody').innerHTML =
     '<div class="desc">Estos datos son los mismos del <b>Panel de obra</b> del proyecto Bambú, pero de <b class="txtAcento">tu propia obra</b>. ' +
     'El lote se dibuja en el terreno con las medidas que escribas y el cerramiento perimetral lo envuelve.</div>' +
@@ -1859,10 +1961,24 @@ function abrirFicha(){
         '<textarea id="fxEquipo" rows="3" style="width:100%; margin-top:3px; resize:vertical; font-family:inherit; background:var(--campo); border:1px solid var(--borde); color:var(--texto); border-radius:var(--radio-campo); padding:7px 9px; font-size:13px" placeholder="Nombre 1' + String.fromCharCode(10) + 'Nombre 2">' + esc((ficha.equipo || []).join('\n')) + '</textarea>' +
       '</label>' +
     '</div>' +
-    '<div style="display:flex; gap:8px; margin-top:8px; align-items:flex-end">' +
-      '<label style="flex:1">Largo del lote (m)<input type="number" id="fxLoteLargo" value="' + ficha.loteLargo + '" min="20" max="400" step="0.5" style="width:100%; margin-top:3px" oninput="refrescarM2Ficha()"></label>' +
-      '<label style="flex:1">Ancho del lote (m)<input type="number" id="fxLoteAncho" value="' + ficha.loteAncho + '" min="20" max="300" step="0.5" style="width:100%; margin-top:3px" oninput="refrescarM2Ficha()"></label>' +
-      '<b id="fichaM2" style="white-space:nowrap; padding-bottom:8px">≈ ' + m2.toLocaleString('es-CO') + ' m²</b>' +
+    '<div style="margin-top:14px; border-top:1px solid var(--linea); padding-top:10px">' +
+      '<b>Forma del lote</b>' +
+      '<div class="desc">Muchos terrenos reales no son rectangulares — dibuja el perímetro a mano si el tuyo tiene quiebres.</div>' +
+      '<div style="display:flex; gap:16px; margin-top:8px">' +
+        '<label style="display:flex; align-items:center; gap:5px"><input type="radio" name="fxLoteModo" value="rectangulo"' + (!esLibreAhora ? ' checked' : '') + ' onchange="cambiarModoLoteFicha()"> Ancho × Largo</label>' +
+        '<label style="display:flex; align-items:center; gap:5px"><input type="radio" name="fxLoteModo" value="libre"' + (esLibreAhora ? ' checked' : '') + ' onchange="cambiarModoLoteFicha()"> Libre (dibujado)</label>' +
+      '</div>' +
+      '<div id="fxLoteRectangulo" style="display:' + (esLibreAhora ? 'none' : 'flex') + '; gap:8px; margin-top:8px; align-items:flex-end">' +
+        '<label style="flex:1">Largo del lote (m)<input type="number" id="fxLoteLargo" value="' + ficha.loteLargo + '" min="20" max="400" step="0.5" style="width:100%; margin-top:3px" oninput="refrescarM2Ficha()"></label>' +
+        '<label style="flex:1">Ancho del lote (m)<input type="number" id="fxLoteAncho" value="' + ficha.loteAncho + '" min="20" max="300" step="0.5" style="width:100%; margin-top:3px" oninput="refrescarM2Ficha()"></label>' +
+        '<b id="fichaM2" style="white-space:nowrap; padding-bottom:8px">≈ ' + m2.toLocaleString('es-CO') + ' m²</b>' +
+      '</div>' +
+      '<div id="fxLoteLibre" style="display:' + (esLibreAhora ? 'block' : 'none') + '; margin-top:8px">' +
+        '<div class="desc">' + (loteEsLibre()
+          ? ('Perímetro dibujado: ' + ficha.lotePoligono.length + ' puntos ≈ ' + Math.round(areaPoligono(ficha.lotePoligono)).toLocaleString('es-CO') + ' m².')
+          : 'Aún no has dibujado el perímetro.') + '</div>' +
+        '<button onclick="guardarFicha(); abrirHerramientaLoteLibre();">' + ic('regla') + (loteEsLibre() ? 'Rehacer el perímetro en el Plano 2D' : 'Dibujar el perímetro en el Plano 2D') + '</button>' +
+      '</div>' +
     '</div>' +
     campo('fxTorres', 'Torres', ficha.torres, 'ej: 2 (01 y 02), en línea') +
     campo('fxApartamentos', 'Apartamentos', ficha.apartamentos, 'ej: 120 (80 + 40) · A–L') +
@@ -1886,17 +2002,28 @@ function abrirFicha(){
   document.getElementById('libreOverlay').style.display = 'flex';
 }
 function refrescarM2Ficha(){
-  const L = numLim(document.getElementById('fxLoteLargo').value, ficha.loteLargo, 20, 400);
-  const A = numLim(document.getElementById('fxLoteAncho').value, ficha.loteAncho, 20, 300);
+  const campoL = document.getElementById('fxLoteLargo'), campoA = document.getElementById('fxLoteAncho');
+  if (!campoL || !campoA) return;
+  const L = numLim(campoL.value, ficha.loteLargo, 20, 400);
+  const A = numLim(campoA.value, ficha.loteAncho, 20, 300);
   document.getElementById('fichaM2').textContent = '≈ ' + Math.round(L * A).toLocaleString('es-CO') + ' m²';
+}
+/* alterna entre los campos de "Ancho × Largo" y el aviso de "Libre (dibujado)" */
+function cambiarModoLoteFicha(){
+  const modo = (document.querySelector('input[name="fxLoteModo"]:checked') || {}).value || 'rectangulo';
+  const rec = document.getElementById('fxLoteRectangulo'), lib = document.getElementById('fxLoteLibre');
+  if (rec) rec.style.display = modo === 'libre' ? 'none' : 'flex';
+  if (lib) lib.style.display = modo === 'libre' ? 'block' : 'none';
 }
 function guardarFicha(){
   const v = id => (document.getElementById(id) || {}).value || '';
+  const modoRadio = (document.querySelector('input[name="fxLoteModo"]:checked') || {}).value;
   ficha = normalizarFicha({
     nombre: v('fxNombre') || 'Mi obra',
     ubicacion: v('fxUbicacion'), torres: v('fxTorres'), apartamentos: v('fxApartamentos'),
     niveles: v('fxNiveles'), alturaTxt: v('fxAltura'), fase: v('fxFase'), personal: v('fxPersonal'),
-    loteLargo: v('fxLoteLargo'), loteAncho: v('fxLoteAncho'),
+    loteLargo: v('fxLoteLargo') || ficha.loteLargo, loteAncho: v('fxLoteAncho') || ficha.loteAncho,
+    loteModo: modoRadio || ficha.loteModo, lotePoligono: ficha.lotePoligono,
     taller: v('fxTaller'), equipo: v('fxEquipo').split('\n').map(s => s.trim()).filter(Boolean)
   });
   cerrCfg = {
@@ -1911,7 +2038,7 @@ function guardarFicha(){
   guardar('Ficha técnica guardada');
   cerrarVentanaLibre();
   mostrarPanelVacio();
-  avisar('Ficha técnica guardada — lote de ' + Math.round(ficha.loteLargo * ficha.loteAncho).toLocaleString('es-CO') + ' m²');
+  avisar('Ficha técnica guardada — lote de ' + Math.round(loteAreaM2()).toLocaleString('es-CO') + ' m²');
 }
 function cerrarVentanaLibre(){ document.getElementById('libreOverlay').style.display = 'none'; }
 
@@ -2500,7 +2627,7 @@ function posicionZonaLibre(nombre){
   return { x: 0, z: 0, w: 6, d: 6 };
 }
 /* entrada/salida de la obra: el mismo portón sur que usa el modo Caminar */
-function entradaObraLibre(){ return [0, ficha.loteAncho / 2 + 8]; }
+function entradaObraLibre(){ return puertaObraXZ; }
 function tramoConViasLibre(desde, hasta){
   return rutaPorViasLibre(desde, hasta) || [desde, hasta];
 }
@@ -2733,20 +2860,25 @@ function setHerramienta(h){
   if (herramienta === h) h = null;
   herramienta = h;
   trazoVia = null; trazoRuta = null; trazoRegla = null;
+  if (h !== 'lote'){ trazoLote = null; vaciarGrupo(loteTrazoGrupo); }
   redibujarMediciones();
   quitarPreviewHerramienta();
   document.getElementById('btnVia').classList.toggle('activo', herramienta === 'via');
   document.getElementById('btnRuta').classList.toggle('activo', herramienta === 'ruta');
   document.getElementById('btnRegla').classList.toggle('activo', herramienta === 'regla');
+  const btnLote = document.getElementById('btnLote');
+  if (btnLote) btnLote.classList.toggle('activo', herramienta === 'lote');
   if (herramienta === 'via') panelHerramientaVia();
   else if (herramienta === 'ruta') panelHerramientaRuta();
   else if (herramienta === 'regla') panelHerramientaRegla();
+  else if (herramienta === 'lote') panelHerramientaLote();
   else mostrarPanelVacio();
 }
 function clicHerramienta(p){
   if (herramienta === 'via') clicVia(p);
   else if (herramienta === 'ruta') clicRuta(p);
   else if (herramienta === 'regla') clicRegla(p);
+  else if (herramienta === 'lote') clicLote(p);
 }
 function deshacerPuntoHerramienta(){
   if (herramienta === 'via' && trazoVia){
@@ -2778,6 +2910,8 @@ function deshacerPuntoHerramienta(){
     }
     redibujarMediciones(); panelHerramientaRegla();
     avisar('Última medición deshecha');
+  } else if (herramienta === 'lote'){
+    escLote();
   }
 }
 function puntoAnclaHerramienta(){
@@ -2789,6 +2923,7 @@ function puntoAnclaHerramienta(){
     return { x: p[0], z: p[1] };
   }
   if (herramienta === 'regla' && trazoRegla) return trazoRegla;
+  if (herramienta === 'lote' && trazoLote && trazoLote.length) return trazoLote[trazoLote.length - 1];
   return null;
 }
 function quitarPreviewHerramienta(){
@@ -2809,8 +2944,8 @@ function actualizarPreviewHerramienta(p){
       new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.45, depthWrite: false }));
     scene.add(previewMesh);
   }
-  previewMesh.material.color.setHex(herramienta === 'via' ? 0x8a8f96 : herramienta === 'regla' ? 0xffd23e : 0x2e9bff);
-  previewMesh.scale.set(len, 1, herramienta === 'via' ? viaAnchoNuevo : herramienta === 'regla' ? 0.25 : 0.5);
+  previewMesh.material.color.setHex(herramienta === 'via' ? 0x8a8f96 : herramienta === 'regla' ? 0xffd23e : herramienta === 'lote' ? 0x3ecf6e : 0x2e9bff);
+  previewMesh.scale.set(len, 1, herramienta === 'via' ? viaAnchoNuevo : (herramienta === 'regla' || herramienta === 'lote') ? 0.25 : 0.5);
   previewMesh.position.set((p.x + ancla.x) / 2, 0.14, (p.z + ancla.z) / 2);
   previewMesh.rotation.y = -Math.atan2(dz, dx);
 }
@@ -2925,6 +3060,110 @@ function borrarMediciones(){
   avisar('Mediciones borradas');
 }
 
+/* ============ HERRAMIENTA "TERRENO LIBRE": dibujar el perímetro del lote
+   por clics, con el área en vivo — para terrenos que no son rectangulares.
+   Se recomienda hacerlo en el Plano 2D (norte arriba) porque ahí se ve el
+   contorno completo, pero funciona igual en 3D. ============ */
+let trazoLote = null;   // array de {x,z} mientras se dibuja el perímetro
+const loteTrazoGrupo = new THREE.Group(); scene.add(loteTrazoGrupo);
+const DIST_CIERRE_LOTE = 2;   // metros: qué tan cerca del primer punto para cerrar el lote
+function clicLote(pRaw){
+  const p = { x: red2(pRaw.x), z: red2(pRaw.z) };
+  if (!trazoLote) trazoLote = [];
+  if (trazoLote.length >= 3){
+    const primero = trazoLote[0];
+    if (Math.hypot(p.x - primero.x, p.z - primero.z) < DIST_CIERRE_LOTE){
+      finalizarLoteLibre();
+      return;
+    }
+  }
+  if (trazoLote.length && Math.hypot(p.x - trazoLote[trazoLote.length - 1].x, p.z - trazoLote[trazoLote.length - 1].z) < 0.3) return;
+  trazoLote.push(p);
+  redibujarTrazoLote();
+  panelHerramientaLote();
+}
+function redibujarTrazoLote(){
+  vaciarGrupo(loteTrazoGrupo);
+  if (!trazoLote || !trazoLote.length) return;
+  const VERDE = 0x3ecf6e;
+  const disco = (x, z, radio) => {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(radio, radio, 0.1, 12),
+      new THREE.MeshBasicMaterial({ color: VERDE }));
+    m.position.set(x, 0.17, z);
+    loteTrazoGrupo.add(m);
+  };
+  for (let i = 0; i < trazoLote.length - 1; i++){
+    const a = trazoLote[i], b = trazoLote[i + 1];
+    const dx = b.x - a.x, dz = b.z - a.z, len = Math.hypot(dx, dz);
+    if (len < 0.05) continue;
+    const linea = new THREE.Mesh(new THREE.BoxGeometry(len, 0.04, 0.22),
+      new THREE.MeshBasicMaterial({ color: VERDE }));
+    linea.position.set((a.x + b.x) / 2, 0.2, (a.z + b.z) / 2);
+    linea.rotation.y = -Math.atan2(dz, dx);
+    loteTrazoGrupo.add(linea);
+  }
+  trazoLote.forEach((pt, i) => disco(pt.x, pt.z, i === 0 ? 0.5 : 0.32));
+  if (trazoLote.length >= 3){
+    const areaViva = Math.round(areaPoligono(trazoLote.map(pt => [pt.x, pt.z])));
+    const et = crearEtiqueta('≈ ' + areaViva.toLocaleString('es-CO') + ' m² si cierras aquí', modo2D ? 14 : 10, 'rgba(30,110,60,0.88)');
+    const cx = trazoLote.reduce((s, pt) => s + pt.x, 0) / trazoLote.length;
+    const cz = trazoLote.reduce((s, pt) => s + pt.z, 0) / trazoLote.length;
+    et.position.set(cx, modo2D ? 2.4 : 2, cz);
+    loteTrazoGrupo.add(et);
+  }
+  aplicarVisibilidadEtiquetas(loteTrazoGrupo);
+}
+function panelHerramientaLote(){
+  const n = trazoLote ? trazoLote.length : 0;
+  const areaViva = n >= 3 ? Math.round(areaPoligono(trazoLote.map(pt => [pt.x, pt.z]))) : null;
+  panelSel('Terreno libre — dibujar el perímetro',
+    '<div class="desc">Haz <b class="txtAcento">clic sobre el terreno</b> marcando cada esquina del lote, en orden, ' +
+    'siguiendo el contorno real (no tiene que ser rectangular). Con 3 puntos o más, haz clic cerca del ' +
+    '<b class="txtAcento">primer punto</b> para cerrar el terreno.</div>' +
+    (n ? '<div class="desc"><b class="txtFuerte">' + n + ' punto(s)</b>' + (areaViva !== null ? ' · ≈ <b class="txtAcento">' + areaViva.toLocaleString('es-CO') + ' m²</b> si cierras ahora' : ' · faltan al menos ' + (3 - n) + ' punto(s) para poder cerrar') + '</div>' : '<div class="desc">Aún no hay puntos marcados.</div>') +
+    (n ? '<button onclick="deshacerPuntoHerramienta()">' + ic('girarIzq') + 'Deshacer último punto</button>' : '') +
+    (n >= 3 ? '<button class="orgAccion primario" onclick="finalizarLoteLibre()">' + ic('check') + 'Cerrar terreno (' + (areaViva || 0).toLocaleString('es-CO') + ' m²)</button>' : '') +
+    (n ? '<button class="btnEliminar" onclick="cancelarLoteLibre()">' + ic('basura') + 'Cancelar dibujo</button>' : ''));
+}
+function finalizarLoteLibre(){
+  if (!trazoLote || trazoLote.length < 3){ avisar('Marca al menos 3 puntos para cerrar el terreno'); return; }
+  ficha.loteModo = 'libre';
+  ficha.lotePoligono = trazoLote.map(pt => [pt.x, pt.z]);
+  trazoLote = null;
+  vaciarGrupo(loteTrazoGrupo);
+  construirLote();
+  construirCerramiento();
+  guardar('Terreno dibujado');
+  setHerramienta(null);
+  avisar('Terreno cerrado — ' + Math.round(loteAreaM2()).toLocaleString('es-CO') + ' m²');
+}
+function cancelarLoteLibre(){
+  trazoLote = null;
+  vaciarGrupo(loteTrazoGrupo);
+  if (herramienta === 'lote') panelHerramientaLote();
+  avisar('Dibujo del terreno cancelado');
+}
+/* Esc con la herramienta de lote activa: primero quita el último punto; con
+   el trazo vacío, un Esc más sale de la herramienta (lo maneja el keydown) */
+function escLote(){
+  if (trazoLote && trazoLote.length){
+    trazoLote.pop();
+    if (!trazoLote.length) trazoLote = null;
+    redibujarTrazoLote(); panelHerramientaLote();
+    avisar('Último punto quitado');
+    return true;
+  }
+  return false;
+}
+/* abre el Plano 2D y activa la herramienta — se llama desde el botón de la
+   Ficha técnica ("Dibujar/Rehacer el perímetro en el Plano 2D") */
+function abrirHerramientaLoteLibre(){
+  cerrarVentanaLibre();
+  if (!modo2D) toggleVista2D();
+  trazoLote = null;
+  setHerramienta('lote');
+}
+
 /* ============ DÍA / NOCHE (iluminación de la obra) ============
    El botón "Noche" oscurece el cielo, baja el sol a luz de luna y ENCIENDE
    los reflectores de las "Torres de iluminación" que el usuario haya
@@ -2973,9 +3212,10 @@ function toggleCaminar(){
   btn.innerHTML = caminando ? ic('volver') + 'Salir' : ic('caminar') + 'Caminar';
   if (caminando){
     setHerramienta(null);
-    // entra por el portón del costado sur, mirando hacia el lote (norte)
-    camWalk.x = 0; camWalk.z = ficha.loteAncho / 2 + 8;
-    camWalk.yaw = Math.PI; camWalk.pitch = 0;
+    // entra por el portón de acceso, mirando hacia el centro del lote
+    const centro = loteCentro();
+    camWalk.x = puertaObraXZ[0]; camWalk.z = puertaObraXZ[1];
+    camWalk.yaw = Math.atan2(centro[0] - camWalk.x, centro[1] - camWalk.z); camWalk.pitch = 0;
     animCam = null;
     try { renderer.domElement.requestPointerLock(); } catch (e) {}
     avisar('Caminando por la obra: W A S D o flechas · Shift corre · mueve el mouse para mirar · Esc sale');
@@ -3140,8 +3380,9 @@ function toggleVista2D(){
   btn.innerHTML = modo2D ? ic('caja') + 'Vista 3D' : ic('plano') + 'Plano 2D';
   document.getElementById('btnAreas').style.display = modo2D ? '' : 'none';
   if (modo2D){
-    camCtrl.target.set(0, 0, 0);
-    zoom2D = Math.max(ficha.loteAncho * 0.72, ficha.loteLargo * 0.42, 55);
+    const centro = loteCentro();
+    camCtrl.target.set(centro[0], 0, centro[1]);
+    zoom2D = zoomAjustadoLote();
     animCam = null;
   } else if (amueblando){
     cerrarAmoblar();
@@ -3162,8 +3403,9 @@ function toggleVista2D(){
 function capturarPlantaLibre(){
   const eraModo2D = modo2D, eraCotas = mostrarCotas, eraEtiquetas = etiquetasVisibles;
   const eraTarget = camCtrl.target.clone(), eraZoom = zoom2D;
-  if (!modo2D){ modo2D = true; camCtrl.target.set(0, 0, 0); }
-  zoom2D = Math.max(ficha.loteAncho * 0.72, ficha.loteLargo * 0.42, 55);
+  const centro = loteCentro();
+  if (!modo2D){ modo2D = true; camCtrl.target.set(centro[0], 0, centro[1]); }
+  zoom2D = zoomAjustadoLote();
   if (!mostrarCotas) setCotas(true);
   if (!etiquetasVisibles) toggleEtiquetasLibre();
   animCam = null;
@@ -3183,7 +3425,8 @@ function capturarPlantaLibre(){
 }
 function exportarPlanoLibre(){
   const img = capturarPlantaLibre();
-  const L = ficha.loteLargo, A = ficha.loteAncho, loteM2 = Math.round(L * A);
+  const loteM2 = loteAreaM2();
+  const descLote = loteEsLibre() ? 'Perímetro libre' : ('Terreno total (' + ficha.loteLargo + ' × ' + ficha.loteAncho + ' m)');
   const filas = elementos.map(g => {
     const d = g.userData.def;
     const area = tieneMedidasCota(d) ? Math.round(d.w * d.d * 10) / 10 : null;
@@ -3229,7 +3472,7 @@ function exportarPlanoLibre(){
     '</div>' +
     '<img class="planta" src="' + img + '" alt="Vista en planta de la obra">' +
     '<div class="resumen">' +
-      '<div><b>' + loteM2.toLocaleString('es-CO') + ' m²</b><span>Terreno total (' + L + ' × ' + A + ' m)</span></div>' +
+      '<div><b>' + loteM2.toLocaleString('es-CO') + ' m²</b><span>' + esc(descLote) + '</span></div>' +
       '<div><b>' + totalArea.toLocaleString('es-CO') + ' m²</b><span>Ejecutado / construido (' + ocupacion + '%)</span></div>' +
       '<div><b>' + disponible.toLocaleString('es-CO') + ' m²</b><span>Espacio disponible</span></div>' +
     '</div>' +
@@ -3446,15 +3689,17 @@ function toggleEtiquetasLibre(){
 function abrirZonasLibre(){
   setHerramienta(null);
   document.getElementById('libreVentTitulo').textContent = 'Zonas y aforo';
-  const L = ficha.loteLargo, A = ficha.loteAncho;
+  const loteM2 = loteAreaM2();
+  const centro = loteCentro();
+  const b = loteBoundingSize();
   const filas = elementos.map(g => {
     const d = g.userData.def;
     const area = (typeof d.w === 'number' && typeof d.d === 'number') ? Math.round(d.w * d.d * 10) / 10 : null;
-    const fuera = Math.abs(d.x) + (d.w || 2) / 2 > L / 2 + 0.5 || Math.abs(d.z) + (d.d || 2) / 2 > A / 2 + 0.5;
+    const fuera = Math.abs(d.x - centro[0]) + (d.w || 2) / 2 > b.largo / 2 + 0.5 || Math.abs(d.z - centro[1]) + (d.d || 2) / 2 > b.ancho / 2 + 0.5;
     return { d, area, fuera };
   });
   const totalArea = Math.round(filas.reduce((s, f) => s + (f.area || 0), 0) * 10) / 10;
-  const ocupacion = Math.round(totalArea / (L * A) * 1000) / 10;
+  const ocupacion = Math.round(totalArea / loteM2 * 1000) / 10;
   const stVias = statsVias();
   const areaVias = Math.round(vias.reduce((s, v) => s + Math.hypot(v.x2 - v.x1, v.z2 - v.z1) * v.ancho, 0));
   document.getElementById('libreBody').innerHTML =
@@ -3468,7 +3713,7 @@ function abrirZonasLibre(){
           '<small style="white-space:nowrap">' + (f.area !== null ? f.area + ' m²' : '—') + '</small></div>').join('')
       : '<div class="desc">Aún no hay zonas ni equipos creados.</div>') +
     '<div class="desc" style="margin-top:10px"><b class="txtFuerte">' + filas.length + ' elementos · ' + totalArea + ' m² ocupados · ' +
-      ocupacion + '% del lote (' + Math.round(L * A).toLocaleString('es-CO') + ' m²)</b><br>' +
+      ocupacion + '% del lote (' + Math.round(loteM2).toLocaleString('es-CO') + ' m²)</b><br>' +
       'Vías: ' + stVias.tramos + ' tramo(s) · ' + stVias.total + ' m lineales ≈ ' + areaVias + ' m² · Rutas de vehículos: ' + rutas.length + '</div>';
   document.getElementById('libreOverlay').style.display = 'flex';
 }
@@ -3481,7 +3726,8 @@ function abrirZonasLibre(){
 function abrirCuadroAreas(){
   setHerramienta(null);
   document.getElementById('libreVentTitulo').textContent = 'Cuadro de áreas';
-  const L = ficha.loteLargo, A = ficha.loteAncho, loteM2 = Math.round(L * A);
+  const loteM2 = loteAreaM2();
+  const descLote = loteEsLibre() ? 'Perímetro libre ≈ ' + loteM2.toLocaleString('es-CO') + ' m²' : (ficha.loteLargo + ' × ' + ficha.loteAncho + ' m ≈ ' + loteM2.toLocaleString('es-CO') + ' m²');
   const filas = elementos.map(g => {
     const d = g.userData.def;
     const area = tieneMedidasCota(d) ? Math.round(d.w * d.d * 10) / 10 : 0;
@@ -3523,7 +3769,7 @@ function abrirCuadroAreas(){
   }).join('');
 
   document.getElementById('libreBody').innerHTML =
-    '<div class="desc">Terreno total: <b class="txtFuerte">' + L + ' × ' + A + ' m ≈ ' + loteM2.toLocaleString('es-CO') + ' m²</b> · ' +
+    '<div class="desc">Terreno total: <b class="txtFuerte">' + descLote + '</b> · ' +
       'Ocupado: <b class="txtFuerte">' + totalArea.toLocaleString('es-CO') + ' m² (' + ocupacion + '%)</b></div>' +
     '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">' +
       tile(filas.length, 'Zonas creadas') +
@@ -3824,6 +4070,13 @@ function cargarLocal(){
   let obj = {};
   if (txt){ try { obj = JSON.parse(txt); } catch (e) {} }
   aplicarEstado(obj);
+  // si ya había una obra guardada (recarga de página), no bloquear la app
+  // con la pantalla de bienvenida — saltar directo al plano restaurado
+  if (fichaCompleta){
+    const el = document.getElementById('libreInicio');
+    el.classList.add('oculto');
+    el.style.display = 'none';
+  }
 }
 
 /* iconos: los botones ya traen su <span class="ic" data-ic="..."> en el
@@ -3846,6 +4099,7 @@ document.getElementById('btnCamiones').onclick = abrirCamionesLibre;
 document.getElementById('btnFichaLibre').onclick = () => { setHerramienta(null); abrirFicha(); };
 document.getElementById('btnOrg').onclick = () => { setHerramienta(null); abrirOrganigrama(); };
 document.getElementById('btnRegla').onclick = () => setHerramienta('regla');
+document.getElementById('btnLote').onclick = () => setHerramienta('lote');
 document.getElementById('btnCotas').onclick = toggleCotas;
 document.getElementById('btn2D').onclick = toggleVista2D;
 document.getElementById('btnAreas').onclick = abrirCuadroAreas;
@@ -3977,6 +4231,7 @@ addEventListener('keydown', e => {
     if (caminando){ toggleCaminar(); return; }
     if (herramienta){
       if (herramienta === 'regla'){ if (escRegla()) return; setHerramienta(null); return; }
+      if (herramienta === 'lote'){ if (escLote()) return; setHerramienta(null); return; }
       if (trazoVia || trazoRuta) terminarTrazo();
       else setHerramienta(null);
       return;
