@@ -33,7 +33,11 @@ const ICO = {
   candado:  '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/>',
   candadoAbierto: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 017.5-1.6"/>',
   plano:    '<rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h9v12M12 9h9M9 3v6"/>',
-  etiqueta: '<path d="M3 12V3h9l9 9-9 9z"/><circle cx="8" cy="8" r="1.6"/>'
+  etiqueta: '<path d="M3 12V3h9l9 9-9 9z"/><circle cx="8" cy="8" r="1.6"/>',
+  regla:    '<path d="M3 17L17 3l4 4L7 21zM7.5 12.5l2 2M10.5 9.5l2 2M13.5 6.5l2 2"/>',
+  caminar:  '<circle cx="13" cy="4.2" r="1.7"/><path d="M12.6 7.5l-2.1 5 2.5 3.2V21M10.5 12.3l-2.6 1.2V17M13 9.4l2.6 2 2.6.6M10.4 15.8L8 21"/>',
+  sol:      '<circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/>',
+  luna:     '<path d="M20 14.5A8 8 0 119.5 4a6.5 6.5 0 0010.5 10.5z"/>'
 };
 function ic(n){
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICO[n] || '') + '</svg>';
@@ -62,7 +66,8 @@ renderer.shadowMap.type = THREE.PCFShadowMap;
 document.body.appendChild(renderer.domElement);
 const ANISO = Math.min(ES_MOVIL ? 2 : 8, renderer.capabilities.getMaxAnisotropy());
 
-scene.add(new THREE.HemisphereLight(0xbfd4ff, 0x3a3428, 0.8));
+const hemi = new THREE.HemisphereLight(0xbfd4ff, 0x3a3428, 0.8);
+scene.add(hemi);
 const sol = new THREE.DirectionalLight(0xfff2dd, 1.0);
 sol.position.set(-90, 140, 70);
 sol.castShadow = true;
@@ -637,6 +642,23 @@ const CATALOGO_MAQUINAS = [
       caja(g, 2.2, 2.2, 1.8, 0xe6e2d8, 3.4, 1.2, 2.6);
       caja(g, 2.0, 0.7, 0.05, 0x23262b, 3.4, 1.6, 3.52);
     } },
+  { id:'torreIluminacion', nombre:'Torre de iluminación', grupo:'Planta e instalaciones', w:2.2, d:2.2, h:9, color:'#f0b429', movil:false,
+    desc:'Torre con reflectores para la iluminación nocturna de la obra: se encienden solas con el botón "Noche".',
+    dibujar(g, c){
+      caja(g, 1.8, 0.35, 1.8, 0x2b2f36, 0, 0.2, 0);
+      caja(g, 0.28, 8.2, 0.28, c, 0, 4.4, 0);
+      caja(g, 0.55, 0.55, 0.4, 0x565b62, 0, 1.1, 0.5);               // generador
+      caja(g, 1.9, 0.14, 0.14, 0x565b62, 0, 8.4, 0);                 // travesaño
+      [-0.7, -0.25, 0.25, 0.7].forEach(x => {
+        const f = caja(g, 0.34, 0.28, 0.2, 0xfff3c4, x, 8.62, 0.14);
+        f.rotation.x = 0.5;
+        f.userData.esFocoReflector = true;
+      });
+      const luz = new THREE.PointLight(0xffe9b0, 0, 55, 1.4);        // apagada de día
+      luz.position.set(0, 8.2, 1.4);
+      luz.userData.esReflector = true;
+      g.add(luz);
+    } },
   { id:'transporteHorizontalLibre', nombre:'Transporte personalizado (horizontal)', grupo:'Transporte horizontal', w:2.2, d:5, h:2.4, color:'#4cae5b', movil:true,
     desc:'Vehículo horizontal genérico: ponle tu propio nombre, dimensiones y color, y asígnale rutas.',
     dibujar(g, c){
@@ -738,7 +760,8 @@ function normalizarDef(raw){
     x: numLim(raw.x, 0, -260, 260),
     z: numLim(raw.z, 0, -180, 180),
     rot: numLim(raw.rot, 0, -Math.PI*4, Math.PI*4),
-    bloqueado: !!raw.bloqueado
+    bloqueado: !!raw.bloqueado,
+    colorPersonalizado: /^#[0-9a-f]{6}$/i.test(raw.colorPersonalizado || '') ? raw.colorPersonalizado : null
   };
   if (tipo === 'espacio'){
     d.w = numLim(raw.w, 10, 2, 90); d.d = numLim(raw.d, 8, 2, 70); d.h = numLim(raw.h, 2.5, 1, 14);
@@ -774,7 +797,9 @@ function crearElemento(raw){
   g.userData.def = def;
   g.userData.tipo = def.tipo;
   g.userData.info.nombre = def.nombre;
-  const et = crearEtiqueta(def.nombre, 12);
+  if (def.colorPersonalizado) aplicarColorLibre(g, def.colorPersonalizado);
+  const et = crearEtiqueta(textoEtiqueta(def), 12);
+  et.visible = etiquetasVisibles;
   et.position.y = (def.tipo === 'gruaTorre' ? def.mastil : def.tipo === 'edificio' ? def.pisos*def.hPiso :
                    def.tipo === 'malacate' ? def.mastil : def.tipo === 'gruaPluma' ? 6 :
                    def.tipo === 'mueble' ? def.h + 0.6 :
@@ -836,7 +861,7 @@ let pinza = null;
 function rayo(e){
   puntero.x = (e.clientX / innerWidth) * 2 - 1;
   puntero.y = -(e.clientY / innerHeight) * 2 + 1;
-  raycaster.setFromCamera(puntero, camera);
+  raycaster.setFromCamera(puntero, camActiva());
 }
 function puntoSuelo(){
   const hits = raycaster.intersectObject(terreno);
@@ -849,6 +874,13 @@ function raizElemento(o){
   return elementos.includes(o) ? o : null;
 }
 function moverCamaraPantalla(dx, dy){
+  if (modo2D){
+    // plano cenital con norte arriba: derecha = +x, abajo = +z
+    const mpp = (2 * zoom2D) / innerHeight;   // metros por píxel
+    camCtrl.target.x -= dx * mpp;
+    camCtrl.target.z -= dy * mpp;
+    return;
+  }
   const derecha = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
   const frente = new THREE.Vector3().subVectors(camCtrl.target, camera.position);
   frente.y = 0; frente.normalize();
@@ -858,12 +890,13 @@ function moverCamaraPantalla(dx, dy){
 
 renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
 renderer.domElement.addEventListener('pointerdown', e => {
+  if (caminando) return;   // en modo caminar el mouse solo mira alrededor
   if (e.pointerType === 'touch'){
     punterosTactiles.set(e.pointerId, { x:e.clientX, y:e.clientY });
     if (punterosTactiles.size === 2){
       arrastrando = null; rotando = false; paneando = false; movido = 999;
       const [a, b] = [...punterosTactiles.values()];
-      pinza = { dist0: Math.hypot(a.x-b.x, a.y-b.y), radio0: camCtrl.radius, cx:(a.x+b.x)/2, cy:(a.y+b.y)/2 };
+      pinza = { dist0: Math.hypot(a.x-b.x, a.y-b.y), radio0: modo2D ? zoom2D : camCtrl.radius, cx:(a.x+b.x)/2, cy:(a.y+b.y)/2 };
       return;
     }
   }
@@ -881,17 +914,22 @@ renderer.domElement.addEventListener('pointerdown', e => {
   const hits = raycaster.intersectObjects(elementos, true);
   if (hits.length){
     const raiz = raizElemento(hits[0].object);
-    if (raiz) { arrastrando = raiz; return; }
+    // bloqueado: no se arrastra, pero el clic corto sí lo selecciona (pointerup)
+    if (raiz && !raiz.userData.def.bloqueado){ arrastrando = raiz; return; }
+    if (raiz) return;
   }
-  rotando = true;
+  if (modo2D) paneando = true;   // en el plano 2D arrastrar en vacío desplaza el plano
+  else rotando = true;
 });
 renderer.domElement.addEventListener('pointermove', e => {
+  if (caminando) return;
   if (e.pointerType === 'touch' && punterosTactiles.has(e.pointerId)){
     punterosTactiles.set(e.pointerId, { x:e.clientX, y:e.clientY });
     if (pinza && punterosTactiles.size >= 2){
       const [a, b] = [...punterosTactiles.values()];
       const dist = Math.hypot(a.x-b.x, a.y-b.y);
-      camCtrl.radius = Math.min(560, Math.max(12, pinza.radio0 * (pinza.dist0 / Math.max(dist,1))));
+      if (modo2D) zoom2D = Math.min(400, Math.max(12, pinza.radio0 * (pinza.dist0 / Math.max(dist,1))));
+      else camCtrl.radius = Math.min(560, Math.max(12, pinza.radio0 * (pinza.dist0 / Math.max(dist,1))));
       const cx = (a.x+b.x)/2, cy = (a.y+b.y)/2;
       moverCamaraPantalla(cx - pinza.cx, cy - pinza.cy);
       pinza.cx = cx; pinza.cy = cy; return;
@@ -924,6 +962,7 @@ renderer.domElement.addEventListener('pointermove', e => {
   }
 });
 function finPointer(e){
+  if (caminando) return;
   if (e.pointerType === 'touch'){
     punterosTactiles.delete(e.pointerId);
     if (punterosTactiles.size < 2) pinza = null;
@@ -949,6 +988,8 @@ function finPointer(e){
 renderer.domElement.addEventListener('pointerup', finPointer);
 renderer.domElement.addEventListener('pointercancel', e => { punterosTactiles.delete(e.pointerId); if (punterosTactiles.size < 2) pinza = null; });
 renderer.domElement.addEventListener('wheel', e => {
+  if (caminando) return;
+  if (modo2D){ zoom2D = Math.min(400, Math.max(12, zoom2D * (1 + e.deltaY * 0.001))); return; }
   camCtrl.radius = Math.min(560, Math.max(12, camCtrl.radius * (1 + e.deltaY * 0.001)));
 }, { passive:true });
 
@@ -1055,6 +1096,7 @@ const AFORO_MAQ = {
   bombaEstacionaria: 'Operarios: 2 personas',
   plantaConcreto: 'Operarios: 2-3 personas en planta',
   siloCemento: 'No aplica (almacenamiento)',
+  torreIluminacion: 'No aplica (iluminación nocturna)',
   transporteHorizontalLibre: 'Operario: 1 persona',
   transporteVerticalLibre: 'Según la plataforma'
 };
@@ -1180,6 +1222,7 @@ function ubicTexto(g){ return 'x: ' + Math.round(g.position.x) + ' m · z: ' + M
 function refrescarUbic(){ const u = document.getElementById('libreUbic'); if (u) u.lastElementChild.textContent = ubicTexto(seleccionado); }
 function girarSel(dir){
   if (!seleccionado) return;
+  if (seleccionado.userData.def.bloqueado){ avisar('Elemento bloqueado: desbloquéalo para girarlo'); return; }
   seleccionado.rotation.y += dir * Math.PI/4;
   seleccionado.userData.def.rot = seleccionado.rotation.y;
   guardar();
@@ -1485,6 +1528,7 @@ function construirLote(){
   const et = crearEtiqueta('Lote ' + L + ' × ' + A + ' m ≈ ' + m2.toLocaleString('es-CO') + ' m²', 26, 'rgba(60,80,30,0.85)');
   et.position.set(0, 3, -A/2 - 2);
   loteGrupo.add(et);
+  aplicarVisibilidadEtiquetas(loteGrupo);
 }
 
 /* ============ CERRAMIENTO PERIMETRAL (material elegible) ============ */
@@ -1547,6 +1591,7 @@ function construirCerramiento(){
   const mtx = new THREE.Matrix4();
   postes.forEach(([x, z], i) => { mtx.makeTranslation(x, (H + 0.15) / 2, z); im.setMatrixAt(i, mtx); });
   cerrGrupo.add(im);
+  aplicarVisibilidadEtiquetas(cerrGrupo);
 }
 
 function abrirFicha(){
@@ -1728,6 +1773,7 @@ function redibujarVias(){
     disco.receiveShadow = true;
     viasGrupo.add(disco);
   });
+  aplicarVisibilidadEtiquetas(viasGrupo);
 }
 
 /* ---- grafo + Dijkstra (mismo enfoque de js/vias.js) ---- */
@@ -1830,9 +1876,7 @@ function statsVias(){
 }
 function panelHerramientaVia(){
   const st = statsVias();
-  pTitulo.textContent = 'Dibujar vías';
-  pBody.className = '';
-  pBody.innerHTML =
+  panelSel('Dibujar vías',
     '<div class="desc">Haz <b class="txtAcento">clic sobre el terreno</b> para marcar los puntos de la vía: cada clic agrega un tramo ' +
     '(los empalmes de las curvas se rellenan solos, sin vacíos). Para borrar POR PARTES: apaga esta herramienta y haz clic sobre un tramo.</div>' +
     '<label>Ancho de los tramos nuevos (m)' +
@@ -1842,15 +1886,17 @@ function panelHerramientaVia(){
     '<button onclick="deshacerPuntoHerramienta()">' + ic('girarIzq') + 'Deshacer último punto</button>' +
     '<button onclick="terminarTrazo()">' + ic('check') + 'Terminar esta vía (empezar otra)</button>' +
     '<div class="desc">Red actual: <b>' + st.tramos + '</b> tramo(s) · <b>' + st.total + ' m</b> en total.</div>' +
-    (vias.length ? '<button class="btnEliminar" onclick="borrarTodasLasVias()">' + ic('basura') + 'Eliminar TODAS las vías</button>' : '');
+    (vias.length ? '<button class="btnEliminar" onclick="borrarTodasLasVias()">' + ic('basura') + 'Eliminar TODAS las vías</button>' : ''));
 }
 function cambiarAnchoNuevo(v){ viaAnchoNuevo = numLim(v, 6, 3, 12); }
 function toggleMedidasVias(v){ verMedidasVias = !!v; redibujarVias(); }
 function terminarTrazo(){
-  trazoVia = null; trazoRuta = null;
+  trazoVia = null; trazoRuta = null; trazoRegla = null;
+  redibujarMediciones();
   quitarPreviewHerramienta();
   if (herramienta === 'via') panelHerramientaVia();
   else if (herramienta === 'ruta') panelHerramientaRuta();
+  else if (herramienta === 'regla') panelHerramientaRegla();
   avisar('Trazo terminado — un nuevo clic empieza otro');
 }
 function seleccionarVia(id){
@@ -1865,9 +1911,7 @@ function seleccionarVia(id){
     const c = vias.find(x => x.id === cid);
     return c ? s + Math.hypot(c.x2 - c.x1, c.z2 - c.z1) : s;
   }, 0) * 10) / 10;
-  pTitulo.textContent = 'Vía — tramo seleccionado';
-  pBody.className = '';
-  pBody.innerHTML =
+  panelSel('Vía — tramo seleccionado',
     '<table>' +
       '<tr><td>Largo del tramo</td><td>' + largo + ' m</td></tr>' +
       '<tr><td>Ancho del tramo</td><td><input type="number" value="' + v.ancho + '" min="3" max="12" step="0.5" style="width:76px" onchange="cambiarAnchoVia(' + id + ', this.value)"> m</td></tr>' +
@@ -1876,7 +1920,7 @@ function seleccionarVia(id){
     '<label class="chk"><input type="checkbox"' + (verMedidasVias ? ' checked' : '') + ' onchange="toggleMedidasVias(this.checked)"> Ver medidas sobre las vías</label>' +
     '<button class="btnEliminar" onclick="eliminarTramoVia(' + id + ')">' + ic('basura') + 'Eliminar SOLO este tramo</button>' +
     '<button class="btnEliminar" onclick="eliminarViaCompleta(' + id + ')">' + ic('basura') + 'Eliminar toda esta vía (' + comp.length + ' tramos)</button>' +
-    '<div class="desc">Se borra únicamente lo que elijas: los demás tramos y las otras vías no se tocan.</div>';
+    '<div class="desc">Se borra únicamente lo que elijas: los demás tramos y las otras vías no se tocan.</div>');
 }
 function cambiarAnchoVia(id, val){
   const v = vias.find(x => x.id === id);
@@ -1964,6 +2008,7 @@ function redibujarRutas(){
       }
     });
   });
+  aplicarVisibilidadEtiquetas(rutasGrupo);
 }
 function clicRuta(pRaw){
   const p = [red2(pRaw.x), red2(pRaw.z)];
@@ -1993,8 +2038,6 @@ function opcionesVehiculos(sel){
     (moviles.length ? '' : '<option value="" disabled>(crea primero una maquinaria móvil en "Agregar")</option>');
 }
 function panelHerramientaRuta(){
-  pTitulo.textContent = 'Marcar ruta de vehículo';
-  pBody.className = '';
   const lista = rutas.map(r =>
     '<div class="planoFila"><span class="planoNom"><span style="display:inline-block; width:11px; height:11px; border-radius:50%; background:' + r.color + '"></span> ' +
       '<b class="txtFuerte">' + esc(r.nombre) + '</b> <small>· ' + r.puntos.length + ' punto(s)' + (r.vehiculo ? ' · ' + esc(r.vehiculo) : '') + '</small></span>' +
@@ -2002,14 +2045,14 @@ function panelHerramientaRuta(){
       '<button class="planoBtn" style="width:auto; margin:0" title="Ver la ficha de esta ruta" onclick="setHerramienta(null); seleccionarRuta(' + r.id + ')">' + ic('ojo') + '</button> ' +
       '<button class="planoBtn peligro" style="width:auto; margin:0" title="Eliminar SOLO esta ruta" onclick="eliminarRuta(' + r.id + ')">' + ic('basura') + '</button>' +
     '</span></div>').join('');
-  pBody.innerHTML =
+  panelSel('Marcar ruta de vehículo',
     '<div class="desc">Haz <b class="txtAcento">clic sobre el terreno</b> para marcar por dónde pasa el vehículo. ' +
     'Entre punto y punto el recorrido <b>sigue las vías</b>; si un tramo cruzaría un edificio o zona, no se acepta. ' +
     'El primer clic crea una ruta nueva.</div>' +
     (trazoRuta ? '<div class="desc"><b class="txtAcento">Editando:</b> ' + esc(trazoRuta.nombre) + ' · ' + trazoRuta.puntos.length + ' punto(s).</div>' : '') +
     '<button onclick="deshacerPuntoHerramienta()">' + ic('girarIzq') + 'Deshacer último punto</button>' +
     '<button onclick="terminarTrazo()">' + ic('check') + 'Terminar esta ruta (empezar otra)</button>' +
-    (rutas.length ? '<b style="display:block; margin-top:10px">Rutas creadas</b>' + lista : '');
+    (rutas.length ? '<b style="display:block; margin-top:10px">Rutas creadas</b>' + lista : ''));
 }
 function seleccionarRuta(id){
   seleccionado = null; elementos.forEach(actualizarTinte);
@@ -2028,9 +2071,7 @@ function renderPanelRuta(){
   const listaPts = r.puntos.map((p, i) =>
     '<div class="planoFila"><span class="planoNom">Punto ' + (i + 1) + ' <small>(' + Math.round(p[0]) + ', ' + Math.round(p[1]) + ')</small></span>' +
     '<button class="planoBtn peligro" style="width:auto; margin:0" title="Quitar SOLO este punto" onclick="quitarPuntoRuta(' + r.id + ',' + i + ')">✕</button></div>').join('');
-  pTitulo.textContent = 'Ruta: ' + r.nombre;
-  pBody.className = '';
-  pBody.innerHTML =
+  panelSel('Ruta: ' + r.nombre,
     '<label>Nombre<input maxlength="30" value="' + esc(r.nombre) + '" onchange="cambiarRuta(' + r.id + ', \'nombre\', this.value)"></label>' +
     '<table style="margin-top:8px">' +
       '<tr><td>Recorrido</td><td>' + largo + ' m (siguiendo las vías)</td></tr>' +
@@ -2046,7 +2087,7 @@ function renderPanelRuta(){
     '<b style="display:block; margin-top:10px">Puntos de la ruta</b>' + listaPts +
     '<button class="btnEliminar" onclick="eliminarRuta(' + r.id + ')">' + ic('basura') + 'Eliminar SOLO esta ruta</button>' +
     '<div class="desc">El recorrido sigue las vías dibujadas y nunca atraviesa zonas ni edificios. ' +
-    'Con ✕ quitas un punto que te quedó mal — las demás rutas no se tocan.</div>';
+    'Con ✕ quitas un punto que te quedó mal — las demás rutas no se tocan.</div>');
 }
 function cambiarRuta(id, campo, val){
   const r = rutas.find(x => x.id === id);
@@ -2131,23 +2172,27 @@ function detenerTodosLosRecorridos(){
   rutasActivas.slice().forEach(a => detenerRecorrido(a.rutaId));
 }
 
-/* ============ HERRAMIENTAS VÍA / RUTA: modo, clics y previsualización ============ */
-let herramienta = null;   // null | 'via' | 'ruta'
+/* ============ HERRAMIENTAS VÍA / RUTA / REGLA: modo, clics y previsualización ============ */
+let herramienta = null;   // null | 'via' | 'ruta' | 'regla'
 let previewMesh = null;
 function setHerramienta(h){
   if (herramienta === h) h = null;
   herramienta = h;
-  trazoVia = null; trazoRuta = null;
+  trazoVia = null; trazoRuta = null; trazoRegla = null;
+  redibujarMediciones();
   quitarPreviewHerramienta();
   document.getElementById('libreBtnVia').classList.toggle('activo', herramienta === 'via');
   document.getElementById('libreBtnRuta').classList.toggle('activo', herramienta === 'ruta');
+  document.getElementById('libreBtnRegla').classList.toggle('activo', herramienta === 'regla');
   if (herramienta === 'via') panelHerramientaVia();
   else if (herramienta === 'ruta') panelHerramientaRuta();
+  else if (herramienta === 'regla') panelHerramientaRegla();
   else mostrarPanelVacio();
 }
 function clicHerramienta(p){
   if (herramienta === 'via') clicVia(p);
   else if (herramienta === 'ruta') clicRuta(p);
+  else if (herramienta === 'regla') clicRegla(p);
 }
 function deshacerPuntoHerramienta(){
   if (herramienta === 'via' && trazoVia){
@@ -2170,6 +2215,15 @@ function deshacerPuntoHerramienta(){
     }
     redibujarRutas(); guardar(); panelHerramientaRuta();
     avisar('Último punto deshecho');
+  } else if (herramienta === 'regla'){
+    if (mediciones.length){
+      const ult = mediciones.pop();
+      trazoRegla = { x: ult.x1, z: ult.z1 };
+    } else {
+      trazoRegla = null;
+    }
+    redibujarMediciones(); panelHerramientaRegla();
+    avisar('Última medición deshecha');
   }
 }
 function puntoAnclaHerramienta(){
@@ -2180,6 +2234,7 @@ function puntoAnclaHerramienta(){
     const p = trazoRuta.puntos[trazoRuta.puntos.length - 1];
     return { x: p[0], z: p[1] };
   }
+  if (herramienta === 'regla' && trazoRegla) return trazoRegla;
   return null;
 }
 function quitarPreviewHerramienta(){
@@ -2200,8 +2255,8 @@ function actualizarPreviewHerramienta(p){
       new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.45, depthWrite: false }));
     scene.add(previewMesh);
   }
-  previewMesh.material.color.setHex(herramienta === 'via' ? 0x8a8f96 : 0x2e9bff);
-  previewMesh.scale.set(len, 1, herramienta === 'via' ? viaAnchoNuevo : 0.5);
+  previewMesh.material.color.setHex(herramienta === 'via' ? 0x8a8f96 : herramienta === 'regla' ? 0xffd23e : 0x2e9bff);
+  previewMesh.scale.set(len, 1, herramienta === 'via' ? viaAnchoNuevo : herramienta === 'regla' ? 0.25 : 0.5);
   previewMesh.position.set((p.x + ancla.x) / 2, 0.14, (p.z + ancla.z) / 2);
   previewMesh.rotation.y = -Math.atan2(dz, dx);
 }
@@ -2232,6 +2287,252 @@ function seleccionarViaORuta(){
     if (hc.length){ abrirFicha(); return true; }
   }
   return false;
+}
+
+/* ============ REGLA / MEDIR DISTANCIAS ============
+   Herramienta de medición: cada clic marca un punto y cada par consecutivo
+   dibuja una línea amarilla con su distancia en metros. Las mediciones se
+   quedan en pantalla como cotas hasta que las borres — pero NO se guardan
+   con el proyecto (son de la sesión). */
+const reglaGrupo = new THREE.Group(); scene.add(reglaGrupo);
+let mediciones = [];      // [{x1,z1,x2,z2}]
+let trazoRegla = null;    // {x,z} último punto marcado (encadena mediciones)
+function clicRegla(pRaw){
+  const p = { x: red2(pRaw.x), z: red2(pRaw.z) };
+  if (!trazoRegla){
+    trazoRegla = p;
+    redibujarMediciones(); panelHerramientaRegla();
+    avisar('Punto inicial marcado — haz clic en el otro extremo para medir');
+    return;
+  }
+  if (Math.hypot(p.x - trazoRegla.x, p.z - trazoRegla.z) < 0.3) return;
+  mediciones.push({ x1: trazoRegla.x, z1: trazoRegla.z, x2: p.x, z2: p.z });
+  trazoRegla = p;    // el final queda como inicio de la siguiente medición
+  redibujarMediciones(); panelHerramientaRegla();
+}
+function redibujarMediciones(){
+  vaciarGrupo(reglaGrupo);
+  const AMARILLO = 0xffd23e;
+  const disco = (x, z) => {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.1, 12),
+      new THREE.MeshBasicMaterial({ color: AMARILLO }));
+    m.position.set(x, 0.16, z);
+    reglaGrupo.add(m);
+  };
+  mediciones.forEach(me => {
+    const dx = me.x2 - me.x1, dz = me.z2 - me.z1, len = Math.hypot(dx, dz);
+    if (len < 0.2) return;
+    const linea = new THREE.Mesh(new THREE.BoxGeometry(len, 0.04, 0.18),
+      new THREE.MeshBasicMaterial({ color: AMARILLO }));
+    linea.position.set((me.x1 + me.x2) / 2, 0.2, (me.z1 + me.z2) / 2);
+    linea.rotation.y = -Math.atan2(dz, dx);
+    reglaGrupo.add(linea);
+    disco(me.x1, me.z1); disco(me.x2, me.z2);
+    const et = crearEtiqueta(Math.round(len * 100) / 100 + ' m', 9, 'rgba(120,85,10,0.88)');
+    et.position.set((me.x1 + me.x2) / 2, 1.8, (me.z1 + me.z2) / 2);
+    reglaGrupo.add(et);
+  });
+  if (trazoRegla) disco(trazoRegla.x, trazoRegla.z);
+  aplicarVisibilidadEtiquetas(reglaGrupo);
+}
+function panelHerramientaRegla(){
+  const total = Math.round(mediciones.reduce((s, m) => s + Math.hypot(m.x2 - m.x1, m.z2 - m.z1), 0) * 100) / 100;
+  panelSel('Regla — medir distancias',
+    '<div class="desc">Haz <b class="txtAcento">clic sobre el terreno</b> en dos puntos para medir la distancia entre ellos; ' +
+    'cada clic siguiente encadena otra medición. Las cotas quedan en pantalla hasta que las borres ' +
+    '(no se guardan con el proyecto).</div>' +
+    (mediciones.length
+      ? '<table>' + mediciones.map((m, i) =>
+          '<tr><td>Medición ' + (i + 1) + '</td><td>' + (Math.round(Math.hypot(m.x2 - m.x1, m.z2 - m.z1) * 100) / 100) + ' m</td></tr>').join('') +
+        '<tr><td><b>Total</b></td><td><b>' + total + ' m</b></td></tr></table>'
+      : '') +
+    (trazoRegla ? '<div class="desc"><b class="txtAcento">Midiendo…</b> haz clic en el siguiente punto.</div>' : '') +
+    '<button onclick="deshacerPuntoHerramienta()">' + ic('girarIzq') + 'Deshacer última medición</button>' +
+    '<button onclick="terminarTrazo()">' + ic('check') + 'Terminar (empezar otra medición)</button>' +
+    (mediciones.length ? '<button class="btnEliminar" onclick="borrarMediciones()">' + ic('basura') + 'Borrar todas las mediciones</button>' : ''));
+}
+function borrarMediciones(){
+  mediciones = []; trazoRegla = null;
+  redibujarMediciones();
+  if (herramienta === 'regla') panelHerramientaRegla();
+  avisar('Mediciones borradas');
+}
+
+/* ============ DÍA / NOCHE (iluminación de la obra) ============
+   El botón "Noche" oscurece el cielo, baja el sol a luz de luna y ENCIENDE
+   los reflectores de las "Torres de iluminación" que el usuario haya
+   instalado (Agregar → Maquinaria → Planta e instalaciones). */
+let esNoche = false;
+function aplicarCielo(){
+  scene.background.setHex(esNoche ? 0x070b14 : 0x1a2030);
+  scene.fog.color.setHex(esNoche ? 0x070b14 : 0x1a2030);
+  hemi.intensity = esNoche ? 0.22 : 0.8;
+  sol.intensity = esNoche ? 0.12 : 1.0;
+  sol.color.setHex(esNoche ? 0x93a7d1 : 0xfff2dd);
+  scene.traverse(n => {
+    if (n.isLight && n.userData.esReflector) n.intensity = esNoche ? 1.8 : 0;
+    if (n.isMesh && n.userData.esFocoReflector && n.material.emissive) n.material.emissive.setHex(esNoche ? 0xffdd88 : 0x000000);
+  });
+  const btn = document.getElementById('libreBtnNoche');
+  if (btn){
+    btn.classList.toggle('activo', esNoche);
+    btn.innerHTML = esNoche ? ic('sol') + 'Día' : ic('luna') + 'Noche';
+  }
+}
+function toggleNoche(){
+  esNoche = !esNoche;
+  aplicarCielo();
+  guardar();
+  const hayTorres = elementos.some(g => g.userData.def.catalogoId === 'torreIluminacion');
+  avisar(esNoche
+    ? (hayTorres ? 'Modo noche: reflectores encendidos' : 'Modo noche — instala "Torres de iluminación" (Agregar → Maquinaria) para alumbrar la obra')
+    : 'Modo día');
+}
+
+/* ============ MODO CAMINAR (primera persona por la obra) ============
+   W A S D o flechas para moverse (Shift = correr), el mouse mira alrededor
+   (pointer lock) y Esc sale. La cámara va a 1,70 m de altura, como una
+   persona recorriendo la obra. */
+let caminando = false;
+const camWalk = { x: 0, z: 30, yaw: Math.PI, pitch: 0 };
+const teclasCaminar = {};
+let portapapeles = null;   // def copiada con Ctrl+C
+function toggleCaminar(){
+  if (!caminando && modo2D) toggleVista2D();   // caminar es en 3D
+  caminando = !caminando;
+  const btn = document.getElementById('libreBtnCaminar');
+  btn.classList.toggle('activo', caminando);
+  btn.innerHTML = caminando ? ic('volver') + 'Salir' : ic('caminar') + 'Caminar';
+  if (caminando){
+    setHerramienta(null);
+    // entra por el portón del costado sur, mirando hacia el lote (norte)
+    camWalk.x = 0; camWalk.z = ficha.loteAncho / 2 + 8;
+    camWalk.yaw = Math.PI; camWalk.pitch = 0;
+    animCam = null;
+    try { renderer.domElement.requestPointerLock(); } catch (e) {}
+    avisar('Caminando por la obra: W A S D o flechas · Shift corre · mueve el mouse para mirar · Esc sale');
+  } else {
+    try { if (document.pointerLockElement) document.exitPointerLock(); } catch (e) {}
+    Object.keys(teclasCaminar).forEach(k => delete teclasCaminar[k]);
+    actualizarCamara();
+    avisar('Saliste del modo caminar');
+  }
+}
+/* si el navegador suelta el puntero (Esc estando bloqueado), se sale solo */
+document.addEventListener('pointerlockchange', () => {
+  if (!document.pointerLockElement && caminando) toggleCaminar();
+});
+document.addEventListener('mousemove', e => {
+  if (!caminando || document.pointerLockElement !== renderer.domElement) return;
+  camWalk.yaw -= (e.movementX || 0) * 0.0024;
+  camWalk.pitch = Math.min(1.25, Math.max(-1.25, camWalk.pitch - (e.movementY || 0) * 0.0022));
+});
+function moverCaminante(dt){
+  const t = teclasCaminar;
+  const adelante = ((t.KeyW || t.ArrowUp) ? 1 : 0) - ((t.KeyS || t.ArrowDown) ? 1 : 0);
+  const lado = ((t.KeyD || t.ArrowRight) ? 1 : 0) - ((t.KeyA || t.ArrowLeft) ? 1 : 0);
+  const vel = (t.ShiftLeft || t.ShiftRight) ? 9 : 4.5;
+  if (adelante || lado){
+    const fx = Math.sin(camWalk.yaw), fz = Math.cos(camWalk.yaw);
+    camWalk.x = Math.min(290, Math.max(-290, camWalk.x + (fx * adelante - fz * lado) * vel * dt));
+    camWalk.z = Math.min(190, Math.max(-190, camWalk.z + (fz * adelante + fx * lado) * vel * dt));
+  }
+  camera.position.set(camWalk.x, 1.7, camWalk.z);
+  camera.lookAt(
+    camWalk.x + Math.sin(camWalk.yaw) * Math.cos(camWalk.pitch),
+    1.7 + Math.sin(camWalk.pitch),
+    camWalk.z + Math.cos(camWalk.yaw) * Math.cos(camWalk.pitch)
+  );
+}
+
+/* ============ VISTA 2D EN PLANTA (organizar zonas viendo los m²) ============
+   Cámara ortográfica cenital sobre la misma escena: el lote se ve en planta
+   con su etiqueta de m², cada zona muestra "nombre · N m²" y se puede
+   arrastrar igual que en 3D. Arrastrar en vacío desplaza el plano; la rueda
+   hace zoom. El botón alterna Plano 2D ↔ Vista 3D. */
+let modo2D = false;
+let zoom2D = 90;                 // media altura visible del plano, en metros
+const cam2D = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 600);
+cam2D.up.set(0, 0, -1);          // norte (−z) hacia arriba de la pantalla
+function actualizarCamara2D(){
+  const aspecto = innerWidth / innerHeight;
+  cam2D.left = -zoom2D * aspecto; cam2D.right = zoom2D * aspecto;
+  cam2D.top = zoom2D; cam2D.bottom = -zoom2D;
+  cam2D.position.set(camCtrl.target.x, 260, camCtrl.target.z);
+  cam2D.lookAt(camCtrl.target.x, 0, camCtrl.target.z);
+  cam2D.updateProjectionMatrix();
+}
+function camActiva(){ return modo2D ? cam2D : camera; }
+/* texto de la etiqueta flotante: en el plano 2D incluye los m² de la zona */
+function textoEtiqueta(def){
+  if (modo2D && typeof def.w === 'number' && typeof def.d === 'number'){
+    return def.nombre + ' · ' + Math.round(def.w * def.d) + ' m²';
+  }
+  return def.nombre;
+}
+function refrescarEtiquetas(){ elementos.forEach(regenerarEtiquetaLibre); }
+function toggleVista2D(){
+  if (caminando) toggleCaminar();   // el plano 2D apaga el modo caminar
+  modo2D = !modo2D;
+  const btn = document.getElementById('libreBtn2D');
+  btn.classList.toggle('activo', modo2D);
+  btn.innerHTML = modo2D ? ic('caja') + 'Vista 3D' : ic('plano') + 'Plano 2D';
+  if (modo2D){
+    camCtrl.target.set(0, 0, 0);
+    zoom2D = Math.max(ficha.loteAncho * 0.72, ficha.loteLargo * 0.42, 55);
+    animCam = null;
+  }
+  refrescarEtiquetas();
+  avisar(modo2D
+    ? 'Plano 2D: arrastra las zonas para organizarlas · arrastrar en vacío mueve el plano · rueda = zoom'
+    : 'Vista 3D');
+}
+
+/* ============ ETIQUETAS (mostrar/ocultar nombres flotantes) ============ */
+let etiquetasVisibles = true;
+/* los grupos que se RECONSTRUYEN (lote, cerramiento, vías, rutas) llaman esto
+   al final para que sus etiquetas respeten el estado del botón "Etiquetas" */
+function aplicarVisibilidadEtiquetas(grupo){
+  if (!etiquetasVisibles) grupo.traverse(n => { if (n.isSprite) n.visible = false; });
+}
+function toggleEtiquetasLibre(){
+  etiquetasVisibles = !etiquetasVisibles;
+  elementos.forEach(g => { if (g.userData.etiqueta) g.userData.etiqueta.visible = etiquetasVisibles; });
+  [loteGrupo, cerrGrupo, viasGrupo, rutasGrupo].forEach(gr => gr.traverse(n => { if (n.isSprite) n.visible = etiquetasVisibles; }));
+  // resaltado solo cuando están OCULTOS (estado no predeterminado)
+  document.getElementById('libreBtnEtiquetas').classList.toggle('activo', !etiquetasVisibles);
+  avisar(etiquetasVisibles ? 'Nombres y medidas visibles' : 'Nombres y medidas ocultos');
+}
+
+/* ============ ZONAS Y AFORO (mismo panel del proyecto Bambú) ============ */
+function abrirZonasLibre(){
+  setHerramienta(null);
+  document.getElementById('libreVentTitulo').textContent = 'Zonas y aforo';
+  const L = ficha.loteLargo, A = ficha.loteAncho;
+  const filas = elementos.map(g => {
+    const d = g.userData.def;
+    const area = (typeof d.w === 'number' && typeof d.d === 'number') ? Math.round(d.w * d.d * 10) / 10 : null;
+    const fuera = Math.abs(d.x) + (d.w || 2) / 2 > L / 2 + 0.5 || Math.abs(d.z) + (d.d || 2) / 2 > A / 2 + 0.5;
+    return { d, area, fuera };
+  });
+  const totalArea = Math.round(filas.reduce((s, f) => s + (f.area || 0), 0) * 10) / 10;
+  const ocupacion = Math.round(totalArea / (L * A) * 1000) / 10;
+  const stVias = statsVias();
+  const areaVias = Math.round(vias.reduce((s, v) => s + Math.hypot(v.x2 - v.x1, v.z2 - v.z1) * v.ancho, 0));
+  document.getElementById('libreBody').innerHTML =
+    '<div class="desc">Todo lo creado en la obra con su área (m²) y la ocupación del lote — igual que "Zonas y aforo" del proyecto Bambú. ' +
+    'Los elementos marcados con ⚠ quedaron por fuera del lote.</div>' +
+    (filas.length
+      ? filas.map(f =>
+          '<div class="planoFila"><span class="planoNom"><b class="txtFuerte">' + esc(f.d.nombre) + '</b> ' +
+            '<small>· ' + NOMBRE_TIPO[f.d.tipo] + (f.d.bloqueado ? ' · bloqueado' : '') + '</small>' +
+            (f.fuera ? ' <small style="color:var(--rojo-texto)">⚠ fuera del lote</small>' : '') + '</span>' +
+          '<small style="white-space:nowrap">' + (f.area !== null ? f.area + ' m²' : '—') + '</small></div>').join('')
+      : '<div class="desc">Aún no hay zonas ni equipos creados.</div>') +
+    '<div class="desc" style="margin-top:10px"><b class="txtFuerte">' + filas.length + ' elementos · ' + totalArea + ' m² ocupados · ' +
+      ocupacion + '% del lote (' + Math.round(L * A).toLocaleString('es-CO') + ' m²)</b><br>' +
+      'Vías: ' + stVias.tramos + ' tramo(s) · ' + stVias.total + ' m lineales ≈ ' + areaVias + ' m² · Rutas de vehículos: ' + rutas.length + '</div>';
+  document.getElementById('libreOverlay').style.display = 'flex';
 }
 
 /* ============ ORGANIGRAMA (plantilla predeterminada, roles editables) ============ */
@@ -2380,6 +2681,7 @@ function estadoActual(){
     fecha: new Date().toISOString(),
     ficha, fichaCompleta,
     cerramiento: cerrCfg,
+    noche: esNoche,
     elementos: elementos.map(g => g.userData.def),
     vias, rutas, organigrama
   };
@@ -2423,6 +2725,8 @@ function aplicarEstado(o){
   const maxId = Math.max(0,
     ...vias.map(v => v.id), ...rutas.map(r => r.id), ...organigrama.map(r => r.id));
   idSec = Math.max(idSec, maxId + 1);
+  esNoche = !!o.noche;
+  aplicarCielo();
   construirLote();
   construirCerramiento();
   redibujarVias();
@@ -2442,6 +2746,12 @@ document.getElementById('libreBtnVia').innerHTML = ic('via') + 'Vías';
 document.getElementById('libreBtnRuta').innerHTML = ic('ruta') + 'Rutas';
 document.getElementById('libreBtnFicha').innerHTML = ic('ficha') + 'Ficha';
 document.getElementById('libreBtnOrg').innerHTML = ic('org') + 'Organigrama';
+document.getElementById('libreBtnRegla').innerHTML = ic('regla') + 'Regla';
+document.getElementById('libreBtn2D').innerHTML = ic('plano') + 'Plano 2D';
+document.getElementById('libreBtnZonas').innerHTML = ic('edificio') + 'Zonas';
+document.getElementById('libreBtnEtiquetas').innerHTML = ic('etiqueta') + 'Etiquetas';
+document.getElementById('libreBtnCaminar').innerHTML = ic('caminar') + 'Caminar';
+document.getElementById('libreBtnNoche').innerHTML = ic('luna') + 'Noche';
 document.getElementById('libreBtnGuardar').innerHTML = ic('guardar') + 'Guardar';
 document.getElementById('libreBtnCargar').innerHTML = ic('carpeta') + 'Cargar';
 document.getElementById('libreBtnVaciar').innerHTML = ic('basura') + 'Vaciar';
@@ -2451,15 +2761,76 @@ document.getElementById('libreBtnVia').onclick = () => setHerramienta('via');
 document.getElementById('libreBtnRuta').onclick = () => setHerramienta('ruta');
 document.getElementById('libreBtnFicha').onclick = () => { setHerramienta(null); abrirFicha(); };
 document.getElementById('libreBtnOrg').onclick = () => { setHerramienta(null); abrirOrganigrama(); };
+document.getElementById('libreBtnRegla').onclick = () => setHerramienta('regla');
+document.getElementById('libreBtn2D').onclick = toggleVista2D;
+document.getElementById('libreBtnZonas').onclick = abrirZonasLibre;
+document.getElementById('libreBtnEtiquetas').onclick = toggleEtiquetasLibre;
+document.getElementById('libreBtnCaminar').onclick = toggleCaminar;
+document.getElementById('libreBtnNoche').onclick = toggleNoche;
+document.querySelectorAll('#libreTabs .tabBtn').forEach(b => { b.onclick = () => mostrarTabLibre(b.dataset.tab); });
+/* ---- atajos de teclado: Esc (salir/deseleccionar), R (girar), Supr
+   (eliminar lo seleccionado: elemento, tramo de vía o ruta), Ctrl+C/Ctrl+V
+   (copiar y pegar el elemento seleccionado) + teclas del modo caminar ---- */
 addEventListener('keydown', e => {
-  if (e.key !== 'Escape') return;
-  const overlay = document.getElementById('libreOverlay');
-  if (overlay.style.display === 'flex'){ overlay.style.display = 'none'; return; }
-  if (herramienta){
-    if (trazoVia || trazoRuta) terminarTrazo();
-    else setHerramienta(null);
+  const tag = (document.activeElement || {}).tagName;
+  const enCampo = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+  if (caminando && !enCampo){
+    teclasCaminar[e.code] = true;
+    if (e.code.indexOf('Arrow') === 0 || e.code === 'Space') e.preventDefault();
+  }
+  if (e.key === 'Escape'){
+    const overlay = document.getElementById('libreOverlay');
+    if (overlay.style.display === 'flex'){ overlay.style.display = 'none'; return; }
+    if (caminando){ toggleCaminar(); return; }
+    if (herramienta){
+      if (trazoVia || trazoRuta || trazoRegla) terminarTrazo();
+      else setHerramienta(null);
+      return;
+    }
+    if (seleccionado || selVia !== null || selRuta !== null){
+      seleccionado = null;
+      elementos.forEach(actualizarTinte);
+      mostrarPanelVacio();
+      avisar('Selección quitada');
+    }
+    return;
+  }
+  if (enCampo) return;
+  if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.metaKey && seleccionado){
+    girarSel(1);
+    return;
+  }
+  if (e.key === 'Delete'){
+    if (seleccionado) eliminarSel();
+    else if (selVia !== null) eliminarTramoVia(selVia);
+    else if (selRuta !== null) eliminarRuta(selRuta);
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')){
+    if (seleccionado){
+      portapapeles = JSON.parse(JSON.stringify(seleccionado.userData.def));
+      avisar('"' + portapapeles.nombre + '" copiado — Ctrl+V para pegarlo');
+      e.preventDefault();
+    }
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')){
+    if (portapapeles){
+      const raw = JSON.parse(JSON.stringify(portapapeles));
+      raw.x = numLim(raw.x + 4, 0, -260, 260);
+      raw.z = numLim(raw.z + 4, 0, -180, 180);
+      raw.nombre = nombreDisponible(raw.nombre);
+      const g = crearElemento(raw);
+      portapapeles.x = raw.x; portapapeles.z = raw.z;   // el siguiente pegado cae escalonado
+      guardar();
+      seleccionar(g);
+      avisar('"' + raw.nombre + '" pegado — arrástralo para ubicarlo');
+      e.preventDefault();
+    }
+    return;
   }
 });
+addEventListener('keyup', e => { delete teclasCaminar[e.code]; });
 document.getElementById('libreBtnAgregar').onclick = () => {
   setHerramienta(null);
   document.getElementById('libreVentTitulo').textContent = 'Agregar elemento a la obra';
@@ -2535,8 +2906,10 @@ function animar(){
     if (!elementos.includes(a.g) || !rutas.some(r => r.id === a.rutaId)){ rutasActivas.splice(i, 1); continue; }
     moverVehiculoRuta(a, dt);
   }
-  actualizarCamara();
-  renderer.render(scene, camera);
+  if (caminando) moverCaminante(dt);
+  else if (modo2D) actualizarCamara2D();
+  else actualizarCamara();
+  renderer.render(scene, camActiva());
 }
 
 /* arranque */
