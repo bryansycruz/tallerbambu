@@ -3018,7 +3018,7 @@ function setHerramienta(h){
   if (herramienta === 'via') panelHerramientaVia();
   else if (herramienta === 'ruta') panelHerramientaRuta();
   else if (herramienta === 'regla') panelHerramientaRegla();
-  else if (herramienta === 'lote') panelHerramientaLote();
+  else if (herramienta === 'lote'){ if (!trazoLote) mostrarPuntosEditablesLote(); panelHerramientaLote(); }
   else if (herramienta === 'porton') panelHerramientaPorton();
   else mostrarPanelVacio();
 }
@@ -3218,7 +3218,21 @@ const loteTrazoGrupo = new THREE.Group(); scene.add(loteTrazoGrupo);
 const DIST_CIERRE_LOTE = 2;   // metros: qué tan cerca del primer punto para cerrar el lote
 function clicLote(pRaw){
   const p = { x: red2(pRaw.x), z: red2(pRaw.z) };
-  if (!trazoLote) trazoLote = [];
+  if (!trazoLote){
+    // sin un trazo nuevo en curso: si el clic cae cerca de un vértice del
+    // perímetro YA guardado, ese clic BORRA ese punto en vez de empezar un
+    // dibujo nuevo (así se puede corregir solo una esquina sin rehacer todo)
+    if (loteEsLibre()){
+      const pts = ficha.lotePoligono;
+      for (let i = 0; i < pts.length; i++){
+        if (Math.hypot(p.x - pts[i][0], p.z - pts[i][1]) < 2){
+          quitarPuntoLoteLibre(i);
+          return;
+        }
+      }
+    }
+    trazoLote = [];
+  }
   if (trazoLote.length >= 3){
     const primero = trazoLote[0];
     if (Math.hypot(p.x - primero.x, p.z - primero.z) < DIST_CIERRE_LOTE){
@@ -3262,9 +3276,60 @@ function redibujarTrazoLote(){
   }
   aplicarVisibilidadEtiquetas(loteTrazoGrupo);
 }
+/* puntos del perímetro YA guardado, resaltados en azul mientras la
+   herramienta está activa pero no hay un trazo nuevo en curso — un clic
+   sobre cualquiera de ellos lo borra (ver clicLote) */
+function mostrarPuntosEditablesLote(){
+  vaciarGrupo(loteTrazoGrupo);
+  if (!loteEsLibre()) return;
+  const AZUL = 0x2e9bff;
+  ficha.lotePoligono.forEach(([x, z]) => {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.1, 12),
+      new THREE.MeshBasicMaterial({ color: AZUL }));
+    m.position.set(x, 0.17, z);
+    loteTrazoGrupo.add(m);
+  });
+}
+function quitarPuntoLoteLibre(i){
+  if (!loteEsLibre() || ficha.lotePoligono.length <= 3){
+    avisar('El perímetro necesita al menos 3 puntos — bórralo completo o dibuja uno nuevo');
+    return;
+  }
+  ficha.lotePoligono.splice(i, 1);
+  construirLote();
+  construirCerramiento();
+  guardar('Punto del terreno eliminado');
+  mostrarPuntosEditablesLote();
+  panelHerramientaLote();
+  avisar('Punto del perímetro eliminado — ' + Math.round(loteAreaM2()).toLocaleString('es-CO') + ' m²');
+}
+function borrarPerimetroLibre(){
+  if (!loteEsLibre()){ avisar('No hay un perímetro libre dibujado'); return; }
+  ficha.lotePoligono = [];
+  ficha.loteModo = 'rectangulo';
+  construirLote();
+  construirCerramiento();
+  guardar('Perímetro libre borrado (vuelve a rectángulo)');
+  vaciarGrupo(loteTrazoGrupo);
+  setHerramienta(null);
+  avisar('Perímetro borrado — el lote volvió a ser rectangular (' + ficha.loteLargo + ' × ' + ficha.loteAncho + ' m)');
+}
 function panelHerramientaLote(){
   const n = trazoLote ? trazoLote.length : 0;
   const areaViva = n >= 3 ? Math.round(areaPoligono(trazoLote.map(pt => [pt.x, pt.z]))) : null;
+  if (!trazoLote && loteEsLibre()){
+    const pts = ficha.lotePoligono;
+    const filas = pts.map((pt, i) =>
+      '<div class="planoFila"><span class="planoNom">Punto ' + (i + 1) + ' <small>· (' + pt[0] + ', ' + pt[1] + ')</small></span>' +
+      '<button class="planoBtn peligro" style="width:auto; margin:0" title="Eliminar SOLO este punto" onclick="quitarPuntoLoteLibre(' + i + ')">✕</button></div>').join('');
+    panelSel('Terreno libre — editar el perímetro',
+      '<div class="desc">Perímetro actual: <b class="txtFuerte">' + pts.length + ' puntos</b> · ≈ <b class="txtAcento">' + Math.round(loteAreaM2()).toLocaleString('es-CO') + ' m²</b>. ' +
+      'Borra un punto suelto con ✕ (los puntos en azul sobre el terreno también se borran con un clic), o haz ' +
+      '<b class="txtAcento">clic sobre un punto vacío del terreno</b> para empezar a dibujar un perímetro nuevo (reemplaza este).</div>' +
+      filas +
+      '<button class="btnEliminar" style="margin-top:10px" onclick="borrarPerimetroLibre()">' + ic('basura') + 'Borrar todo el perímetro (volver a rectángulo)</button>');
+    return;
+  }
   panelSel('Terreno libre — dibujar el perímetro',
     '<div class="desc">Haz <b class="txtAcento">clic sobre el terreno</b> marcando cada esquina del lote, en orden, ' +
     'siguiendo el contorno real (no tiene que ser rectangular). Con 3 puntos o más, haz clic cerca del ' +
@@ -3289,7 +3354,7 @@ function finalizarLoteLibre(){
 }
 function cancelarLoteLibre(){
   trazoLote = null;
-  vaciarGrupo(loteTrazoGrupo);
+  if (herramienta === 'lote') mostrarPuntosEditablesLote(); else vaciarGrupo(loteTrazoGrupo);
   if (herramienta === 'lote') panelHerramientaLote();
   avisar('Dibujo del terreno cancelado');
 }
@@ -3298,8 +3363,9 @@ function cancelarLoteLibre(){
 function escLote(){
   if (trazoLote && trazoLote.length){
     trazoLote.pop();
-    if (!trazoLote.length) trazoLote = null;
-    redibujarTrazoLote(); panelHerramientaLote();
+    if (!trazoLote.length){ trazoLote = null; mostrarPuntosEditablesLote(); }
+    else redibujarTrazoLote();
+    panelHerramientaLote();
     avisar('Último punto quitado');
     return true;
   }
