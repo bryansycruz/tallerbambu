@@ -210,14 +210,36 @@ function renderPanelSectores(){
       '<button style="width:auto; margin:0; padding:6px 9px" title="Eliminar" onclick="eliminarSector(' + s.id + ')">' + ic('basura') + '</button>' +
     '</div>'
   ).join('');
+  const sinAsignar = habitaciones.filter(h => !h.sectorId).length;
   document.getElementById('edPBody').innerHTML =
     '<div class="desc">Crea los sectores de tu obra (apartamentos, zonas comunes) y luego asígnalos a cada habitación desde su ficha (clic sobre ella). ' +
-    'El orden de esta lista define cómo rotan las cuadrillas en la secuencia de obra — igual que en el cronograma real.</div>' +
+    'El orden de esta lista define cómo rotan las cuadrillas en la secuencia de obra — igual que en el cronograma real. ' +
+    '<b class="txtAcento">Una habitación sin sector nunca cambia de color en la secuencia de obra</b> — si le das reproducir y no ves nada, revisa que cada habitación tenga un sector asignado.</div>' +
     (lista || '<div class="desc">Aún no has creado ningún sector.</div>') +
     '<div style="display:flex; gap:6px; margin-top:10px">' +
       '<input id="edNuevoSector" maxlength="30" placeholder="Nombre del nuevo sector" style="flex:1; margin:0">' +
       '<button style="width:auto; margin:0" onclick="agregarSector()">' + ic('check') + '</button>' +
-    '</div>';
+    '</div>' +
+    (habitaciones.length
+      ? '<button style="margin-top:10px" onclick="asignarSectoresAuto()">' + ic('sectores') + 'Asignar automáticamente' +
+        (sinAsignar ? ' (' + sinAsignar + ' sin sector)' : '') + '</button>'
+      : '');
+}
+/* reparte las habitaciones SIN sector entre los sectores existentes (round
+   robin, en el mismo orden de la lista) — para que "Secuencia de obra"
+   tenga algo que animar sin tener que asignar sector habitación por
+   habitación una por una */
+function asignarSectoresAuto(){
+  const lista = sectoresOrdenados();
+  if (!lista.length){ avisar('Crea al menos un sector primero'); return; }
+  let i = 0;
+  habitaciones.forEach(h => {
+    if (h.sectorId) return;
+    h.sectorId = lista[i % lista.length].id;
+    i++;
+  });
+  guardar(); renderPanelSectores(); dibujar();
+  avisar(i ? (i + ' habitación(es) asignadas') : 'Todas las habitaciones ya tenían sector');
 }
 
 /* ============ CATÁLOGO DE MUEBLES (mismas piezas que taller-libre.js/CATALOGO_MUEBLES,
@@ -306,12 +328,15 @@ function construirGrafo(){
   });
   return { nodos, aristas };
 }
+/* devuelve, por cada cara detectada, tanto la secuencia de nodos como la
+   secuencia de ARISTAS (y por tanto de muros) que la bordean — así una
+   habitación sabe qué muros son "suyos" y se pueden pintar junto con ella */
 function detectarCaras(nodos, aristas){
   if (nodos.length < 3 || aristas.length < 3) return [];
   const medios = [];
-  aristas.forEach(ar => {
-    medios.push({ desde: ar.a, hasta: ar.b });
-    medios.push({ desde: ar.b, hasta: ar.a });
+  aristas.forEach((ar, ai) => {
+    medios.push({ desde: ar.a, hasta: ar.b, aristaIdx: ai });
+    medios.push({ desde: ar.b, hasta: ar.a, aristaIdx: ai });
   });
   medios.forEach((m, i) => { m.gemelo = (i % 2 === 0) ? i + 1 : i - 1; });
   const salientes = nodos.map(() => []);
@@ -325,25 +350,26 @@ function detectarCaras(nodos, aristas){
   const caras = [];
   for (let inicio = 0; inicio < medios.length; inicio++){
     if (usado[inicio]) continue;
-    const secuencia = [];
+    const nodosCara = [], aristasCara = [];
     let actual = inicio, vueltas = 0;
     while (!usado[actual] && vueltas++ < medios.length + 2){
       usado[actual] = true;
-      secuencia.push(medios[actual].desde);
+      nodosCara.push(medios[actual].desde);
+      aristasCara.push(medios[actual].aristaIdx);
       const llegada = medios[actual].hasta;
       const gemelo = medios[actual].gemelo;
       const lista = salientes[llegada];
       const pos = lista.indexOf(gemelo);
       actual = lista[(pos - 1 + lista.length) % lista.length];
     }
-    if (secuencia.length >= 3) caras.push(secuencia);
+    if (nodosCara.length >= 3) caras.push({ nodos: nodosCara, aristas: aristasCara });
   }
   return caras;
 }
-function areaConSigno(cara, nodos){
+function areaConSigno(nodosCara, nodos){
   let a = 0;
-  for (let i = 0; i < cara.length; i++){
-    const p = nodos[cara[i]], q = nodos[cara[(i + 1) % cara.length]];
+  for (let i = 0; i < nodosCara.length; i++){
+    const p = nodos[nodosCara[i]], q = nodos[nodosCara[(i + 1) % nodosCara.length]];
     a += p.x * q.z - q.x * p.z;
   }
   return a / 2;
@@ -356,14 +382,15 @@ function recalcularHabitaciones(){
   const caras = detectarCaras(nodos, aristas);
   const anteriores = habitaciones;
   habitaciones = caras.map(cara => {
-    const area = areaConSigno(cara, nodos);
+    const area = areaConSigno(cara.nodos, nodos);
     if (area <= 0.5) return null;
-    const pts = cara.map(i => nodos[i]);
+    const pts = cara.nodos.map(i => nodos[i]);
     const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
     const cz = pts.reduce((s, p) => s + p.z, 0) / pts.length;
+    const muroIds = [...new Set(cara.aristas.map(ai => aristas[ai].muro.id))];
     let meta = anteriores.find(h => Math.hypot((h.cx || 0) - cx, (h.cz || 0) - cz) < 2.5);
     if (!meta) meta = { id: nuevoId(), nombre: 'Habitación', color: colorHabitacionDefault(), sectorId: null };
-    return { id: meta.id, nombre: meta.nombre, color: meta.color, sectorId: meta.sectorId || null, cx, cz, area: red(area), puntos: pts };
+    return { id: meta.id, nombre: meta.nombre, color: meta.color, sectorId: meta.sectorId || null, cx, cz, area: red(area), puntos: pts, muroIds };
   }).filter(Boolean);
 }
 
@@ -647,12 +674,147 @@ function sectorEnProceso(sectorId, dia){
   return diaLocal >= idx * subDur && diaLocal < idx * subDur + subDur;
 }
 function hexANumero(hex){ return parseInt(String(hex).replace('#', ''), 16) || 0; }
+/* gris "obra sin acabar" claramente distinto de la paleta pastel de
+   habitaciones/sectores (a propósito más oscuro/apagado, no un gris casi
+   blanco que se confunda con el color ya terminado) + curva de aceleración
+   (raíz cuadrada) para que el cambio se note desde las primeras actividades,
+   no solo cerca del final de las 45 */
 function colorMezclado(hexBase, fraccion){
   const c = hexANumero(hexBase);
-  const GRIS = 0xb9b9b9;
-  const canal = shift => Math.round(((GRIS >> shift & 255) * (1 - fraccion)) + ((c >> shift & 255) * fraccion));
+  const GRIS = 0x9aa0a3;
+  const f = Math.sqrt(Math.max(0, Math.min(1, fraccion)));
+  const canal = shift => Math.round(((GRIS >> shift & 255) * (1 - f)) + ((c >> shift & 255) * f));
   const r = canal(16), g = canal(8), b = canal(0);
   return '#' + [r, g, b].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('');
+}
+/* misma lógica de grupo/sub-tramo que fraccionCompletadaSector(), pero
+   respondiendo solo "¿ya terminó ESTA actividad para ESTE sector?" (no
+   cuando termina para TODOS los sectores) — la usan tanto el color de
+   muros/pisos como el revelado de puertas/ventanas/muebles reales. */
+function actividadHechaParaSector(sectorId, actividad, dia){
+  if (actividad.finDia <= dia) return true;
+  if (actividad.inicioDia > dia) return false;
+  const grupos = agruparSectoresPorPatron(sectoresOrdenados().map(s => s.id), actividad.patron);
+  const grupo = grupos.find(g => g.includes(sectorId));
+  if (!grupo) return false;
+  const diaLocal = dia - actividad.inicioDia;
+  const idx = grupo.indexOf(sectorId);
+  const subDur = actividad.duracionDias / grupo.length;
+  return diaLocal >= idx * subDur + subDur;
+}
+function algunaActividadHecha(nombres, sectorId, dia){
+  return LINEA_TIEMPO.some(a => nombres.includes(a.nombre) && actividadHechaParaSector(sectorId, a, dia));
+}
+
+/* ============ COLOR DE MUROS Y PISOS SEGÚN LA ACTIVIDAD EN CURSO ============
+   En vez de un solo color que se "aclara" con el progreso, el muro y el piso
+   de un sector avanzan por su PROPIA paleta de acabados reales (obra gris →
+   pañete → estuco → pintura para el muro; contrapiso → el material de piso
+   que corresponda para el piso) — así al terminar las 45 actividades el
+   muro y el piso quedan en colores claramente distintos, como en una obra
+   real. El color final del muro es el color propio del SECTOR (elegido en
+   el panel "Sectores"), para que cada apartamento termine pintado de un
+   tono distinto y reconocible. */
+const GRIS_ESTRUCTURA = '#9aa0a3';
+const GRIS_CONTRAPISO = '#a8a29a';
+const COLOR_MURO_POR_ACTIVIDAD = {
+  'Mampostería Exterior': '#b5652f',
+  'Mampostería Interior': '#b5814a',
+  'Revoque Muros Interiores': '#c9c2b8',
+  'Estuco': '#e8e4da',
+  'Pintura Muros (Fase inicial)': '#eef1e8',
+  'Enchape Duchas': '#bcd8e0',
+  'Salpicadero Cocina': '#bcd8e0',
+  'Enchape Zona de Ropas': '#bcd8e0'
+};
+const COLOR_PISO_POR_ACTIVIDAD = {
+  'Piso en Porcelanato': '#d9d3c8',
+  'Piso en Cerámica Baños': '#e3eef2',
+  'Piso Alcobas + Vestier': '#c9a876'
+};
+function colorMuroSector(sectorId, dia){
+  const sector = sectorPorId(sectorId);
+  let color = GRIS_ESTRUCTURA;
+  for (const a of LINEA_TIEMPO){
+    if (!actividadHechaParaSector(sectorId, a, dia)) continue;
+    if (a.nombre === 'Pintura Muros (Acabado final)') color = (sector && sector.color) || color;
+    else if (COLOR_MURO_POR_ACTIVIDAD[a.nombre]) color = COLOR_MURO_POR_ACTIVIDAD[a.nombre];
+  }
+  return color;
+}
+function colorPisoSector(sectorId, dia){
+  let color = GRIS_CONTRAPISO;
+  for (const a of LINEA_TIEMPO){
+    if (!actividadHechaParaSector(sectorId, a, dia)) continue;
+    if (COLOR_PISO_POR_ACTIVIDAD[a.nombre]) color = COLOR_PISO_POR_ACTIVIDAD[a.nombre];
+  }
+  return color;
+}
+function categoriaDeActividad(nombre){
+  if (nombre === 'Pintura Muros (Acabado final)' || COLOR_MURO_POR_ACTIVIDAD[nombre]) return 'muro';
+  if (COLOR_PISO_POR_ACTIVIDAD[nombre]) return 'piso';
+  return null;
+}
+/* texto blanco o negro según el brillo del color de fondo, para que la
+   etiqueta de actividad siempre se lea bien sin importar el acabado */
+function colorTextoContraste(hex){
+  const c = hexANumero(hex);
+  const lum = (0.299 * (c >> 16 & 255) + 0.587 * (c >> 8 & 255) + 0.114 * (c & 255)) / 255;
+  return lum > 0.6 ? '#1a1a1a' : '#ffffff';
+}
+/* estado de un MURO: sector "dueño" (el de mayor progreso entre las
+   habitaciones que lo bordean, así una pared compartida muestra el más
+   avanzado) + si está en proceso ahora mismo. tieneSector=false -> se pinta
+   siempre como muro normal (nunca se ve distinto si no se usa Secuencia) */
+function estadoMuro(muroId, dia){
+  let mejorFraccion = -1, sectorId = null, enProceso = false;
+  habitaciones.forEach(h => {
+    if (!h.sectorId || !(h.muroIds || []).includes(muroId)) return;
+    const f = fraccionCompletadaSector(h.sectorId, dia);
+    if (f > mejorFraccion){ mejorFraccion = f; sectorId = h.sectorId; }
+    if (sectorEnProceso(h.sectorId, dia)) enProceso = true;
+  });
+  return { sectorId, enProceso, tieneSector: sectorId !== null };
+}
+
+/* ============ REVELADO DE PUERTAS/VENTANAS/MUEBLES REALES EN LA VISTA 3D ============
+   En 2D SIEMPRE se ve todo lo que el usuario colocó (es el lienzo de
+   diseño). En 3D, si la pieza pertenece a un sector con secuencia activa,
+   solo se muestra una vez que la actividad real que la instala ya se
+   completó PARA ESE SECTOR — así "reproducir" realmente hace aparecer las
+   puertas/ventanas/muebles que el usuario ya diseñó, en vez de inventar
+   piezas nuevas. Sin sector asignado, todo se ve siempre (comportamiento de
+   antes de usar Sectores/Secuencia). */
+const ACTIVIDADES_PUERTA = ['Instalación Puertas de Entrada', 'Puerta Alcoba Principal', 'Puerta Alcobas', 'Puerta WC Alcoba Principal', 'Puerta Baño Social', 'Puertas Vidrieras'];
+const ACTIVIDADES_VENTANA = ['Instalación de Ventanas'];
+const CATALOGO_A_ACTIVIDADES = {
+  lavamanos: ['Lavamanos Alcoba Principal', 'Lavamanos Baño Social', 'Lavamanos Alcoba Principal (Repaso)', 'Mesón WC Principal', 'Mesón WC Social', 'Mueble Baño Social', 'Mueble Baño Habitación Principal'],
+  inodoro: ['Sanitario Baño Alcoba Principal', 'Sanitario Baño Social'],
+  ducha: ['Cabina Baño Principal', 'Cabina Baño Social'],
+  meson: ['Mesón Cocina', 'Muebles Cocina'],
+  nevera: ['Muebles Cocina'],
+  estufa: ['Muebles Cocina'],
+  closet: ['Mueble de Ropas', 'Vestier / Closet']
+};
+function sectorDeMuro(muroId){
+  const h = habitaciones.find(hh => hh.sectorId && (hh.muroIds || []).includes(muroId));
+  return h ? h.sectorId : null;
+}
+function sectorDePunto(x, z){
+  const h = habitaciones.find(hh => hh.sectorId && puntoEnPoligono(x, z, hh.puntos));
+  return h ? h.sectorId : null;
+}
+function visibleAbertura3D(ab, nombresActividad, dia){
+  const sectorId = sectorDeMuro(ab.muroId);
+  if (!sectorId) return true;
+  return algunaActividadHecha(nombresActividad, sectorId, dia);
+}
+function visibleMueble3D(mu, dia){
+  const nombres = CATALOGO_A_ACTIVIDADES[mu.catalogoId];
+  if (!nombres) return true;
+  const sectorId = sectorDePunto(mu.x, mu.z);
+  if (!sectorId) return true;
+  return algunaActividadHecha(nombres, sectorId, dia);
 }
 
 function togglePlay(){
@@ -663,6 +825,7 @@ function togglePlay(){
 function reiniciarSecuencia(){
   diaActual = 0; reproduciendo = false;
   renderPanelSecuencia(); dibujar();
+  if (vista3D){ construir3DDesdeDatos(); renderer3D.render(escena3D, camara3D); }
 }
 function cambiarVelocidadSecuencia(){
   velocidadDias = parseFloat(document.getElementById('edVelocidad').value) || 1;
@@ -671,7 +834,9 @@ function saltarADia(v){
   diaActual = Math.min(DURACION_TOTAL_DIAS, Math.max(0, parseFloat(v) || 0));
   dibujar();
   actualizarLecturaSecuencia();
+  if (vista3D){ construir3DDesdeDatos(); renderer3D.render(escena3D, camara3D); }
 }
+let ultimoRefresco3D = 0;
 function pasoAnimacion(ts){
   if (!reproduciendo){ ultimoTs = null; return; }
   if (ultimoTs == null) ultimoTs = ts;
@@ -681,6 +846,14 @@ function pasoAnimacion(ts){
   if (diaActual >= DURACION_TOTAL_DIAS) reproduciendo = false;
   dibujar();
   actualizarLecturaSecuencia();
+  // la vista 3D se reconstruye completa (no hay sincronización cuadro a
+  // cuadro para eso) -- solo tiene sentido hacerlo unas pocas veces por
+  // segundo, no 60 veces, mientras esté visible y reproduciendo
+  if (vista3D && ts - ultimoRefresco3D > 300){
+    ultimoRefresco3D = ts;
+    construir3DDesdeDatos();
+    renderer3D.render(escena3D, camara3D);
+  }
   if (reproduciendo) requestAnimationFrame(pasoAnimacion);
   else renderPanelSecuencia();
 }
@@ -867,11 +1040,20 @@ function dibujarCuadricula(){
 }
 function dibujarHabitaciones(){
   habitaciones.forEach(h => {
-    let colorRelleno = h.color, enProceso = false, actividadTxt = '';
+    let colorRelleno = h.color, enProceso = false, actividadTxt = '', colorChip = cssVar('--acento');
     if (h.sectorId){
-      colorRelleno = colorMezclado(h.color, fraccionCompletadaSector(h.sectorId, diaActual));
+      colorRelleno = colorPisoSector(h.sectorId, diaActual);   // el PISO de la habitación, no un tono aclarado del color de zona
       enProceso = sectorEnProceso(h.sectorId, diaActual);
-      if (enProceso){ const act = actividadEnDia(diaActual); actividadTxt = act ? act.nombre : ''; }
+      if (enProceso){
+        const act = actividadEnDia(diaActual);
+        if (act){
+          actividadTxt = act.nombre;
+          const cat = categoriaDeActividad(act.nombre);
+          colorChip = cat === 'muro' ? colorMuroSector(h.sectorId, diaActual)
+                    : cat === 'piso' ? colorPisoSector(h.sectorId, diaActual)
+                    : cssVar('--acento');
+        }
+      }
     }
     ctx.beginPath();
     h.puntos.forEach((p, i) => {
@@ -880,28 +1062,37 @@ function dibujarHabitaciones(){
     });
     ctx.closePath();
     ctx.fillStyle = colorRelleno;
-    ctx.globalAlpha = 0.85;
+    ctx.globalAlpha = 0.9;
     ctx.fill();
     ctx.globalAlpha = 1;
     if (enProceso){
       ctx.save();
       ctx.strokeStyle = cssVar('--acento');
-      ctx.lineWidth = 3;
-      ctx.setLineDash([5, 3]);
+      ctx.lineWidth = 5;
+      ctx.setLineDash([7, 4]);
+      ctx.lineDashOffset = -performance.now() / 60;   // "hormigas marchando": se nota que está EN proceso, no estático
       ctx.stroke();
       ctx.restore();
     }
     const [cx, cz] = mundoAPantalla(h.cx, h.cz);
-    ctx.fillStyle = cssVar('--texto');
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = cssVar('--texto');
     ctx.font = '600 13px Nunito, sans-serif';
     ctx.fillText(h.nombre, cx, cz - 7);
     ctx.font = '400 11px Nunito, sans-serif';
     ctx.fillText(h.area + ' m²', cx, cz + 9);
     if (actividadTxt){
-      ctx.fillStyle = cssVar('--acento-texto');
+      // el fondo del chip ES el color del acabado que se está aplicando —
+      // así se lee "qué actividad" y "qué color" en un solo elemento
       ctx.font = '700 11px Nunito, sans-serif';
-      ctx.fillText(actividadTxt, cx, cz + 24);
+      const anchoChip = Math.max(60, ctx.measureText(actividadTxt).width + 16);
+      ctx.fillStyle = colorChip;
+      ctx.fillRect(cx - anchoChip / 2, cz + 17, anchoChip, 17);
+      ctx.strokeStyle = cssVar('--borde');
+      ctx.lineWidth = 1;
+      ctx.strokeRect(cx - anchoChip / 2, cz + 17, anchoChip, 17);
+      ctx.fillStyle = colorTextoContraste(colorChip);
+      ctx.fillText(actividadTxt, cx, cz + 25);
     }
   });
 }
@@ -910,19 +1101,37 @@ function dibujarHabitaciones(){
 function dibujarMuro(m){
   const aberturas = aberturasDeMuro(m.id);
   const seleccionado = seleccion && seleccion.tipo === 'muro' && seleccion.obj === m;
-  ctx.strokeStyle = seleccionado ? cssVar('--acento') : cssVar('--texto');
-  ctx.lineWidth = Math.max(3, MURO_GROSOR * vista.escala);
-  ctx.lineCap = 'square';
+  const { sectorId, enProceso, tieneSector } = estadoMuro(m.id, diaActual);
+  const grosor = Math.max(3, MURO_GROSOR * vista.escala);
   let cursor = 0;
   const tramos = [];
   aberturas.forEach(ab => { if (ab.t0 > cursor) tramos.push([cursor, ab.t0]); cursor = Math.max(cursor, ab.t1); });
   if (cursor < 1) tramos.push([cursor, 1]);
-  tramos.forEach(([ta, tb]) => {
+  const segmentosPantalla = tramos.map(([ta, tb]) => {
     const xa = m.x1 + (m.x2 - m.x1) * ta, za = m.z1 + (m.z2 - m.z1) * ta;
     const xb = m.x1 + (m.x2 - m.x1) * tb, zb = m.z1 + (m.z2 - m.z1) * tb;
-    const [pxa, pza] = mundoAPantalla(xa, za), [pxb, pzb] = mundoAPantalla(xb, zb);
+    return [mundoAPantalla(xa, za), mundoAPantalla(xb, zb)];
+  });
+  ctx.lineCap = 'square';
+  ctx.strokeStyle = seleccionado ? cssVar('--acento') : (tieneSector ? colorMuroSector(sectorId, diaActual) : cssVar('--texto'));
+  ctx.lineWidth = grosor;
+  ctx.setLineDash([]);
+  segmentosPantalla.forEach(([[pxa, pza], [pxb, pzb]]) => {
     ctx.beginPath(); ctx.moveTo(pxa, pza); ctx.lineTo(pxb, pzb); ctx.stroke();
   });
+  ctx.setLineDash([]);
+  if (enProceso){
+    ctx.save();
+    ctx.strokeStyle = cssVar('--acento');
+    ctx.lineWidth = grosor + 5;
+    ctx.globalAlpha = 0.45;
+    ctx.lineDashOffset = -performance.now() / 60;
+    ctx.setLineDash([8, 5]);
+    segmentosPantalla.forEach(([[pxa, pza], [pxb, pzb]]) => {
+      ctx.beginPath(); ctx.moveTo(pxa, pza); ctx.lineTo(pxb, pzb); ctx.stroke();
+    });
+    ctx.restore();
+  }
   aberturas.forEach(ab => dibujarAbertura(m, ab));
 }
 function dibujarAbertura(m, ab){
@@ -960,6 +1169,9 @@ function dibujarMuros(){
     ctx.beginPath(); ctx.arc(px, pz, 3.5, 0, Math.PI * 2); ctx.fill();
   });
 }
+/* piezas que "aparecen" al completarse su actividad (ver ACTIVIDAD_A_MUEBLE)
+   — puramente visual, calculadas cada cuadro desde diaActual, nunca se
+   agregan a muebles[] ni se guardan */
 function dibujarMuebles(){
   muebles.forEach(mu => {
     const [cx, cz] = mundoAPantalla(mu.x, mu.z);
@@ -1322,6 +1534,8 @@ function construir3DDesdeDatos(){
   }
   muros.forEach(m => {
     const aberturas = aberturasDeMuro(m.id);
+    const { sectorId, enProceso, tieneSector } = estadoMuro(m.id, diaActual);
+    const colorMuro = !tieneSector ? 0xd8d8d0 : hexANumero(enProceso ? colorMezclado('#f2a33e', 0.85) : colorMuroSector(sectorId, diaActual));
     let cursor = 0; const tramos = [];
     aberturas.forEach(ab => { if (ab.t0 > cursor) tramos.push([cursor, ab.t0]); cursor = Math.max(cursor, ab.t1); });
     if (cursor < 1) tramos.push([cursor, 1]);
@@ -1330,10 +1544,15 @@ function construir3DDesdeDatos(){
       const xb = m.x1 + (m.x2 - m.x1) * tb, zb = m.z1 + (m.z2 - m.z1) * tb;
       const dx = xb - xa, dz = zb - za, len = Math.hypot(dx, dz);
       if (len < 0.05) return;
-      const c = caja3D(grupo3D, len, ALTURA_MURO, MURO_GROSOR, 0xd8d8d0, (xa + xb) / 2, ALTURA_MURO / 2, (za + zb) / 2);
+      const c = caja3D(grupo3D, len, ALTURA_MURO, MURO_GROSOR, colorMuro, (xa + xb) / 2, ALTURA_MURO / 2, (za + zb) / 2);
       c.rotation.y = -Math.atan2(dz, dx);
     });
+    // puertas/ventanas REALES colocadas por el usuario: en 3D solo se
+    // revelan cuando su actividad de instalación ya se completó para el
+    // sector de este muro (si no tiene sector, se ven siempre)
     aberturas.forEach(ab => {
+      const nombres = ab.tipo === 'puerta' ? ACTIVIDADES_PUERTA : ACTIVIDADES_VENTANA;
+      if (!visibleAbertura3D(ab.obj, nombres, diaActual)) return;
       const x0 = m.x1 + (m.x2 - m.x1) * ab.t0, z0 = m.z1 + (m.z2 - m.z1) * ab.t0;
       const x1 = m.x1 + (m.x2 - m.x1) * ab.t1, z1 = m.z1 + (m.z2 - m.z1) * ab.t1;
       const dx = x1 - x0, dz = z1 - z0, len = Math.hypot(dx, dz);
@@ -1352,13 +1571,18 @@ function construir3DDesdeDatos(){
     if (h.puntos.length < 3) return;
     const shape = new THREE.Shape(h.puntos.map(p => new THREE.Vector2(p.x, p.z)));
     const geo = new THREE.ShapeGeometry(shape);
-    const color = h.sectorId ? colorMezclado(h.color, fraccionCompletadaSector(h.sectorId, diaActual)) : h.color;
+    let color = h.color;
+    if (h.sectorId){
+      color = sectorEnProceso(h.sectorId, diaActual) ? colorMezclado('#f2a33e', 0.85) : colorPisoSector(h.sectorId, diaActual);
+    }
     const piso = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color, side: THREE.DoubleSide }));
     piso.rotation.x = Math.PI / 2;   // shape en plano XY -> mundo (x, 0, z): local Y del shape pasa a mundo Z
     piso.position.y = 0.02;
     grupo3D.add(piso);
   });
+  // muebles REALES colocados por el usuario: mismo criterio de revelado
   muebles.forEach(mu => {
+    if (!visibleMueble3D(mu, diaActual)) return;
     const item = catalogoMuebleId(mu.catalogoId);
     const alto = item.h || 0.8;
     const c = caja3D(grupo3D, mu.w, alto, mu.d, mu.color, mu.x, alto / 2, mu.z);
