@@ -3084,7 +3084,7 @@ function moverVehiculoManejado(dt){
   if (puedeAvanzar){
     const adelante = ((t.KeyW || t.ArrowUp) ? 1 : 0) - ((t.KeyS || t.ArrowDown) ? 1 : 0);
     const girar = ((t.KeyA || t.ArrowLeft) ? 1 : 0) - ((t.KeyD || t.ArrowRight) ? 1 : 0);
-    const velMax = (t.ShiftLeft || t.ShiftRight) ? 16 : 8;
+    const velMax = (t.ShiftLeft || t.ShiftRight || t.KeyT) ? 16 : 8;   // T = turbo, igual que mantener Shift
     velManejarActual = adelante
       ? Math.min(velMax, velManejarActual + dt * velMax * 1.8)
       : Math.max(0, velManejarActual - dt * velMax * 2.5);
