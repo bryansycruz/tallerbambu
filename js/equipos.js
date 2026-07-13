@@ -13,13 +13,21 @@ const TIPOS_EQUIPO = {
   carretilla:           { nombre: 'Carretilla' },
   plataformaTransporte: { nombre: 'Plataforma de transporte' },
   andamioColgante:      { nombre: 'Andamio colgante' },
-  plumaGrua:            { nombre: 'Torre grúa' }
+  plumaGrua:            { nombre: 'Torre grúa' },
+  pilaArena:            { nombre: 'Pila de arena' },
+  bultosCemento:        { nombre: 'Bultos de cemento (estiba)' },
+  pilaAgregado:         { nombre: 'Pila de agregado (grava/triturado)' },
+  plantaConcreto:       { nombre: 'Planta de concreto' },
+  tanqueAgua:           { nombre: 'Tanque de agua elevado' }
 };
 /* subgrupos del selector "Equipos": vertical = sube/baja material entre
-   niveles; horizontal = lo mueve por el mismo piso */
+   niveles; horizontal = lo mueve por el mismo piso; acopio = materiales
+   sueltos junto a la vía; instalaciones = plantas fijas */
 const GRUPOS_EQUIPO = [
   { nombre: 'Transporte vertical', tipos: ['montacargasElectrico', 'montacargasManual', 'andamioColgante', 'plumaGrua'] },
-  { nombre: 'Transporte horizontal', tipos: ['carretilla', 'plataformaTransporte'] }
+  { nombre: 'Transporte horizontal', tipos: ['carretilla', 'plataformaTransporte'] },
+  { nombre: 'Materiales de acopio', tipos: ['pilaArena', 'bultosCemento', 'pilaAgregado'] },
+  { nombre: 'Planta e instalaciones', tipos: ['plantaConcreto', 'tanqueAgua'] }
 ];
 function opcionesTipoEquipo(){
   return GRUPOS_EQUIPO.map(grupo =>
@@ -37,7 +45,7 @@ const MAT_ROJO_EQ = 0xc0392b;
 const MAT_NARANJA_EQ = 0xd9822b;
 
 function ruedaEq(g, x, y, z, r){
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(r || 0.16, r || 0.16, 0.1, 10), new THREE.MeshLambertMaterial({ color: MAT_NEGRO_EQ }));
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r || 0.16, r || 0.16, 0.1, 14), new THREE.MeshLambertMaterial({ color: MAT_NEGRO_EQ }));
   m.rotation.z = Math.PI / 2;
   m.position.set(x, y, z);
   m.castShadow = true;
@@ -306,13 +314,146 @@ function construirPlumaGrua(def){
   return g;
 }
 
+/* ---- Materiales de acopio: pilas junto a la vía o la zona de mezcla.
+   Geometría simple (conos/cajas), sin animación ni campos propios. ---- */
+function construirPilaArena(def){
+  const g = new THREE.Group();
+  const c = 0xd9c08a;
+  cono(g, 1.7, 1.6, c, 0, 0);
+  cono(g, 0.9, 0.9, c, 0.5, 0.3);
+  g.userData.info = {
+    nombre: def.nombre,
+    aforo: 'No aplica',
+    dimensiones: '≈3.4 × 3.4 m',
+    altura: '1.6 m',
+    material: 'Acopio de arena a granel, junto a la vía o la zona de mezcla de concreto/mortero',
+    cerramiento: 'A cielo abierto',
+    descripcion: (def.descripcion ? esc(def.descripcion).replace(/\n/g, '<br>') + '<br><br>' : '') +
+      'Pila de arena creada desde "Equipos". Arrástrala, gírala de a 45°, bloquéala o elimínala cuando ya no se necesite.'
+  };
+  return g;
+}
+function construirPilaAgregado(def){
+  const g = new THREE.Group();
+  const c = 0x9a9a94;
+  cono(g, 1.7, 1.6, c, 0, 0);
+  cono(g, 0.9, 0.9, c, -0.5, -0.3);
+  g.userData.info = {
+    nombre: def.nombre,
+    aforo: 'No aplica',
+    dimensiones: '≈3.4 × 3.4 m',
+    altura: '1.6 m',
+    material: 'Acopio de agregado grueso (grava o triturado), junto a la vía',
+    cerramiento: 'A cielo abierto',
+    descripcion: (def.descripcion ? esc(def.descripcion).replace(/\n/g, '<br>') + '<br><br>' : '') +
+      'Pila de agregado creada desde "Equipos". Arrástrala, gírala de a 45°, bloquéala o elimínala cuando ya no se necesite.'
+  };
+  return g;
+}
+function construirBultosCemento(def){
+  const g = new THREE.Group();
+  const c = 0xc9c3b5;
+  caja(g, 1.3, 0.12, 1.1, 0x8a6642, 0, 0.06, 0);
+  caja(g, 1.15, 0.22, 0.95, c, 0, 0.24, 0);
+  caja(g, 1.0, 0.22, 0.82, c, 0, 0.48, 0);
+  caja(g, 0.85, 0.22, 0.68, c, 0, 0.72, 0);
+  caja(g, 0.62, 0.22, 0.5, c, 0, 0.95, 0);
+  g.userData.info = {
+    nombre: def.nombre,
+    aforo: 'No aplica',
+    dimensiones: '≈1.3 × 1.1 m',
+    altura: '1.1 m',
+    material: 'Estiba de bultos de cemento sobre estibador de madera, lista para mezcla en obra',
+    cerramiento: 'A cielo abierto',
+    descripcion: (def.descripcion ? esc(def.descripcion).replace(/\n/g, '<br>') + '<br><br>' : '') +
+      'Bultos de cemento creados desde "Equipos". Arrástralos, gíralos de a 45°, bloquéalos o elimínalos cuando ya no se necesiten.'
+  };
+  return g;
+}
+
+/* ---- Planta de concreto: dosificadora con mezclador y silos de agregado.
+   Escribe la meta de m³ en su ficha ("Modificar") para ver cuántos días de
+   producción necesita, a razón de TASA_CONCRETO_DIA m³/día. ---- */
+const TASA_CONCRETO_DIA = 240;   // 30 m³/h × 8 h/día
+function conoTruncadoEq(g, r1, r2, h, color, x, y, z){
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r2, r1, h, 16), new THREE.MeshLambertMaterial({ color }));
+  m.position.set(x, y, z); m.castShadow = true; g.add(m); return m;
+}
+function construirPlantaConcreto(def){
+  const g = new THREE.Group();
+  const c = 0xd9a521;
+  [[-1.6, -1.6], [1.6, -1.6], [-1.6, 1.6], [1.6, 1.6]].forEach(([x, z]) => caja(g, 0.25, 4.6, 0.25, MAT_GRIS_EQ, x, 2.3, z));
+  caja(g, 4.0, 0.25, 4.0, MAT_GRIS_EQ, 0, 4.7, 0);
+  cilindro(g, 1.35, 1.8, c, 0, 5.8, 0);
+  caja(g, 1.0, 0.7, 1.0, MAT_GRIS_EQ, 1.6, 5.4, 1.3);
+  conoTruncadoEq(g, 0.5, 0.18, 1.2, MAT_GRIS_EQ, 0, 4.0, 0);
+  const banda = caja(g, 1.2, 0.18, 9.0, MAT_NEGRO_EQ, -0.2, 3.4, -4.6); banda.rotation.x = 0.42;
+  [-2.6, 0, 2.6].forEach(x => {
+    conoTruncadoEq(g, 0.35, 1.5, 1.8, MAT_GRIS_EQ, x, 2.6, -6.0);
+    caja(g, 2.9, 0.9, 2.9, 0x9aa0a5, x, 3.9, -6.0);
+    [[-1.2, -1.2], [1.2, -1.2], [-1.2, 1.2], [1.2, 1.2]].forEach(([px, pz]) => caja(g, 0.14, 3.4, 0.14, MAT_GRIS_EQ, x + px, 1.7, -6.0 + pz));
+  });
+  caja(g, 2.2, 2.2, 1.8, 0xe6e2d8, 3.4, 1.2, 2.6);
+  caja(g, 2.0, 0.7, 0.05, MAT_NEGRO_EQ, 3.4, 1.6, 3.52);
+  g.userData.metaM3 = def.metaM3 || 0;
+  const dias = g.userData.metaM3 ? Math.ceil(g.userData.metaM3 / TASA_CONCRETO_DIA) : 0;
+  g.userData.info = {
+    nombre: def.nombre,
+    aforo: 'Operario 1 persona en caseta de control',
+    dimensiones: '≈9 × 13 m',
+    altura: '7 m (silos)',
+    material: 'Planta dosificadora de concreto 30 m³/h con mezclador — instálala junto al silo de cemento o la pila de agregado',
+    cerramiento: 'Instalación fija, sin cerramiento propio',
+    descripcion: (def.descripcion ? esc(def.descripcion).replace(/\n/g, '<br>') + '<br><br>' : '') +
+      'Planta de concreto creada desde "Equipos". Escribe la meta de m³ en su ficha ("Modificar") para ver cuántos días de producción necesita' +
+      (g.userData.metaM3 ? (' — a ' + TASA_CONCRETO_DIA + ' m³/día, ' + g.userData.metaM3 + ' m³ tardan ' + dias + ' día' + (dias === 1 ? '' : 's') + '.') : ('.'))
+  };
+  return g;
+}
+
+/* ---- Tanque de agua elevado: sobre torre metálica con arriostramiento en
+   cruz — abastece baños, comedor y control de incendios. ---- */
+function construirTanqueAgua(def){
+  const g = new THREE.Group();
+  const c = 0x4a9ec9;
+  const patas = [[-1.1, -1.1], [1.1, -1.1], [-1.1, 1.1], [1.1, 1.1]];
+  patas.forEach(([x, z]) => caja(g, 0.16, 4.2, 0.16, MAT_GRIS_EQ, x, 2.1, z));
+  for (let y = 0.9; y < 4.2; y += 1.4){
+    patas.forEach(([x1, z1], i) => {
+      const [x2, z2] = patas[(i + 1) % 4];
+      const largo = Math.hypot(x2 - x1, z2 - z1);
+      const barra = caja(g, largo, 0.08, 0.08, MAT_GRIS_EQ, (x1 + x2) / 2, y, (z1 + z2) / 2);
+      barra.rotation.y = -Math.atan2(z2 - z1, x2 - x1);
+    });
+  }
+  caja(g, 3.0, 0.18, 3.0, 0x565b62, 0, 4.3, 0);
+  cilindro(g, 1.45, 2.0, c, 0, 5.4, 0);
+  conoTruncadoEq(g, 1.45, 0.15, 0.7, c, 0, 6.55, 0);
+  g.userData.info = {
+    nombre: def.nombre,
+    aforo: 'No aplica',
+    dimensiones: '≈3.2 × 3.2 m',
+    altura: '6.5 m',
+    material: 'Tanque elevado de almacenamiento de agua sobre torre metálica: abastece baños, comedor y control de incendios',
+    cerramiento: 'Instalación fija, sin cerramiento propio',
+    descripcion: (def.descripcion ? esc(def.descripcion).replace(/\n/g, '<br>') + '<br><br>' : '') +
+      'Tanque de agua creado desde "Equipos". Arrástralo, gíralo de a 45°, bloquéalo o elimínalo cuando ya no se necesite.'
+  };
+  return g;
+}
+
 const FABRICAS_EQUIPO = {
   montacargasElectrico: construirMontacargasElectrico,
   montacargasManual: construirMontacargasManual,
   carretilla: construirCarretilla,
   plataformaTransporte: construirPlataformaTransporte,
   andamioColgante: construirAndamioColgante,
-  plumaGrua: construirPlumaGrua
+  plumaGrua: construirPlumaGrua,
+  pilaArena: construirPilaArena,
+  bultosCemento: construirBultosCemento,
+  pilaAgregado: construirPilaAgregado,
+  plantaConcreto: construirPlantaConcreto,
+  tanqueAgua: construirTanqueAgua
 };
 
 /* construye, etiqueta, posiciona y registra un equipo (scene + draggables +
@@ -431,6 +572,22 @@ function modificarGrua(){
   avisoGuardado('Torre grúa actualizada: brazo ' + def.brazo + ' m · radio ' + def.radio + ' m');
 }
 
+/* control "Meta de producción" de la ficha de la planta de concreto: no
+   cambia la geometría, solo el dato y el cálculo de días — no hace falta
+   reconstruir el grupo, basta actualizar el def y refrescar el panel */
+function modificarPlantaConcreto(){
+  if (!seleccionado || seleccionado.userData.tipoEquipo !== 'plantaConcreto') return;
+  const nombre = seleccionado.userData.info.nombre;
+  const def = equiposCreados.find(e => e.nombre === nombre);
+  if (!def) return;
+  def.metaM3 = Math.round(numLim(document.getElementById('modMetaM3').value, def.metaM3 || 0, 0, 100000));
+  seleccionado.userData.metaM3 = def.metaM3;
+  guardarCompartido();
+  seleccionar(seleccionado);
+  const dias = def.metaM3 ? Math.ceil(def.metaM3 / TASA_CONCRETO_DIA) : 0;
+  avisoGuardado('Meta de concreto: ' + def.metaM3 + ' m³' + (def.metaM3 ? (' · ' + dias + ' día' + (dias === 1 ? '' : 's') + ' de producción') : ''));
+}
+
 /* recrea los equipos al cargar estado (local, respaldo o Supabase) */
 function normalizarDefEquipo(raw){
   const def = {
@@ -455,6 +612,8 @@ function normalizarDefEquipo(raw){
     def.ubicacion = raw.ubicacion === 'techo' ? 'techo' : 'suelo';
     def.brazo = numLim(raw.brazo, 20, 8, 40);
     def.radio = numLim(raw.radio, 25, 10, 50);
+  } else if (raw.tipo === 'plantaConcreto'){
+    def.metaM3 = numLim(raw.metaM3, 0, 0, 100000);
   }
   return def;
 }

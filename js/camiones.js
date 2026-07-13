@@ -46,6 +46,52 @@ function crearCamion3D(){
   });
   return cam;
 }
+/* cono truncado (para el tanque de la pipa cementera): r1 = radio de la
+   base, r2 = radio de la punta */
+function conoTruncadoCam(g, r1, r2, h, color, x, y, z){
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r2, r1, h, 16), new THREE.MeshLambertMaterial({ color }));
+  m.position.set(x, y, z); m.castShadow = true; g.add(m); return m;
+}
+/* ---- camión planchón: plataforma plana para acero, formaleta y maquinaria menor ---- */
+function crearCamionPlanchon(){
+  const cam = new THREE.Group();
+  caja(cam, 2.3, 0.5, 11.4, 0x2b2f36, 0, 0.85, 0);
+  caja(cam, 2.4, 1.9, 2.1, 0x2e6db8, 0, 2.0, 4.55);
+  caja(cam, 2.2, 0.8, 0.06, 0x9fc4e8, 0, 2.45, 5.62);
+  caja(cam, 2.55, 0.22, 8.8, 0xa97a4d, 0, 1.25, -1.1);
+  [-1.22, 1.22].forEach(x => caja(cam, 0.08, 0.35, 8.8, 0x6d7075, x, 1.5, -1.1));
+  [4.5, 3.3, -2.6, -3.9].forEach(z => [-1.1, 1.1].forEach(x => {
+    const r = cilindro(cam, 0.6, 0.45, 0x15181c, x, 0.6, z); r.rotation.z = Math.PI / 2;
+  }));
+  return cam;
+}
+/* ---- pipa cementera: cisterna que transporta cemento a granel ---- */
+function crearPipaCementera(){
+  const cam = new THREE.Group();
+  const c = 0xd9dde0;
+  caja(cam, 2.3, 0.5, 9.4, 0x2b2f36, 0, 0.85, 0);
+  caja(cam, 2.4, 1.9, 2.0, 0xc9581e, 0, 2.0, 3.6);
+  caja(cam, 2.2, 0.8, 0.06, 0x9fc4e8, 0, 2.45, 4.62);
+  const tanque = cilindro(cam, 1.25, 6.2, c, 0, 2.45, -0.9); tanque.rotation.x = Math.PI / 2;
+  const c1 = conoTruncadoCam(cam, 1.25, 0.35, 0.9, c, 0, 2.45, 2.6); c1.rotation.x = Math.PI / 2;
+  const c2 = conoTruncadoCam(cam, 1.25, 0.35, 0.9, c, 0, 2.45, -4.4); c2.rotation.x = -Math.PI / 2;
+  [0.4, -2.2].forEach(z => cilindro(cam, 0.28, 0.35, 0x8a8f96, 0, 3.8, z));
+  cilindro(cam, 0.12, 2.2, 0x8a8f96, 0.95, 1.5, -4.4);
+  [3.4, -2.4, -3.7].forEach(z => [-1.1, 1.1].forEach(x => {
+    const r = cilindro(cam, 0.6, 0.45, 0x15181c, x, 0.6, z); r.rotation.z = Math.PI / 2;
+  }));
+  return cam;
+}
+/* catálogo de vehículos disponibles al programar un camión */
+const TIPOS_CAMION = {
+  volqueta: { nombre: 'Volqueta', fabrica: crearCamion3D },
+  planchon: { nombre: 'Camión planchón (acero/formaleta)', fabrica: crearCamionPlanchon },
+  pipa:     { nombre: 'Pipa cementera', fabrica: crearPipaCementera }
+};
+function opcionesTipoCamion(sel){
+  return Object.keys(TIPOS_CAMION).map(k =>
+    '<option value="' + k + '"' + (k === (sel || 'volqueta') ? ' selected' : '') + '>' + esc(TIPOS_CAMION[k].nombre) + '</option>').join('');
+}
 
 /* ---- ubicación de cualquier zona por su nombre (para el destino del camión) ---- */
 function posicionZona(nombre){
@@ -136,8 +182,9 @@ function procesarColaCamiones(){
 function despacharCamion(c){
   const nombreZona = (c && c.zona) || 'Almacén central';
   const material = (c && c.material) || 'materiales';
+  const tipoVeh = (c && TIPOS_CAMION[c.vehiculo]) ? c.vehiculo : 'volqueta';
   const rec = recorridoCamion(nombreZona);
-  const grupo = crearCamion3D();
+  const grupo = TIPOS_CAMION[tipoVeh].fabrica();
   scene.add(grupo);
 
   // recorrido visible sobre el suelo
@@ -150,7 +197,7 @@ function despacharCamion(c){
     curva: curvaTerreno(rec.ida, 0.05), rec,
     t: 0, dur: 26, fase: 'entrando', espera: 0
   });
-  avisoGuardado('Camión ingresando con ' + material + ' → ' + nombreZona);
+  avisoGuardado(TIPOS_CAMION[tipoVeh].nombre + ' ingresando con ' + material + ' → ' + nombreZona);
 }
 
 /* línea punteada del recorrido + banderines de descarga */
@@ -275,6 +322,7 @@ function renderCamiones(){
         const i = camiones.indexOf(c);
         return '<div class="planoFila">' +
           '<span class="planoNom">' + icono('camion') + ' <b class="txtFuerte">' + esc(c.fecha || fechaObra) + ' ' + esc(c.hora) + '</b> · ' +
+            esc((TIPOS_CAMION[c.vehiculo] || TIPOS_CAMION.volqueta).nombre) + ' · ' +
             esc(c.material) + ' <small>→ ' + esc(c.zona || 'Almacén central') + '</small></span>' +
           '<span>' +
             '<button class="planoBtn" title="Enviar el camión a la fila de acceso" onclick="lanzarCamion(camiones[' + i + '])">' + icono('ruta') + '</button> ' +
@@ -312,7 +360,9 @@ function renderCamiones(){
         '<input type="time" id="camHora" value="08:00">' +
         '<input id="camMaterial" maxlength="60" placeholder="Material (ej: Cerámica)" style="flex:1; min-width:140px">' +
       '</div>' +
-      '<div style="display:flex; gap:6px; align-items:center">' +
+      '<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap">' +
+        '<span class="txtSuave">Vehículo:</span>' +
+        '<select id="camVehiculo">' + opcionesTipoCamion('volqueta') + '</select>' +
         '<span class="txtSuave">Destino:</span>' +
         '<select id="camZona" style="flex:1">' + opcionesZonas(zonaCamionSel) + '</select>' +
         '<button class="orgAccion primario" style="margin:0" onclick="agregarCamion()">' + icono('mas') + 'Agregar</button>' +
@@ -327,13 +377,14 @@ function agregarCamion(){
   const fecha = document.getElementById('camFecha').value || fechaObra;
   const hora = document.getElementById('camHora').value;
   const material = (document.getElementById('camMaterial').value || '').trim().slice(0, 60) || 'Materiales';
+  const vehiculo = TIPOS_CAMION[(document.getElementById('camVehiculo') || {}).value] ? document.getElementById('camVehiculo').value : 'volqueta';
   const zona = document.getElementById('camZona').value || 'Almacén central';
   if (!hora){ avisoGuardado('Elige la hora del camión'); return; }
-  camiones.push({ fecha, hora, material, zona });
+  camiones.push({ fecha, hora, material, zona, vehiculo });
   zonaCamionSel = zona;
   guardarCompartido();
   renderCamiones();
-  avisoGuardado('Camión programado: ' + material + ' el ' + fecha + ' ' + hora + ' → ' + zona);
+  avisoGuardado(TIPOS_CAMION[vehiculo].nombre + ' programado: ' + material + ' el ' + fecha + ' ' + hora + ' → ' + zona);
 }
 function quitarCamion(i){
   camiones.splice(i, 1);
@@ -353,8 +404,8 @@ function descargarCamiones(){
     ['Pedidos de camiones de materiales — Proyecto Bambú · Marinilla'],
     ['Generado', new Date().toLocaleString()],
     [],
-    ['#', 'Fecha', 'Hora de entrada', 'Material', 'Zona de destino'],
-    ...lista.map((c, i) => [i + 1, c.fecha || fechaObra, c.hora, c.material, c.zona || 'Almacén central'])
+    ['#', 'Fecha', 'Hora de entrada', 'Vehículo', 'Material', 'Zona de destino'],
+    ...lista.map((c, i) => [i + 1, c.fecha || fechaObra, c.hora, (TIPOS_CAMION[c.vehiculo] || TIPOS_CAMION.volqueta).nombre, c.material, c.zona || 'Almacén central'])
   ];
   // BOM UTF-8 + separador ";": Excel en español lo abre con tildes y columnas correctas
   const csv = String.fromCharCode(0xFEFF) + filas.map(f => f.map(celda).join(';')).join('\r\n');

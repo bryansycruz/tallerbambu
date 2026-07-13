@@ -13,7 +13,10 @@ const renderer = new THREE.WebGLRenderer({ antialias: !ES_MOVIL, powerPreference
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio, ES_MOVIL ? 1.15 : 1.5));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = ES_MOVIL ? THREE.BasicShadowMap : THREE.PCFShadowMap;
+// suave en escritorio (se ve mejor); en celular la más barata, igual que antes.
+// Como el mapa de sombras ya se actualiza cada 3 cuadros (ver más abajo), este
+// cambio de tipo no cuesta más en la práctica.
+renderer.shadowMap.type = ES_MOVIL ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
 // el mapa de sombras solo se recalcula cada 3 cuadros (ver animar en main.js):
 // visualmente imperceptible y la GPU se ahorra 2 de cada 3 pasadas de sombra
 renderer.shadowMap.autoUpdate = false;
@@ -32,6 +35,7 @@ sol.shadow.mapSize.set(ES_MOVIL ? 512 : 1024, ES_MOVIL ? 512 : 1024);
 sol.shadow.camera.left = -160; sol.shadow.camera.right = 160;
 sol.shadow.camera.top = 120;  sol.shadow.camera.bottom = -100;
 sol.shadow.camera.far = 500;
+sol.shadow.bias = -0.0015;   // evita el "acné" de sombra sin costo extra
 scene.add(sol);
 
 /* ============ 3. TERRENO 3D ============ */
@@ -62,7 +66,28 @@ function alturaApoyo(x, z, w, d){ return 0; }
 const terrenoGeo = new THREE.PlaneGeometry(420, 260);
 terrenoGeo.rotateX(-Math.PI/2);
 terrenoGeo.translate(10, 0, -5);
-const terreno = new THREE.Mesh(terrenoGeo, new THREE.MeshLambertMaterial({ color:0x7d9a4e }));
+/* textura procedural (generada una sola vez, en un canvas) en vez de color
+   plano: se ve mucho menos "plástico" sin costo por cuadro — es la misma
+   cantidad de triángulos y solo una consulta de textura más por píxel. */
+function texturaTerreno(){
+  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#7d9a4e'; ctx.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 900; i++){
+    const x = Math.random() * 256, y = Math.random() * 256;
+    const r = 1 + Math.random() * 2.4;
+    const luz = (Math.random() - 0.5) * 28;
+    ctx.fillStyle = 'rgba(' + Math.round(Math.max(0, Math.min(255, 125 + luz))) + ',' +
+      Math.round(Math.max(0, Math.min(255, 154 + luz))) + ',' + Math.round(Math.max(0, Math.min(255, 78 + luz * 0.7))) + ',0.55)';
+    ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.6, Math.random() * Math.PI, 0, Math.PI * 2); ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = ANISO;
+  tex.repeat.set(42, 26);
+  return tex;
+}
+const terreno = new THREE.Mesh(terrenoGeo, new THREE.MeshLambertMaterial({ map: texturaTerreno() }));
 terreno.position.y = -0.05;
 terreno.receiveShadow = true;
 scene.add(terreno);
@@ -289,6 +314,9 @@ function pintarCerramiento(hex){
   });
   cerramiento.userData.colorPersonalizado = hex;
 }
+/* punto de acceso (portón), para el modo Caminar (js/caminar.js): se fija
+   una sola vez al construir el cerramiento, más abajo */
+let entradaObra = null;
 {
   const matLam = new THREE.MeshLambertMaterial({ color:0x9fb3a8, transparent:true, opacity:0.55 });
   const matPoste = new THREE.MeshLambertMaterial({ color:0x4a5560 });
@@ -329,6 +357,7 @@ function pintarCerramiento(hex){
       tramoCerr(px(0.68), pz(0.68), px(0.74), pz(0.74));   // machón portón / peatonal
       tramoCerr(px(0.80), pz(0.80), px(1),    pz(1));      // fence tras la puerta peatonal
       gate = { x: px(0.49), z: pz(0.49), rot: -Math.atan2(dz, dx) };
+      entradaObra = gate;
     } else {
       tramoCerr(a[0], a[1], b[0], b[1]);
     }
@@ -874,11 +903,11 @@ function caja(g, w, h, d, color, x, y, z, op){
   return m;
 }
 function cilindro(g, r, h, color, x, y, z){
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 12), new THREE.MeshLambertMaterial({ color }));
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 16), new THREE.MeshLambertMaterial({ color }));
   m.position.set(x, y, z); m.castShadow = true; g.add(m); return m;
 }
 function cono(g, r, h, color, x, z){
-  const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, 14), new THREE.MeshLambertMaterial({ color }));
+  const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, 18), new THREE.MeshLambertMaterial({ color }));
   m.position.set(x, h/2, z); m.castShadow = true; g.add(m); return m;
 }
 function textoLocal(g, texto, w, x, z, color){

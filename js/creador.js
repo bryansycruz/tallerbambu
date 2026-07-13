@@ -184,6 +184,49 @@ function construirEdificio(def){
   return g;
 }
 
+/* ---- muro suelto: independiente del cerramiento perimetral, se coloca en
+   cualquier parte de la obra (divisiones internas, contención provisional…).
+   Una sola placa w × h × espesor, sin puerta ni techo. ---- */
+function construirMuro(def){
+  let color = parseInt(String(def.color || '#9aa0a5').replace('#', ''), 16);
+  if (!isFinite(color)) color = 0x9aa0a5;
+  const g = new THREE.Group();
+  caja(g, def.w, def.h, def.espesor, color, 0, def.h / 2, 0);
+  const area = Math.round(def.w * def.espesor * 10) / 10;
+  g.userData.esProvisional = true;
+  g.userData.personalizado = true;
+  g.userData.info = {
+    nombre: def.nombre, w: def.w, d: def.espesor, h: def.h,
+    aforo: 'No aplica',
+    dimensiones: def.w + ' × ' + def.espesor + ' m ≈ ' + area + ' m²',
+    altura: def.h + ' m',
+    material: 'Muro suelto, independiente del cerramiento perimetral',
+    cerramiento: 'Elemento de referencia (no cierra la obra por sí solo)',
+    descripcion: (def.descripcion ? esc(def.descripcion).replace(/\n/g, '<br>') + '<br><br>' : '') +
+      'Muro creado desde el botón "Espacios". Arrástralo para ubicarlo en cualquier parte de la obra, gíralo de a 45°, ' +
+      'bloquéalo o elimínalo cuando ya no lo necesites.'
+  };
+  const et = crearEtiqueta(def.nombre, Math.max(7, Math.min(14, def.w * 0.6)));
+  et.position.y = def.h + 1.4;
+  g.add(et);
+  g.position.set(def.pos[0], 0, def.pos[1]);
+  g.userData.idEstable = 'c:' + def.id;
+  scene.add(g);
+  draggables.push(g);
+  const opt = document.createElement('option');
+  opt.value = draggables.length - 1;
+  opt.textContent = def.nombre;
+  selectorUI.appendChild(opt);
+  return g;
+}
+/* constructor genérico por clase — evita repetir el ternario 'edificio' /
+   'muro' / 'espacio' en cada punto que crea o reconstruye un personalizado */
+function construirPersonalizado(def){
+  if (def.clase === 'edificio') return construirEdificio(def);
+  if (def.clase === 'muro') return construirMuro(def);
+  return construirEspacio(def);
+}
+
 /* ---- utilidades de limpieza ---- */
 function quitarGrupoEscena(g){
   g.traverse(n => {
@@ -246,24 +289,28 @@ function abrirEditorPersonalizado(nombre){
   document.getElementById('espOverlay').style.display = 'flex';
 }
 function renderEditorEspacio(def){
-  const esEd = def.clase === 'edificio';
+  const esEd = def.clase === 'edificio', esMuro = def.clase === 'muro';
+  const NOMBRE_CLASE = { edificio: 'Edificio', muro: 'Muro', espacio: 'Espacio' };
   const num = (id, lbl, val, min, max, step) =>
     '<label>' + lbl + ' <input type="number" id="' + id + '" value="' + val + '" min="' + min + '" max="' + max + '" step="' + step + '" style="width:70px"></label>';
   document.getElementById('espBody').innerHTML =
-    '<div class="desc">Editando <b class="txtAcento">' + esc(def.nombre) + '</b> (' + (esEd ? 'Edificio' : 'Espacio') + '). ' +
+    '<div class="desc">Editando <b class="txtAcento">' + esc(def.nombre) + '</b> (' + NOMBRE_CLASE[def.clase] + '). ' +
       'Cambia sus medidas y guarda; conserva su posición y rotación en la obra.</div>' +
     '<div style="display:flex; flex-direction:column; gap:8px; margin-top:10px">' +
       '<input id="edNombre" maxlength="40" value="' + esc(def.nombre) + '" placeholder="Nombre">' +
       '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">' +
-        num('edAncho', 'Ancho (m)', def.w, 2, 80, 0.1) +
-        num('edFondo', 'Fondo (m)', def.d, 2, 60, 0.1) +
-        (esEd
-          ? num('edPisos', 'Pisos', def.pisos, 1, 30, 1) + num('edHPiso', 'Entrepiso (m)', def.hPiso, 2, 5, 0.05) +
-            '<label style="width:100%">Sistema estructural <select id="edSistema" style="flex:1">' + opcionesSistema(def.sistema || 'aporticado') + '</select></label>'
-          : num('edAlto', 'Altura (m)', def.h, 1, 12, 0.1) +
-            '<label>Color <input type="color" id="edColor" value="' + (def.color || '#3f7fbf') + '"></label>' +
-            '<label><input type="checkbox" id="edMuros"' + (def.muros ? ' checked' : '') + '> Muros</label>' +
-            '<label><input type="checkbox" id="edTecho"' + (def.techo ? ' checked' : '') + '> Techo</label>') +
+        (esMuro
+          ? num('edAncho', 'Largo (m)', def.w, 1, 90, 0.1) + num('edAlto', 'Alto (m)', def.h, 0.5, 14, 0.1) +
+            num('edEspesor', 'Espesor (m)', def.espesor, 0.1, 1.5, 0.05) +
+            '<label>Color <input type="color" id="edColor" value="' + (def.color || '#9aa0a5') + '"></label>'
+          : num('edAncho', 'Ancho (m)', def.w, 2, 80, 0.1) + num('edFondo', 'Fondo (m)', def.d, 2, 60, 0.1) +
+            (esEd
+              ? num('edPisos', 'Pisos', def.pisos, 1, 30, 1) + num('edHPiso', 'Entrepiso (m)', def.hPiso, 2, 5, 0.05) +
+                '<label style="width:100%">Sistema estructural <select id="edSistema" style="flex:1">' + opcionesSistema(def.sistema || 'aporticado') + '</select></label>'
+              : num('edAlto', 'Altura (m)', def.h, 1, 12, 0.1) +
+                '<label>Color <input type="color" id="edColor" value="' + (def.color || '#3f7fbf') + '"></label>' +
+                '<label><input type="checkbox" id="edMuros"' + (def.muros ? ' checked' : '') + '> Muros</label>' +
+                '<label><input type="checkbox" id="edTecho"' + (def.techo ? ' checked' : '') + '> Techo</label>')) +
       '</div>' +
       '<textarea id="edDesc" maxlength="400" rows="2" placeholder="Descripción (opcional)">' + esc(def.descripcion || '') + '</textarea>' +
       '<div style="display:flex; gap:6px">' +
@@ -290,14 +337,19 @@ function guardarEdicionEspacio(){
   }
   def.nombre = nuevo;
   def.descripcion = (document.getElementById('edDesc').value || '').trim().slice(0, 400);
-  def.w = numLim(document.getElementById('edAncho').value, def.w, 2, 80);
-  def.d = numLim(document.getElementById('edFondo').value, def.d, 2, 60);
+  def.w = numLim(document.getElementById('edAncho').value, def.w, def.clase === 'muro' ? 1 : 2, 80);
   if (def.clase === 'edificio'){
+    def.d = numLim(document.getElementById('edFondo').value, def.d, 2, 60);
     def.pisos = Math.round(numLim(document.getElementById('edPisos').value, def.pisos, 1, 30));
     def.hPiso = numLim(document.getElementById('edHPiso').value, def.hPiso, 2, 5);
     const sisEl = document.getElementById('edSistema');
     if (sisEl && SISTEMAS_EDIF[sisEl.value]) def.sistema = sisEl.value;
+  } else if (def.clase === 'muro'){
+    def.h = numLim(document.getElementById('edAlto').value, def.h, 0.5, 14);
+    def.espesor = numLim(document.getElementById('edEspesor').value, def.espesor, 0.1, 1.5);
+    def.color = document.getElementById('edColor').value || def.color;
   } else {
+    def.d = numLim(document.getElementById('edFondo').value, def.d, 2, 60);
     def.h = numLim(document.getElementById('edAlto').value, def.h, 1, 12);
     def.color = document.getElementById('edColor').value || def.color;
     def.muros = document.getElementById('edMuros').checked;
@@ -306,7 +358,7 @@ function guardarEdicionEspacio(){
   // reconstruir el elemento con las medidas nuevas
   quitarGrupoEscena(g);
   draggables.splice(draggables.indexOf(g), 1);
-  const ng = (def.clase === 'edificio') ? construirEdificio(def) : construirEspacio(def);
+  const ng = construirPersonalizado(def);
   ng.position.set(pos.x, 0, pos.z);
   ng.rotation.y = rot;
   ng.userData.bloqueado = bloqueado;
@@ -336,29 +388,35 @@ function aplicarPersonalizados(lista){
   personalizados = [];
   (Array.isArray(lista) ? lista : []).forEach(def => {
     if (!def || !def.nombre) return;
+    const clase = def.clase === 'edificio' ? 'edificio' : def.clase === 'muro' ? 'muro' : 'espacio';
     const d2 = {
-      clase: def.clase === 'edificio' ? 'edificio' : 'espacio',
+      clase,
       nombre: String(def.nombre).slice(0, 40),
-      w: numLim(def.w, 10, 2, 80),
-      d: numLim(def.d, 8, 2, 60),
+      w: numLim(def.w, clase === 'muro' ? 6 : 10, clase === 'muro' ? 1 : 2, 80),
       pos: Array.isArray(def.pos) ? [numLim(def.pos[0], 0, CFG.limites.xMin, CFG.limites.xMax),
                                      numLim(def.pos[1], -28, CFG.limites.zMin, CFG.limites.zMax)] : posicionLibre(),
       descripcion: String(def.descripcion || '').slice(0, 400),
       id: (def.id && String(def.id)) || nuevoId()
     };
-    if (d2.clase === 'edificio'){
+    if (clase === 'edificio'){
+      d2.d = numLim(def.d, 8, 2, 60);
       d2.pisos = Math.round(numLim(def.pisos, 5, 1, 30));
       d2.hPiso = numLim(def.hPiso, CFG.hPiso, 2, 5);
       d2.sistema = SISTEMAS_EDIF[def.sistema] ? def.sistema : 'aporticado';
       d2.color = def.color || null;   // override opcional (recoloreado a mano)
+    } else if (clase === 'muro'){
+      d2.h = numLim(def.h, 2.4, 0.5, 14);
+      d2.espesor = numLim(def.espesor, 0.2, 0.1, 1.5);
+      d2.color = def.color || '#9aa0a5';
     } else {
+      d2.d = numLim(def.d, 8, 2, 60);
       d2.h = numLim(def.h, 2.5, 1, 12);
       d2.color = def.color || '#3f7fbf';
       d2.muros = !!def.muros;
       d2.techo = !!def.techo;
     }
     personalizados.push(d2);
-    const g = (d2.clase === 'edificio') ? construirEdificio(d2) : construirEspacio(d2);
+    const g = construirPersonalizado(d2);
     ajustarEtiquetaNueva(g);
   });
   reconstruirSelector();
@@ -370,6 +428,8 @@ function renderEspacios(){
     ? personalizados.map((p, i) => {
         const dims = p.clase === 'edificio'
           ? p.w + ' × ' + p.d + ' m · ' + p.pisos + (p.pisos === 1 ? ' piso' : ' pisos')
+          : p.clase === 'muro'
+          ? p.w + ' × ' + p.espesor + ' m · h ' + p.h + ' m'
           : p.w + ' × ' + p.d + ' m · h ' + p.h + ' m';
         return '<div class="planoFila">' +
           '<span class="planoNom">' + icono(p.clase === 'edificio' ? 'edificio' : 'etiqueta') +
@@ -398,13 +458,14 @@ function renderEspacios(){
         '<select id="espTipo" onchange="cambiarTipoEspacio()">' +
           '<option value="espacio">Espacio en obra</option>' +
           '<option value="edificio">Edificio</option>' +
+          '<option value="muro">Muro (suelto)</option>' +
         '</select>' +
         '<input id="espNombre" maxlength="40" placeholder="Nombre (ej: Taller de hierro)" style="flex:1; min-width:150px">' +
       '</div>' +
       '<textarea id="espDescripcion" maxlength="400" rows="2" placeholder="Descripción (opcional): para qué se usa, quién la maneja, notas…" style="width:100%; resize:vertical; font-family:inherit"></textarea>' +
       '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">' +
         '<label>Ancho (m) <input type="number" id="espAncho" value="10" min="2" max="80" step="0.1" style="width:68px"></label>' +
-        '<label>Fondo (m) <input type="number" id="espFondo" value="8" min="2" max="60" step="0.1" style="width:68px"></label>' +
+        '<label id="espFondoLbl">Fondo (m) <input type="number" id="espFondo" value="8" min="2" max="60" step="0.1" style="width:68px"></label>' +
         '<span id="espSoloEspacio" style="display:inline-flex; gap:8px; flex-wrap:wrap; align-items:center">' +
           '<label>Altura (m) <input type="number" id="espAlto" value="2.5" min="1" max="12" step="0.1" style="width:62px"></label>' +
           '<label>Color <input type="color" id="espColor" value="#3f7fbf"></label>' +
@@ -415,6 +476,11 @@ function renderEspacios(){
           '<label>Pisos <input type="number" id="espPisos" value="5" min="1" max="30" step="1" style="width:56px"></label>' +
           '<label>Entrepiso (m) <input type="number" id="espHPiso" value="2.65" min="2" max="5" step="0.05" style="width:68px"></label>' +
           '<label style="width:100%">Sistema estructural <select id="espSistema" style="flex:1">' + opcionesSistema('aporticado') + '</select></label>' +
+        '</span>' +
+        '<span id="espSoloMuro" style="display:none; gap:8px; flex-wrap:wrap; align-items:center">' +
+          '<label>Alto (m) <input type="number" id="espAltoMuro" value="2.4" min="0.5" max="14" step="0.1" style="width:62px"></label>' +
+          '<label>Espesor (m) <input type="number" id="espEspesor" value="0.2" min="0.1" max="1.5" step="0.05" style="width:64px"></label>' +
+          '<label>Color <input type="color" id="espColorMuro" value="#9aa0a5"></label>' +
         '</span>' +
       '</div>' +
       '<button class="orgAccion primario" style="margin:0; align-self:flex-start" onclick="agregarPersonalizado()">' +
@@ -481,21 +547,28 @@ function aplicarPresetEspacio(){
   document.getElementById('espDescripcion').value = p.descripcion || '';
 }
 function cambiarTipoEspacio(){
-  const esEdificio = document.getElementById('espTipo').value === 'edificio';
-  document.getElementById('espSoloEspacio').style.display = esEdificio ? 'none' : 'inline-flex';
+  const tipo = document.getElementById('espTipo').value;
+  const esEdificio = tipo === 'edificio', esMuro = tipo === 'muro';
+  document.getElementById('espSoloEspacio').style.display = (esEdificio || esMuro) ? 'none' : 'inline-flex';
   document.getElementById('espSoloEdificio').style.display = esEdificio ? 'inline-flex' : 'none';
-  document.getElementById('espNombre').placeholder = esEdificio ? 'Nombre (ej: Torre 03)' : 'Nombre (ej: Taller de hierro)';
+  document.getElementById('espSoloMuro').style.display = esMuro ? 'inline-flex' : 'none';
+  document.getElementById('espFondoLbl').style.display = esMuro ? 'none' : 'inline-block';
+  document.getElementById('espNombre').placeholder = esEdificio ? 'Nombre (ej: Torre 03)' : esMuro ? 'Nombre (ej: Muro divisorio)' : 'Nombre (ej: Taller de hierro)';
   if (esEdificio){
     document.getElementById('espAncho').value = 20;
     document.getElementById('espFondo').value = 12;
+  } else if (esMuro){
+    document.getElementById('espAncho').value = 6;
   } else {
     document.getElementById('espAncho').value = 10;
     document.getElementById('espFondo').value = 8;
   }
 }
 function agregarPersonalizado(){
-  const clase = document.getElementById('espTipo').value === 'edificio' ? 'edificio' : 'espacio';
-  const nombre = nombreDisponible(document.getElementById('espNombre').value || (clase === 'edificio' ? 'Edificio' : 'Espacio'));
+  const tipo = document.getElementById('espTipo').value;
+  const clase = tipo === 'edificio' ? 'edificio' : tipo === 'muro' ? 'muro' : 'espacio';
+  const NOMBRE_CLASE = { edificio: 'Edificio', muro: 'Muro', espacio: 'Espacio' };
+  const nombre = nombreDisponible(document.getElementById('espNombre').value || NOMBRE_CLASE[clase]);
   const descripcion = (document.getElementById('espDescripcion').value || '').trim().slice(0, 400);
   const def = { clase, nombre, descripcion, pos: posicionLibre(), id: nuevoId() };
   if (clase === 'edificio'){
@@ -505,6 +578,11 @@ function agregarPersonalizado(){
     def.hPiso = numLim(document.getElementById('espHPiso').value, CFG.hPiso, 2, 5);
     const sisEl = document.getElementById('espSistema');
     def.sistema = (sisEl && SISTEMAS_EDIF[sisEl.value]) ? sisEl.value : 'aporticado';
+  } else if (clase === 'muro'){
+    def.w = numLim(document.getElementById('espAncho').value, 6, 1, 90);
+    def.h = numLim(document.getElementById('espAltoMuro').value, 2.4, 0.5, 14);
+    def.espesor = numLim(document.getElementById('espEspesor').value, 0.2, 0.1, 1.5);
+    def.color = document.getElementById('espColorMuro').value || '#9aa0a5';
   } else {
     def.w = numLim(document.getElementById('espAncho').value, 10, 2, 80);
     def.d = numLim(document.getElementById('espFondo').value, 8, 2, 60);
@@ -514,13 +592,13 @@ function agregarPersonalizado(){
     def.techo = document.getElementById('espTecho').checked;
   }
   personalizados.push(def);
-  const g = (clase === 'edificio') ? construirEdificio(def) : construirEspacio(def);
+  const g = construirPersonalizado(def);
   ajustarEtiquetaNueva(g);
   guardarCompartido();
   document.getElementById('espOverlay').style.display = 'none';
   seleccionar(g);
-  irA(g.position.x, 2, g.position.z, clase === 'edificio' ? 95 : 55, camCtrl.theta, 1.05);
-  avisoGuardado((clase === 'edificio' ? 'Edificio' : 'Espacio') + ' "' + nombre + '" creado — arrástralo para ubicarlo');
+  irA(g.position.x, 2, g.position.z, clase === 'edificio' ? 95 : clase === 'muro' ? 25 : 55, camCtrl.theta, 1.05);
+  avisoGuardado(NOMBRE_CLASE[clase] + ' "' + nombre + '" creado — arrástralo para ubicarlo');
 }
 function eliminarPersonalizadoIdx(i){
   const p = personalizados[i];

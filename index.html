@@ -92,6 +92,9 @@
     <button id="btnCotas" title="Mostrar u ocultar las medidas (cotas) de zonas y edificios"><span class="ic" data-ic="cota"></span>Cotas</button>
     <button id="btnOrg" title="Roles del equipo, funciones y zonas de riesgo"><span class="ic" data-ic="equipo"></span>Organigrama</button>
     <button id="btnZonas" title="Ver todas las zonas creadas: área (m²) y aforo máximo"><span class="ic" data-ic="plano"></span>Zonas y aforo</button>
+    <button id="btnHistorial" title="Historial de cambios: revisa qué se movió, creó o eliminó y vuelve a cualquier paso (Ctrl+Z / Ctrl+Shift+Z)"><span class="ic" data-ic="reloj"></span>Historial</button>
+    <button id="btnFondoPlano" title="Sube una imagen (PNG/JPG) de tu plano, por ejemplo de AutoCAD, para calcarla sobre el terreno"><span class="ic" data-ic="plano"></span>Fondo del plano</button>
+    <button id="btnCaminar" title="Camina por la obra en primera persona: W A S D o flechas + mouse · E para subirte a un equipo o malacate cercano · Esc para salir"><span class="ic" data-ic="caminar"></span>Caminar</button>
   </div>
   <div class="uiGrupo" data-nombre="Materiales y rutas">
     <button id="btnFlujo" title="Dibuja rutas de materiales con clics sobre el terreno"><span class="ic" data-ic="ruta"></span>Dibujar ruta</button>
@@ -101,10 +104,12 @@
     <button id="btnVia" title="Dibuja tramos de vía con clics sobre el terreno: los camiones las recorren de verdad"><span class="ic" data-ic="ruta"></span>Dibujar vía</button>
     <button id="btnFinVia" style="display:none"><span class="ic" data-ic="check"></span>Finalizar vía</button>
     <button id="btnBorrarVias" title="Elimina todas las vías dibujadas"><span class="ic" data-ic="basura"></span>Borrar vías</button>
+    <button id="btnRegla" title="Mide distancias con clics sobre el terreno; clic cerca de un extremo existente borra esa medición, Esc quita la última"><span class="ic" data-ic="cota"></span>Regla</button>
+    <button id="btnBorrarRegla" title="Elimina todas las mediciones"><span class="ic" data-ic="basura"></span>Borrar mediciones</button>
   </div>
   <div class="uiGrupo" data-nombre="Crear en obra">
-    <button id="btnEspacios" title="Crea espacios y edificios con sus medidas, y elimínalos cuando no los necesites"><span class="ic" data-ic="mas"></span>Espacios</button>
-    <button id="btnEquipos" title="Crea montacargas, carretillas, andamios colgantes y torres grúa"><span class="ic" data-ic="herramienta"></span>Equipos</button>
+    <button id="btnEspacios" title="Crea espacios, edificios y muros sueltos con sus medidas, y elimínalos cuando no los necesites"><span class="ic" data-ic="mas"></span>Espacios</button>
+    <button id="btnEquipos" title="Crea montacargas, carretillas, andamios colgantes, torres grúa, materiales de acopio y planta de concreto"><span class="ic" data-ic="herramienta"></span>Equipos</button>
   </div>
   <div class="uiGrupo" data-nombre="Fase de obra">
     <select id="selFase" title="Cada fase recuerda su propia distribución de provisionales: reubícalos para cada etapa">
@@ -225,6 +230,28 @@
   </div>
 </div>
 
+<!-- ============ HISTORIAL DE CAMBIOS ============ -->
+<div id="historialOverlay">
+  <div id="historialVentana">
+    <div id="historialCabecera">
+      <h3 id="historialTitulo">Historial de cambios</h3>
+      <button id="historialCerrar" title="Cerrar">✕</button>
+    </div>
+    <div id="historialBody"></div>
+  </div>
+</div>
+
+<!-- ============ IMAGEN DE FONDO PARA CALCAR ============ -->
+<div id="fondoOverlay">
+  <div id="fondoVentana">
+    <div id="fondoCabecera">
+      <h3 id="fondoTitulo">Imagen de fondo (calcar plano)</h3>
+      <button id="fondoCerrar" title="Cerrar">✕</button>
+    </div>
+    <div id="fondoBody"></div>
+  </div>
+</div>
+
 <!-- ============ PANEL DE INFORMACIÓN (dashboard con pestañas) ============ -->
 <div id="panel">
   <button id="panelToggle" title="Ocultar el panel">–</button>
@@ -291,7 +318,10 @@
     <b>Rutas:</b> "Dibujar ruta" → clics en el terreno → "Finalizar ruta"<br>
     <b>Organigrama:</b> clic en cada rol: funciones, resaltar su área y zonas de riesgo<br>
     <b>Documentos:</b> selecciona una zona → ficha técnica, planos y enlaces de página<br>
-    <b>Espacios propios:</b> botón "Espacios" → crea espacios o edificios con sus medidas y elimínalos cuando quieras
+    <b>Espacios propios:</b> botón "Espacios" → crea espacios, edificios o muros sueltos con sus medidas y elimínalos cuando quieras<br>
+    <b>Regla:</b> clic sobre el terreno mide distancias; clic cerca de un extremo existente borra esa medición; Esc quita la última<br>
+    <b>Historial:</b> revisa cada cambio y vuelve a cualquier paso · <b>Ctrl+Z</b> deshace · <b>Ctrl+Shift+Z</b> rehace<br>
+    <b>Caminar:</b> W A S D o flechas para moverte · mouse para mirar · <b>E</b> sube/baja de un montacargas, carretilla, andamio, torre grúa o malacate cercano (mantén W para acelerar, Shift o T = turbo) · Esc para salir
   </div>
 </div>
 
@@ -340,6 +370,11 @@
 <script src="js/equipos.js"></script>
 <script src="js/modificar.js"></script>
 <script src="js/analisis.js"></script>
+<script src="js/regla.js"></script>
+<script src="js/historial.js"></script>
+<script src="js/fondoplano.js"></script>
+<script src="js/caminar.js"></script>
+<script src="js/atajos.js"></script>
 <script src="js/main.js"></script>
 <script>
   /* ===== Dashboard: pestañas del panel + controles de vista =====

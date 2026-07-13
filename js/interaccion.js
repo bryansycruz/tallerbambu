@@ -66,6 +66,7 @@ function buscarRaiz(obj){
 renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
 
 renderer.domElement.addEventListener('pointerdown', e => {
+  if (caminando) return;   // en modo caminar/manejar el mouse solo mira alrededor (ver js/caminar.js)
   if (e.pointerType === 'touch'){
     punterosTactiles.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (punterosTactiles.size === 2){
@@ -95,6 +96,11 @@ renderer.domElement.addEventListener('pointerdown', e => {
     if (p){ if (!viaActual) iniciarVia(); agregarPuntoVia(p); }
     return;
   }
+  if (modoRegla){
+    const p = interseccionSuelo();
+    if (p) clicRegla(p);
+    return;
+  }
   const hitsM = raycaster.intersectObjects(malacates, true);
   if (hitsM.length){
     arrastrando = buscarRaiz(hitsM[0].object) || malacate;
@@ -122,6 +128,7 @@ renderer.domElement.addEventListener('pointerdown', e => {
 });
 
 renderer.domElement.addEventListener('pointermove', e => {
+  if (caminando) return;
   if (e.pointerType === 'touch' && punterosTactiles.has(e.pointerId)){
     punterosTactiles.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pinza && punterosTactiles.size >= 2){
@@ -182,13 +189,14 @@ renderer.domElement.addEventListener('pointercancel', e => {
 });
 
 renderer.domElement.addEventListener('pointerup', e => {
+  if (caminando) return;
   if (e.pointerType === 'touch'){
     punterosTactiles.delete(e.pointerId);
     if (punterosTactiles.size < 2) pinza = null;
   }
   const eraArrastre = arrastrando;
   arrastrando = null; rotando = false; paneando = false;
-  if (movido < 6 && e.button === 0 && !modoFlujo){
+  if (movido < 6 && e.button === 0 && !modoFlujo && !modoVia && !modoRegla){
     rayoDesdeEvento(e);
     if (vistaPiso4){
       const hitsA = raycaster.intersectObjects(aptosClick);
@@ -215,6 +223,7 @@ renderer.domElement.addEventListener('pointerup', e => {
 });
 
 renderer.domElement.addEventListener('wheel', e => {
+  if (caminando) return;
   camCtrl.radius = Math.min(500, Math.max(12, camCtrl.radius * (1 + e.deltaY * 0.001)));
 }, { passive:true });
 
@@ -334,6 +343,19 @@ function renderModificar(obj){
         '<button style="width:auto" title="Aplicar" onclick="modificarGrua()">' + icono('check') + ' Aplicar</button>' +
       '</div>' +
       '<small>El anillo amarillo sobre el terreno muestra el alcance real y su medida.</small>' +
+      '</div>';
+  }
+  if (obj.userData.tipoEquipo === 'plantaConcreto'){
+    const dias = obj.userData.metaM3 ? Math.ceil(obj.userData.metaM3 / TASA_CONCRETO_DIA) : 0;
+    html += '<div class="desc" style="margin-top:8px">' +
+      '<b class="txtFuerte">Meta de producción</b>' +
+      '<div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; align-items:center">' +
+        '<label style="display:flex; align-items:center; gap:4px">Meta (m³) <input id="modMetaM3" type="number" min="0" max="100000" step="10" value="' + (obj.userData.metaM3 || 0) + '" style="width:80px"></label>' +
+        '<button style="width:auto" title="Aplicar" onclick="modificarPlantaConcreto()">' + icono('check') + ' Aplicar</button>' +
+      '</div>' +
+      (obj.userData.metaM3
+        ? ('<small>A ' + TASA_CONCRETO_DIA + ' m³/día, tarda <b class="txtAcento">' + dias + ' día' + (dias === 1 ? '' : 's') + '</b> en producir esa meta.</small>')
+        : '<small>Escribe la meta en m³ para ver cuántos días de producción necesita.</small>') +
       '</div>';
   }
   if (id){

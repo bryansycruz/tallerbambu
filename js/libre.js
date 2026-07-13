@@ -85,7 +85,8 @@ const renderer = new THREE.WebGLRenderer({ antialias: !ES_MOVIL, powerPreference
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio, ES_MOVIL ? 1.2 : 1.5));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFShadowMap;
+// suave en escritorio (se ve mejor); en celular la más barata, igual que antes
+renderer.shadowMap.type = ES_MOVIL ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 const ANISO = Math.min(ES_MOVIL ? 2 : 8, renderer.capabilities.getMaxAnisotropy());
 
@@ -97,12 +98,34 @@ sol.castShadow = true;
 sol.shadow.mapSize.set(1024, 1024);
 sol.shadow.camera.left = -160; sol.shadow.camera.right = 160;
 sol.shadow.camera.top = 130; sol.shadow.camera.bottom = -110; sol.shadow.camera.far = 520;
+sol.shadow.bias = -0.0015;   // evita el "acné" de sombra sin costo extra
 scene.add(sol);
 
-/* terreno plano + cuadrícula de referencia (sensación de "lienzo para construir") */
+/* terreno plano + cuadrícula de referencia (sensación de "lienzo para construir").
+   Textura procedural (generada una sola vez, en un canvas) en vez de color
+   plano: se ve mucho menos "plástico" sin costo por cuadro — es la misma
+   cantidad de triángulos y solo una consulta de textura más por píxel. */
+function texturaTerrenoLibre(){
+  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#7d9a4e'; ctx.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 900; i++){
+    const x = Math.random() * 256, y = Math.random() * 256;
+    const r = 1 + Math.random() * 2.4;
+    const luz = (Math.random() - 0.5) * 28;
+    ctx.fillStyle = 'rgba(' + Math.round(Math.max(0, Math.min(255, 125 + luz))) + ',' +
+      Math.round(Math.max(0, Math.min(255, 154 + luz))) + ',' + Math.round(Math.max(0, Math.min(255, 78 + luz * 0.7))) + ',0.55)';
+    ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.6, Math.random() * Math.PI, 0, Math.PI * 2); ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = ANISO;
+  tex.repeat.set(60, 40);
+  return tex;
+}
 const terreno = new THREE.Mesh(
   new THREE.PlaneGeometry(600, 400),
-  new THREE.MeshLambertMaterial({ color:0x7d9a4e })
+  new THREE.MeshLambertMaterial({ map: texturaTerrenoLibre() })
 );
 terreno.rotation.x = -Math.PI/2; terreno.position.y = -0.02; terreno.receiveShadow = true;
 scene.add(terreno);
@@ -122,19 +145,19 @@ function caja(g, w, h, d, color, x, y, z, op){
 }
 function cilindro(g, r, h, color, x, y, z, op){
   const m = new THREE.Mesh(
-    new THREE.CylinderGeometry(r, r, h, 12),
+    new THREE.CylinderGeometry(r, r, h, 16),
     new THREE.MeshLambertMaterial(op !== undefined ? { color, transparent:true, opacity:op } : { color })
   );
   m.position.set(x, y, z); m.castShadow = (op === undefined); g.add(m); return m;
 }
 /* cono truncado: r1 = radio inferior, r2 = radio superior */
 function cono(g, r1, r2, h, color, x, y, z){
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(r2, r1, h, 14), new THREE.MeshLambertMaterial({ color }));
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r2, r1, h, 18), new THREE.MeshLambertMaterial({ color }));
   m.position.set(x, y, z); m.castShadow = true; g.add(m); return m;
 }
 /* rueda de vehículo (cilindro acostado sobre el eje x) */
 function rueda(g, x, y, z, r, ancho){
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, ancho || 0.35, 12), new THREE.MeshLambertMaterial({ color: 0x15181c }));
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, ancho || 0.35, 16), new THREE.MeshLambertMaterial({ color: 0x15181c }));
   m.rotation.z = Math.PI / 2;
   m.position.set(x, y, z); m.castShadow = true; g.add(m); return m;
 }
@@ -835,6 +858,23 @@ const CATALOGO_MAQUINAS = [
       caja(g, 0.12, 9.6, 0.35, 0x565b62, 1.62, 5.4, 0);
       cilindro(g, 0.11, 8.5, 0x8a8f96, -1.35, 5.2, -0.9);
     } },
+  { id:'tanqueAgua', nombre:'Tanque de agua elevado', grupo:'Planta e instalaciones', w:3.2, d:3.2, h:6.5, color:'#4a9ec9', movil:false,
+    desc:'Tanque elevado de almacenamiento de agua sobre torre metálica: abastece baños, comedor y control de incendios.',
+    dibujar(g, c){
+      const patas = [[-1.1, -1.1], [1.1, -1.1], [-1.1, 1.1], [1.1, 1.1]];
+      patas.forEach(([x, z]) => caja(g, 0.16, 4.2, 0.16, 0x6d7075, x, 2.1, z));
+      for (let y = 0.9; y < 4.2; y += 1.4){
+        patas.forEach(([x1, z1], i) => {
+          const [x2, z2] = patas[(i + 1) % 4];
+          const largo = Math.hypot(x2 - x1, z2 - z1);
+          const barra = caja(g, largo, 0.08, 0.08, 0x6d7075, (x1 + x2) / 2, y, (z1 + z2) / 2);
+          barra.rotation.y = -Math.atan2(z2 - z1, x2 - x1);
+        });
+      }
+      caja(g, 3.0, 0.18, 3.0, 0x565b62, 0, 4.3, 0);
+      cilindro(g, 1.45, 2.0, c, 0, 5.4, 0);
+      cono(g, 1.45, 0.15, 0.7, c, 0, 6.55, 0);
+    } },
   { id:'pilaArena', nombre:'Pila de arena', grupo:'Materiales de acopio', w:3.4, d:3.4, h:1.6, color:'#d9c08a', movil:false,
     desc:'Acopio de arena junto a la vía o la zona de mezcla, para concreto o mortero.',
     dibujar(g, c){
@@ -1340,7 +1380,11 @@ const AFORO_MAQ = {
   siloCemento: 'No aplica (almacenamiento)',
   torreIluminacion: 'No aplica (iluminación nocturna)',
   transporteHorizontalLibre: 'Operario: 1 persona',
-  transporteVerticalLibre: 'Según la plataforma'
+  transporteVerticalLibre: 'Según la plataforma',
+  pilaArena: 'No aplica (acopio)',
+  bultosCemento: 'No aplica (acopio)',
+  pilaAgregado: 'No aplica (acopio)',
+  tanqueAgua: 'No aplica (almacenamiento)'
 };
 function renderFichaTecnicaLibre(g){
   const d = g.userData.def, info = g.userData.info;
@@ -2983,13 +3027,22 @@ function sumarDiaISOLibre(iso){
 let fechaObraLibre = fechaISOLibre();
 
 /* camión de materiales a escala 1:1, reutilizando los mismos helpers caja()/cilindro()/rueda() */
-function crearCamion3DLibre(){
+/* catálogo de vehículos que se pueden elegir al programar un camión —
+   reutiliza las piezas ya dibujadas en CATALOGO_MAQUINAS (misma silueta que
+   si las agregaras a mano desde "Equipos") */
+const TIPOS_CAMION_LIBRE = {
+  volqueta: { nombre: 'Volqueta dobletroque', catalogoId: 'volquetaDobletroque' },
+  planchon: { nombre: 'Camión planchón (acero/formaleta)', catalogoId: 'camionPlanchon' },
+  pipa:     { nombre: 'Pipa cementera', catalogoId: 'pipaCementera' }
+};
+function opcionesTipoCamionLibre(sel){
+  return Object.keys(TIPOS_CAMION_LIBRE).map(k =>
+    '<option value="' + k + '"' + (k === (sel || 'volqueta') ? ' selected' : '') + '>' + esc(TIPOS_CAMION_LIBRE[k].nombre) + '</option>').join('');
+}
+function crearCamion3DLibre(tipoVeh){
+  const item = catalogoMaquina((TIPOS_CAMION_LIBRE[tipoVeh] || TIPOS_CAMION_LIBRE.volqueta).catalogoId);
   const cam = new THREE.Group();
-  caja(cam, 2.3, 0.5, 8.4, 0x2b2f36, 0, 0.75, -0.2);
-  caja(cam, 2.4, 1.9, 2.0, 0x2e6db8, 0, 2.0, 3.1);
-  caja(cam, 2.2, 0.8, 0.06, 0x9fc4e8, 0, 2.45, 4.1);
-  caja(cam, 2.5, 1.9, 5.4, 0xe6e2d8, 0, 1.75, -1.4);
-  [3.0, -2.2, -3.6].forEach(z => [-1.1, 1.1].forEach(x => rueda(cam, x, 0.6, z, 0.6, 0.5)));
+  item.dibujar(cam, item.color);
   return cam;
 }
 /* ubicación de cualquier zona por su nombre — el destino del camión */
@@ -3047,8 +3100,9 @@ function procesarColaCamionesLibre(){
 function despacharCamionLibre(c){
   const nombreZona = (c && c.zona) || '';
   const material = (c && c.material) || 'materiales';
+  const tipoVeh = (c && TIPOS_CAMION_LIBRE[c.vehiculo]) ? c.vehiculo : 'volqueta';
   const rec = recorridoCamionLibre(nombreZona);
-  const grupo = crearCamion3DLibre();
+  const grupo = crearCamion3DLibre(tipoVeh);
   scene.add(grupo);
   const rutaG = new THREE.Group();
   dibujarRecorridoCamionLibre(rutaG, [...rec.ida, ...rec.vuelta.slice(1)]);
@@ -3058,7 +3112,7 @@ function despacharCamionLibre(c){
     curva: curvaTerrenoLibre(rec.ida, 0.05), rec,
     t: 0, dur: 26, fase: 'entrando', espera: 0
   });
-  avisar('Camión ingresando con ' + material + ' → ' + (nombreZona || '(zona no encontrada)'));
+  avisar(TIPOS_CAMION_LIBRE[tipoVeh].nombre + ' ingresando con ' + material + ' → ' + (nombreZona || '(zona no encontrada)'));
 }
 const camTmpPLibre = new THREE.Vector3(), camTmpTLibre = new THREE.Vector3();
 function moverCamionLibre(a, dt){

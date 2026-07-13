@@ -50,6 +50,7 @@ const ICONOS = {
   grua:          '<path d="M5 21V3h12l4 4M17 7v14M9 7l-4.5 3.2M5 12h6M17 17h4"/>',
   herramienta:   '<path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.7 2.7-2-2z"/>',
   cota:          '<path d="M4 12h16M4 8v8M20 8v8M9 12v-2M13 12v2"/>',
+  caminar:       '<circle cx="13" cy="4.2" r="1.7"/><path d="M12.6 7.5l-2.1 5 2.5 3.2V21M10.5 12.3l-2.6 1.2V17M13 9.4l2.6 2 2.6.6M10.4 15.8L8 21"/>',
   /* selector de tema: sol/luna en vez de los círculos ◐/◑ de texto */
   sol:           '<circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/>',
   luna:          '<path d="M20 14.5A8 8 0 119.5 4a6.5 6.5 0 0010.5 10.5z"/>',

@@ -173,6 +173,7 @@ const btnFinVia = document.getElementById('btnFinVia');
 const TXT_AVISO_RUTA = 'Dibujando ruta: haz clic sobre el terreno para marcar el recorrido y termina con "Finalizar ruta"';
 const TXT_AVISO_VIA  = 'Dibujando vía: haz clic sobre el terreno para marcar el tramo y termina con "Finalizar vía"';
 btnFlujo.onclick = () => {
+  if (typeof modoRegla !== 'undefined' && modoRegla) toggleRegla();
   modoFlujo = !modoFlujo;
   if (modoFlujo && modoVia){ modoVia = false; btnVia.classList.remove('activo'); btnFinVia.style.display = 'none'; finalizarVia(); }
   btnFlujo.classList.toggle('activo', modoFlujo);
@@ -186,6 +187,7 @@ btnFin.onclick = () => { finalizarRuta(); };
 document.getElementById('btnBorrar').onclick = borrarRutas;
 
 btnVia.onclick = () => {
+  if (typeof modoRegla !== 'undefined' && modoRegla) toggleRegla();
   modoVia = !modoVia;
   if (modoVia && modoFlujo){ modoFlujo = false; btnFlujo.classList.remove('activo'); btnFin.style.display = 'none'; finalizarRuta(); }
   btnVia.classList.toggle('activo', modoVia);
@@ -300,8 +302,12 @@ addEventListener('resize', () => {
 });
 
 // restaurar la distribución compartida del equipo (Supabase); si no hay
-// conexión, usa la copia local o dibuja la ruta de ejemplo del informe
-cargarCompartido();
+// conexión, usa la copia local o dibuja la ruta de ejemplo del informe.
+// La línea base del historial se siembra DESPUÉS de que esto termine, para
+// que "Paso 1" sea la obra recién cargada, no una escena vacía.
+cargarCompartido().then(() => {
+  if (typeof sembrarHistorialInicial === 'function') sembrarHistorialInicial();
+});
 
 const reloj = new THREE.Clock();
 let tiempo = 0;
@@ -383,7 +389,9 @@ function animar(){
 
   actualizarCamiones(dt);
 
-  actualizarCamara();
+  if (manejando) moverVehiculoManejado(dt);
+  else if (caminando) moverCaminante(dt);
+  else actualizarCamara();
   numFrame++;
   if (numFrame % 3 === 0) renderer.shadowMap.needsUpdate = true;
   renderer.render(scene, camera);
