@@ -1747,6 +1747,8 @@ function normalizarFicha(raw){
     lotePoligono: (Array.isArray(raw.lotePoligono) ? raw.lotePoligono : [])
       .filter(p => Array.isArray(p) && p.length === 2 && isFinite(p[0]) && isFinite(p[1]))
       .map(p => [red2(p[0]), red2(p[1])]).slice(0, 60),
+    // lado del cerramiento donde va el portón; null = automático (el lado más al sur)
+    idxPorton: Number.isInteger(raw.idxPorton) && raw.idxPorton >= 0 ? raw.idxPorton : null,
     taller: String(raw.taller || 'Taller II').slice(0, 40),
     equipo: (Array.isArray(raw.equipo) ? raw.equipo : []).map(n => String(n).slice(0, 40)).filter(Boolean).slice(0, 12)
   };
@@ -1875,11 +1877,18 @@ function construirCerramiento(){
   }
   const H = cerrCfg.altura;
   const mat = MATERIALES_CERR[cerrCfg.material] || MATERIALES_CERR.lona;
-  // elige el lado del portón: en rectángulo siempre el costado sur (índice
-  // 2, igual que siempre); en el perímetro libre, el lado más al sur (mayor
-  // z promedio) que sea lo bastante largo para el portón
+  // elige el lado del portón: si el usuario ya lo escogió a mano (herramienta
+  // "Elegir portón") se respeta ese lado; si no, en rectángulo va siempre en
+  // el costado sur (índice 2) y en el perímetro libre en el lado más al sur
+  // (mayor z promedio) que sea lo bastante largo para el portón
   let idxGate = 2 % n;
-  if (loteEsLibre()){
+  const ladoValido = i => {
+    const a = esquinas[i], b = esquinas[(i + 1) % n];
+    return Math.hypot(b[0] - a[0], b[1] - a[1]) >= 7;
+  };
+  if (Number.isInteger(ficha.idxPorton) && ficha.idxPorton < n && ladoValido(ficha.idxPorton)){
+    idxGate = ficha.idxPorton;
+  } else if (loteEsLibre()){
     let mejorZ = -Infinity;
     for (let i = 0; i < n; i++){
       const a = esquinas[i], b = esquinas[(i + 1) % n];
@@ -1939,6 +1948,142 @@ function construirCerramiento(){
   postes.forEach(([x, z], i) => { mtx.makeTranslation(x, (H + 0.15) / 2, z); im.setMatrixAt(i, mtx); });
   cerrGrupo.add(im);
   aplicarVisibilidadEtiquetas(cerrGrupo);
+}
+/* ============ ELEGIR DÓNDE VA EL PORTÓN (herramienta "Elegir portón") ============
+   Por defecto el portón se ubica automáticamente en el costado sur del
+   lote; esta herramienta deja que el usuario haga clic sobre cualquier lado
+   del cerramiento (mejor visto en el Plano 2D) para ponerlo ahí. */
+function clicPorton(pRaw){
+  if (!cerrCfg.activo){
+    avisar('Activa el cerramiento en la Ficha técnica para poder ubicar el portón');
+    setHerramienta(null);
+    return;
+  }
+  const esquinas = loteEsquinas();
+  const n = esquinas.length;
+  let mejorI = -1, mejorD = Infinity;
+  for (let i = 0; i < n; i++){
+    const a = esquinas[i], b = esquinas[(i + 1) % n];
+    const dx = b[0] - a[0], dz = b[1] - a[1], len2 = dx * dx + dz * dz;
+    let t = len2 > 0 ? ((pRaw.x - a[0]) * dx + (pRaw.z - a[1]) * dz) / len2 : 0;
+    t = Math.max(0, Math.min(1, t));
+    const d = Math.hypot(pRaw.x - (a[0] + dx * t), pRaw.z - (a[1] + dz * t));
+    if (d < mejorD){ mejorD = d; mejorI = i; }
+  }
+  if (mejorI < 0) return;
+  const a = esquinas[mejorI], b = esquinas[(mejorI + 1) % n];
+  if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 7){
+    avisar('Ese lado es muy corto para el portón (mínimo ~7 m) — elige otro lado');
+    return;
+  }
+  ficha.idxPorton = mejorI;
+  construirCerramiento();
+  guardar('Portón reubicado');
+  setHerramienta(null);
+  avisar('Portón ubicado en el lado elegido');
+}
+function panelHerramientaPorton(){
+  panelSel('Elegir dónde va el portón',
+    '<div class="desc">Haz <b class="txtAcento">clic sobre uno de los lados del cerramiento</b> (se ve mejor en el Plano 2D) ' +
+    'para poner ahí el portón de acceso. El lado debe tener al menos 7 m.</div>' +
+    (cerrCfg.activo ? '' : '<div class="desc" style="color:var(--rojo-texto)">Activa el cerramiento en la Ficha técnica primero.</div>'));
+}
+
+/* ============ IMAGEN DE FONDO PARA CALCAR (plano de AutoCAD u otro) ============
+   Sube una foto/captura del plano (PNG/JPG) y se acuesta sobre el terreno,
+   justo debajo de las líneas que dibujas, para poder guiarte y calcar
+   encima en el Plano 2D. Se ajusta tamaño/posición/rotación/opacidad a mano
+   porque cada imagen trae su propia escala; NO se guarda con el proyecto
+   (solo dura mientras la pestaña esté abierta). */
+const fondoGrupo = new THREE.Group(); scene.add(fondoGrupo);
+let fondoImg = null;   // { mesh, anchoM, altoM, opacidad, rotDeg }
+function cargarFondoPlanoArchivo(file){
+  if (!file) return;
+  const lector = new FileReader();
+  lector.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      vaciarGrupo(fondoGrupo);
+      const tex = new THREE.Texture(img);
+      tex.needsUpdate = true;
+      const aspecto = img.width / img.height;
+      const anchoM = Math.round(loteBoundingSize().largo) || 100;
+      const altoM = Math.round(anchoM / aspecto);
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1),
+        new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.6, depthWrite: false, side: THREE.DoubleSide }));
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.scale.set(anchoM, altoM, 1);
+      fondoGrupo.add(mesh);
+      const centro = loteCentro();
+      fondoGrupo.position.set(centro[0], 0.03, centro[1]);
+      fondoGrupo.rotation.y = 0;
+      fondoImg = { mesh, anchoM, altoM, opacidad: 0.6, rotDeg: 0 };
+      panelHerramientaFondo();
+      avisar('Imagen de fondo cargada — ajusta tamaño, posición y rotación para calzarla con el lote');
+    };
+    img.src = lector.result;
+  };
+  lector.readAsDataURL(file);
+}
+function actualizarFondoPlano(){
+  if (!fondoImg) return;
+  fondoImg.mesh.scale.set(fondoImg.anchoM, fondoImg.altoM, 1);
+  fondoImg.mesh.material.opacity = fondoImg.opacidad;
+  fondoGrupo.rotation.y = fondoImg.rotDeg * Math.PI / 180;
+}
+function quitarFondoPlano(){
+  vaciarGrupo(fondoGrupo);
+  fondoImg = null;
+  avisar('Imagen de fondo quitada');
+  abrirFondoPlano();
+}
+function abrirFondoPlano(){
+  setHerramienta(null);
+  document.getElementById('libreVentTitulo').textContent = 'Imagen de fondo (calcar plano)';
+  if (!fondoImg){
+    document.getElementById('libreBody').innerHTML =
+      '<div class="desc">Sube una foto o captura de tu plano (por ejemplo, exportado desde AutoCAD como PNG o JPG) para calcarlo ' +
+      'en el <b class="txtAcento">Plano 2D</b>. Después de cargarla podrás ajustar tamaño, posición, rotación y opacidad para que ' +
+      'calce con tu lote. <b>No se guarda con el proyecto</b> — solo dura mientras tengas esta pestaña abierta.</div>' +
+      '<label style="display:block; margin-top:10px">Imagen (PNG/JPG)<input type="file" id="fondoArchivo" accept="image/png,image/jpeg" style="width:100%; margin-top:4px"></label>';
+    document.getElementById('libreOverlay').style.display = 'flex';
+    document.getElementById('fondoArchivo').onchange = e => { const f = e.target.files[0]; if (f) cargarFondoPlanoArchivo(f); };
+    return;
+  }
+  panelHerramientaFondo();
+  document.getElementById('libreOverlay').style.display = 'flex';
+}
+function panelHerramientaFondo(){
+  document.getElementById('libreVentTitulo').textContent = 'Imagen de fondo (calcar plano)';
+  document.getElementById('libreBody').innerHTML =
+    '<div class="desc">Ajusta tamaño, posición y rotación hasta que la imagen calce con tu lote — ve al ' +
+    '<b class="txtAcento">Plano 2D</b> para verla desde arriba mientras ajustas. No se guarda con el proyecto.</div>' +
+    '<div style="display:flex; gap:8px; margin-top:10px">' +
+      '<label style="flex:1">Ancho (m)<input type="number" id="fdAncho" value="' + fondoImg.anchoM + '" min="1" max="1000" step="0.5" style="width:100%; margin-top:3px" oninput="cambiarFondoPlano()"></label>' +
+      '<label style="flex:1">Alto (m)<input type="number" id="fdAlto" value="' + fondoImg.altoM + '" min="1" max="1000" step="0.5" style="width:100%; margin-top:3px" oninput="cambiarFondoPlano()"></label>' +
+    '</div>' +
+    '<div style="display:flex; gap:8px; margin-top:8px">' +
+      '<label style="flex:1">Centro X (m)<input type="number" id="fdX" value="' + Math.round(fondoGrupo.position.x) + '" step="1" style="width:100%; margin-top:3px" oninput="cambiarFondoPlano()"></label>' +
+      '<label style="flex:1">Centro Z (m)<input type="number" id="fdZ" value="' + Math.round(fondoGrupo.position.z) + '" step="1" style="width:100%; margin-top:3px" oninput="cambiarFondoPlano()"></label>' +
+    '</div>' +
+    '<label style="display:block; margin-top:8px">Rotación (°)<input type="number" id="fdRot" value="' + fondoImg.rotDeg + '" step="1" style="width:100%; margin-top:3px" oninput="cambiarFondoPlano()"></label>' +
+    '<label style="display:block; margin-top:8px">Opacidad<input type="range" id="fdOp" min="10" max="100" value="' + Math.round(fondoImg.opacidad * 100) + '" style="width:100%; margin-top:3px" oninput="cambiarFondoPlano()"></label>' +
+    '<div style="margin-top:14px; display:flex; gap:6px; flex-wrap:wrap">' +
+      '<label class="orgAccion" style="margin:0; cursor:pointer">' + ic('carpeta') + 'Cambiar imagen<input type="file" id="fondoArchivo2" accept="image/png,image/jpeg" style="display:none"></label>' +
+      '<button class="btnEliminar" onclick="quitarFondoPlano()">' + ic('basura') + 'Quitar imagen</button>' +
+    '</div>';
+  document.getElementById('fondoArchivo2').onchange = e => { const f = e.target.files[0]; if (f) cargarFondoPlanoArchivo(f); };
+}
+function cambiarFondoPlano(){
+  if (!fondoImg) return;
+  fondoImg.anchoM = numLim((document.getElementById('fdAncho') || {}).value, fondoImg.anchoM, 1, 1000);
+  fondoImg.altoM = numLim((document.getElementById('fdAlto') || {}).value, fondoImg.altoM, 1, 1000);
+  fondoImg.rotDeg = numLim((document.getElementById('fdRot') || {}).value, fondoImg.rotDeg, -360, 360);
+  fondoImg.opacidad = numLim((document.getElementById('fdOp') || {}).value, fondoImg.opacidad * 100, 10, 100) / 100;
+  const x = numLim((document.getElementById('fdX') || {}).value, fondoGrupo.position.x, -100000, 100000);
+  const z = numLim((document.getElementById('fdZ') || {}).value, fondoGrupo.position.z, -100000, 100000);
+  fondoGrupo.position.set(x, 0.03, z);
+  actualizarFondoPlano();
 }
 
 function abrirFicha(){
@@ -2868,10 +3013,13 @@ function setHerramienta(h){
   document.getElementById('btnRegla').classList.toggle('activo', herramienta === 'regla');
   const btnLote = document.getElementById('btnLote');
   if (btnLote) btnLote.classList.toggle('activo', herramienta === 'lote');
+  const btnPorton = document.getElementById('btnPorton');
+  if (btnPorton) btnPorton.classList.toggle('activo', herramienta === 'porton');
   if (herramienta === 'via') panelHerramientaVia();
   else if (herramienta === 'ruta') panelHerramientaRuta();
   else if (herramienta === 'regla') panelHerramientaRegla();
   else if (herramienta === 'lote') panelHerramientaLote();
+  else if (herramienta === 'porton') panelHerramientaPorton();
   else mostrarPanelVacio();
 }
 function clicHerramienta(p){
@@ -2879,6 +3027,7 @@ function clicHerramienta(p){
   else if (herramienta === 'ruta') clicRuta(p);
   else if (herramienta === 'regla') clicRegla(p);
   else if (herramienta === 'lote') clicLote(p);
+  else if (herramienta === 'porton') clicPorton(p);
 }
 function deshacerPuntoHerramienta(){
   if (herramienta === 'via' && trazoVia){
@@ -2944,7 +3093,7 @@ function actualizarPreviewHerramienta(p){
       new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.45, depthWrite: false }));
     scene.add(previewMesh);
   }
-  previewMesh.material.color.setHex(herramienta === 'via' ? 0x8a8f96 : herramienta === 'regla' ? 0xffd23e : herramienta === 'lote' ? 0x3ecf6e : 0x2e9bff);
+  previewMesh.material.color.setHex(herramienta === 'via' ? 0x8a8f96 : herramienta === 'regla' ? 0xffd23e : herramienta === 'lote' ? 0xe0303d : 0x2e9bff);
   previewMesh.scale.set(len, 1, herramienta === 'via' ? viaAnchoNuevo : (herramienta === 'regla' || herramienta === 'lote') ? 0.25 : 0.5);
   previewMesh.position.set((p.x + ancla.x) / 2, 0.14, (p.z + ancla.z) / 2);
   previewMesh.rotation.y = -Math.atan2(dz, dx);
@@ -3085,10 +3234,10 @@ function clicLote(pRaw){
 function redibujarTrazoLote(){
   vaciarGrupo(loteTrazoGrupo);
   if (!trazoLote || !trazoLote.length) return;
-  const VERDE = 0x3ecf6e;
+  const ROJO = 0xe0303d;   // rojo: sobre el terreno verde se distingue mucho mejor que el verde
   const disco = (x, z, radio) => {
     const m = new THREE.Mesh(new THREE.CylinderGeometry(radio, radio, 0.1, 12),
-      new THREE.MeshBasicMaterial({ color: VERDE }));
+      new THREE.MeshBasicMaterial({ color: ROJO }));
     m.position.set(x, 0.17, z);
     loteTrazoGrupo.add(m);
   };
@@ -3097,7 +3246,7 @@ function redibujarTrazoLote(){
     const dx = b.x - a.x, dz = b.z - a.z, len = Math.hypot(dx, dz);
     if (len < 0.05) continue;
     const linea = new THREE.Mesh(new THREE.BoxGeometry(len, 0.04, 0.22),
-      new THREE.MeshBasicMaterial({ color: VERDE }));
+      new THREE.MeshBasicMaterial({ color: ROJO }));
     linea.position.set((a.x + b.x) / 2, 0.2, (a.z + b.z) / 2);
     linea.rotation.y = -Math.atan2(dz, dx);
     loteTrazoGrupo.add(linea);
@@ -3105,7 +3254,7 @@ function redibujarTrazoLote(){
   trazoLote.forEach((pt, i) => disco(pt.x, pt.z, i === 0 ? 0.5 : 0.32));
   if (trazoLote.length >= 3){
     const areaViva = Math.round(areaPoligono(trazoLote.map(pt => [pt.x, pt.z])));
-    const et = crearEtiqueta('≈ ' + areaViva.toLocaleString('es-CO') + ' m² si cierras aquí', modo2D ? 14 : 10, 'rgba(30,110,60,0.88)');
+    const et = crearEtiqueta('≈ ' + areaViva.toLocaleString('es-CO') + ' m² si cierras aquí', modo2D ? 14 : 10, 'rgba(150,25,30,0.88)');
     const cx = trazoLote.reduce((s, pt) => s + pt.x, 0) / trazoLote.length;
     const cz = trazoLote.reduce((s, pt) => s + pt.z, 0) / trazoLote.length;
     et.position.set(cx, modo2D ? 2.4 : 2, cz);
@@ -3136,6 +3285,7 @@ function finalizarLoteLibre(){
   guardar('Terreno dibujado');
   setHerramienta(null);
   avisar('Terreno cerrado — ' + Math.round(loteAreaM2()).toLocaleString('es-CO') + ' m²');
+  if (disenoInicialPendiente) abrirDisenoTerrenoInicial();
 }
 function cancelarLoteLibre(){
   trazoLote = null;
@@ -3162,6 +3312,75 @@ function abrirHerramientaLoteLibre(){
   if (!modo2D) toggleVista2D();
   trazoLote = null;
   setHerramienta('lote');
+}
+
+/* ============ DISEÑAR EL TERRENO ANTES QUE LA FICHA TÉCNICA ============
+   Al comenzar una obra nueva, primero se define el lote (rectángulo o
+   perímetro libre dibujado) y solo cuando ya quedó cerrado se pasa a pedir
+   el nombre del proyecto, el taller y el equipo. */
+let disenoInicialPendiente = false;
+function abrirDisenoTerrenoInicial(){
+  disenoInicialPendiente = true;
+  setHerramienta(null);
+  const esLibreAhora = ficha.loteModo === 'libre';
+  document.getElementById('libreVentTitulo').textContent = 'Diseña el terreno';
+  document.getElementById('libreBody').innerHTML =
+    '<div class="desc">Antes de ponerle nombre a la obra, define el terreno. Escribe el ancho y el largo, ' +
+    'o dibuja el perímetro a mano si tu lote no es rectangular (muchos terrenos reales no lo son).</div>' +
+    '<div style="display:flex; gap:16px; margin-top:10px">' +
+      '<label style="display:flex; align-items:center; gap:5px"><input type="radio" name="iniLoteModo" value="rectangulo"' + (!esLibreAhora ? ' checked' : '') + ' onchange="cambiarModoLoteInicial()"> Ancho × Largo</label>' +
+      '<label style="display:flex; align-items:center; gap:5px"><input type="radio" name="iniLoteModo" value="libre"' + (esLibreAhora ? ' checked' : '') + ' onchange="cambiarModoLoteInicial()"> Libre (dibujado)</label>' +
+    '</div>' +
+    '<div id="iniLoteRectangulo" style="display:' + (esLibreAhora ? 'none' : 'flex') + '; gap:8px; margin-top:10px; align-items:flex-end">' +
+      '<label style="flex:1">Largo del lote (m)<input type="number" id="iniLoteLargo" value="' + ficha.loteLargo + '" min="20" max="400" step="0.5" style="width:100%; margin-top:3px" oninput="refrescarM2Inicial()"></label>' +
+      '<label style="flex:1">Ancho del lote (m)<input type="number" id="iniLoteAncho" value="' + ficha.loteAncho + '" min="20" max="300" step="0.5" style="width:100%; margin-top:3px" oninput="refrescarM2Inicial()"></label>' +
+      '<b id="iniLoteM2" style="white-space:nowrap; padding-bottom:8px">≈ ' + Math.round(ficha.loteLargo * ficha.loteAncho).toLocaleString('es-CO') + ' m²</b>' +
+    '</div>' +
+    '<div id="iniLoteLibre" style="display:' + (esLibreAhora ? 'block' : 'none') + '; margin-top:10px">' +
+      '<div class="desc">' + (loteEsLibre()
+        ? ('Perímetro dibujado: ' + ficha.lotePoligono.length + ' puntos ≈ ' + Math.round(areaPoligono(ficha.lotePoligono)).toLocaleString('es-CO') + ' m².')
+        : 'Aún no has dibujado el perímetro.') + '</div>' +
+      '<button onclick="iniciarDibujoLoteInicial()">' + ic('regla') + (loteEsLibre() ? 'Rehacer el perímetro' : 'Dibujar el perímetro en el Plano 2D') + '</button>' +
+    '</div>' +
+    '<div style="margin-top:16px; display:flex; gap:6px">' +
+      '<button class="orgAccion primario" style="margin:0" onclick="continuarConNombresInicial()">' + ic('check') + 'Continuar → Datos de la obra</button>' +
+    '</div>';
+  document.getElementById('libreOverlay').style.display = 'flex';
+}
+function cambiarModoLoteInicial(){
+  const modo = (document.querySelector('input[name="iniLoteModo"]:checked') || {}).value || 'rectangulo';
+  const rec = document.getElementById('iniLoteRectangulo'), lib = document.getElementById('iniLoteLibre');
+  if (rec) rec.style.display = modo === 'libre' ? 'none' : 'flex';
+  if (lib) lib.style.display = modo === 'libre' ? 'block' : 'none';
+}
+function refrescarM2Inicial(){
+  const campoL = document.getElementById('iniLoteLargo'), campoA = document.getElementById('iniLoteAncho');
+  if (!campoL || !campoA) return;
+  const L = numLim(campoL.value, ficha.loteLargo, 20, 400);
+  const A = numLim(campoA.value, ficha.loteAncho, 20, 300);
+  const el = document.getElementById('iniLoteM2');
+  if (el) el.textContent = '≈ ' + Math.round(L * A).toLocaleString('es-CO') + ' m²';
+}
+function iniciarDibujoLoteInicial(){
+  cerrarVentanaLibre();
+  if (!modo2D) toggleVista2D();
+  trazoLote = null;
+  setHerramienta('lote');
+}
+function continuarConNombresInicial(){
+  const modoRadio = (document.querySelector('input[name="iniLoteModo"]:checked') || {}).value || 'rectangulo';
+  if (modoRadio === 'rectangulo'){
+    const L = numLim((document.getElementById('iniLoteLargo') || {}).value, ficha.loteLargo, 20, 400);
+    const A = numLim((document.getElementById('iniLoteAncho') || {}).value, ficha.loteAncho, 20, 300);
+    ficha.loteLargo = L; ficha.loteAncho = A; ficha.loteModo = 'rectangulo';
+    construirLote();
+    construirCerramiento();
+  } else if (!loteEsLibre()){
+    avisar('Dibuja el perímetro del terreno antes de continuar');
+    return;
+  }
+  disenoInicialPendiente = false;
+  abrirFicha();
 }
 
 /* ============ DÍA / NOCHE (iluminación de la obra) ============
@@ -4100,10 +4319,12 @@ document.getElementById('btnFichaLibre').onclick = () => { setHerramienta(null);
 document.getElementById('btnOrg').onclick = () => { setHerramienta(null); abrirOrganigrama(); };
 document.getElementById('btnRegla').onclick = () => setHerramienta('regla');
 document.getElementById('btnLote').onclick = () => setHerramienta('lote');
+document.getElementById('btnPorton').onclick = () => setHerramienta('porton');
 document.getElementById('btnCotas').onclick = toggleCotas;
 document.getElementById('btn2D').onclick = toggleVista2D;
 document.getElementById('btnAreas').onclick = abrirCuadroAreas;
 document.getElementById('btnHistorial').onclick = abrirHistorialLibre;
+document.getElementById('btnFondoPlano').onclick = abrirFondoPlano;
 document.getElementById('btnEditarEquipo').onclick = () => { setHerramienta(null); abrirFicha(); };
 document.getElementById('btnZonas').onclick = abrirZonasLibre;
 document.getElementById('btnEtiquetas').onclick = toggleEtiquetasLibre;
@@ -4337,13 +4558,16 @@ document.getElementById('btnVaciar').onclick = () => {
   }
 };
 
-/* pantalla de bienvenida: al comenzar por primera vez pide la ficha técnica
-   (m² del terreno + datos generales) antes de armar la obra */
+/* pantalla de bienvenida: al comenzar por primera vez se diseña PRIMERO el
+   terreno (rectángulo o dibujado a mano) y solo DESPUÉS se piden los
+   nombres/datos generales en la ficha técnica — así quien dibuja el lote
+   libre no tiene que pasar primero por un formulario pensado para el
+   rectángulo. */
 document.getElementById('libreComenzar').onclick = () => {
   const el = document.getElementById('libreInicio');
   el.classList.add('oculto');
   setTimeout(() => { el.style.display = 'none'; }, 400);
-  if (!fichaCompleta) setTimeout(abrirFicha, 450);
+  if (!fichaCompleta) setTimeout(abrirDisenoTerrenoInicial, 450);
 };
 
 /* ============ BUCLE DE ANIMACIÓN ============ */
