@@ -195,6 +195,65 @@ function construirEspacio(def){
   };
   return g;
 }
+/* plantillas predeterminadas de espacio (mismas medidas y color que el
+   proyecto Bambú — ver js/creador.js), para agregar uno con un clic sin
+   tener que escribir las medidas a mano */
+const PRESETS_ESPACIO = {
+  campamento: { nombre:'Campamento', w:19.8, d:17.6, h:2.5, color:'#3f7fbf', muros:true,  techo:true,
+    descripcion:'Campamento de oficinas en casetas prefabricadas: dirección, coordinación, interventoría, oficina técnica, sala de reuniones y archivo. Ubicarlo lejos del polvo y del tránsito de camiones.' },
+  almacen:    { nombre:'Almacén',    w:37.5, d:13.9, h:4,   color:'#d9a521', muros:true,  techo:true,
+    descripcion:'Almacén cubierto y ventilado para material delicado (cerámica, pintura, grifería, aparatos). Ubicarlo cerca de la torre para minimizar acarreos.' },
+  acopio:     { nombre:'Acopio de materiales', w:21.4, d:16,   h:1.6, color:'#b08f5a', muros:false, techo:false,
+    descripcion:'Superficie afirmada con estibas para recepción y organización de material a granel o paletizado. Debe quedar dentro del alcance de la grúa o junto al malacate.' },
+  maniobra:   { nombre:'Patio de maniobra',    w:14.8, d:17.5, h:2.4, color:'#e0c040', muros:false, techo:false,
+    descripcion:'Placa afirmada y señalizada con radio de giro suficiente para camión sencillo/turbo (radio mínimo ≈12 m).' },
+  lavado:     { nombre:'Lavado de llantas',    w:11.6, d:15.7, h:1,   color:'#4a9ec9', muros:false, techo:false,
+    descripcion:'Lavado obligatorio de llantas antes de salir a la vía pública, con poceta de sedimentación y trampa de grasas.' },
+  porteria:   { nombre:'Portería', w:10,   d:4,    h:2.5, color:'#b8371f', muros:false, techo:false,
+    descripcion:'Único punto de control de acceso vehicular y peatonal, con portón del ancho de la vía y puerta peatonal separada.' },
+  comedor:    { nombre:'Comedor',  w:12,   d:6.4,  h:2.7, color:'#5fae4a', muros:true,  techo:true,
+    descripcion:'Comedor/casino del personal: ≈1.2 m² por comensal por turno. Ubicarlo en la zona de bienestar, lejos del polvo y el ruido.' },
+  casilleros: { nombre:'Casilleros', w:15.5, d:13.8, h:2.5, color:'#8a6a3a', muros:true,  techo:true,
+    descripcion:'Guardarropa del personal: 1 casillero por trabajador, junto a baños y vestidores.' },
+  banos:      { nombre:'Baños y vestidores', w:15.8, d:17.5, h:2.5, color:'#4f66c9', muros:true, techo:true,
+    descripcion:'Batería de baños, duchas y vestidores. Res. 2400/79 art. 17: 1 inodoro, 1 lavamanos, 1 orinal y 1 ducha por cada 15 trabajadores.' },
+  contenedorOficina: { nombre:'Contenedor oficina 20 ft', w:6.06, d:2.44, h:2.59, color:'#2e6db8', muros:true, techo:true,
+    descripcion:'Contenedor marítimo estándar de 20 pies (6.06 × 2.44 × 2.59 m) adecuado como oficina, portería o cuarto técnico. Requiere apoyo nivelado.' },
+  bateriaSanitaria: { nombre:'Batería sanitaria (4 und)', w:5, d:1.5, h:2.4, color:'#4a9ec9', muros:true, techo:true,
+    descripcion:'Módulo de 4 unidades sanitarias portátiles (≈1.2 × 1.2 m c/u). Res. 2400/79: 1 inodoro por cada 15 trabajadores, separados por sexo; requiere mantenimiento y vaciado periódico.' },
+  patioHierros: { nombre:'Patio de hierros', w:24, d:10, h:1.2, color:'#8a5a3a', muros:false, techo:false,
+    descripcion:'Zona de figuración y almacenamiento de acero de refuerzo: bancos de corte/doblado y estibas por diámetro. Debe quedar dentro del alcance de la grúa y cerca del acceso de camiones.' },
+  zonaResiduos: { nombre:'Zona de residuos', w:8, d:6, h:1.8, color:'#6f7a2f', muros:true, techo:false,
+    descripcion:'Punto ecológico y acopio temporal de RCD con contención: separación por tipo (ordinarios, reciclables, peligrosos, escombro) según el plan de manejo ambiental.' },
+  escombros: { nombre:'Zona de escombros', w:8, d:6, h:1.5, color:'#8f7d6b', muros:false, techo:false,
+    descripcion:'Acopio temporal de escombros (concreto, mampostería y material pétreo de demoliciones o sobrantes), separado de la basura ordinaria. Debe quedar accesible para el camión volqueta y evacuarse periódicamente a una escombrera autorizada.' },
+  parqueadero: { nombre:'Parqueadero (6 celdas)', w:15, d:11, h:1, color:'#6d7075', muros:false, techo:false,
+    descripcion:'Parqueadero interno de 6 celdas de 2.5 × 5 m con circulación central de 6 m. Ubicarlo sin interferir el patio de maniobra ni las rutas de material.' },
+  senalizacion: { nombre:'Punto de señalización', w:2, d:2, h:2, color:'#e0c040', muros:false, techo:false,
+    descripcion:'Punto de señalización SST: señales reflectivas de obligación, prevención y prohibición (casco, ruta de evacuación, riesgo eléctrico, velocidad máxima).' },
+  cerramientoTramo: { nombre:'Cerramiento provisional (tramo)', w:12, d:0.5, h:2.4, color:'#9aa0a6', muros:true, techo:false,
+    descripcion:'Tramo de cerramiento provisional de 12 m (teja galvanizada o polisombra sobre estructura), altura mínima 2.0 m. Repetir tramos para cerrar frentes o desviar circulaciones peatonales.' },
+  viaInterna: { nombre:'Vía interna (tramo)', w:30, d:6, h:1, color:'#55585e', muros:false, techo:false,
+    descripcion:'Tramo de vía interna afirmada de 6 m de ancho: mínimo recomendado 6 m para doble sentido o 3.5 m para un solo sentido, con radio de giro ≥12 m para camión sencillo. La validación de "Zonas y aforo" alerta si queda más angosta.' }
+};
+function opcionesPresetEspacio(){
+  return Object.keys(PRESETS_ESPACIO).map(k => '<option value="' + k + '">' + esc(PRESETS_ESPACIO[k].nombre) + '</option>').join('');
+}
+/* muro suelto, independiente del cerramiento perimetral: se puede colocar
+   en cualquier parte de la obra (ej. divisiones internas, muros de
+   contención provisionales) — solo una placa, sin puerta ni techo */
+function construirMuro(def){
+  const g = new THREE.Group();
+  const W = def.w, H = def.h, E = def.espesor, cm = def.color;
+  caja(g, W, H, E, cm, 0, H / 2, 0);
+  const area = Math.round(W * E * 10) / 10;
+  g.userData.info = {
+    dimensiones: W + ' × ' + E + ' m ≈ ' + area + ' m²',
+    altura: H + ' m',
+    detalle: 'Muro suelto'
+  };
+  return g;
+}
 
 /* Sistemas estructurales del edificio: nombre + descripción + dibujo distinto */
 const SISTEMAS = {
@@ -775,6 +834,27 @@ const CATALOGO_MAQUINAS = [
       cono(g, 1.5, 0.2, 0.8, c, 0, 10.4, 0);
       caja(g, 0.12, 9.6, 0.35, 0x565b62, 1.62, 5.4, 0);
       cilindro(g, 0.11, 8.5, 0x8a8f96, -1.35, 5.2, -0.9);
+    } },
+  { id:'pilaArena', nombre:'Pila de arena', grupo:'Materiales de acopio', w:3.4, d:3.4, h:1.6, color:'#d9c08a', movil:false,
+    desc:'Acopio de arena junto a la vía o la zona de mezcla, para concreto o mortero.',
+    dibujar(g, c){
+      cono(g, 1.7, 0.1, 1.6, c, 0, 0.8, 0);
+      cono(g, 0.9, 0.1, 0.9, c, 0.5, 1.5, 0.3);
+    } },
+  { id:'pilaAgregado', nombre:'Pila de agregado (grava/triturado)', grupo:'Materiales de acopio', w:3.4, d:3.4, h:1.6, color:'#9a9a94', movil:false,
+    desc:'Acopio de agregado grueso (grava o triturado) junto a la vía.',
+    dibujar(g, c){
+      cono(g, 1.7, 0.1, 1.6, c, 0, 0.8, 0);
+      cono(g, 0.9, 0.1, 0.9, c, -0.5, 1.5, -0.3);
+    } },
+  { id:'bultosCemento', nombre:'Bultos de cemento (estiba)', grupo:'Materiales de acopio', w:1.3, d:1.1, h:1.2, color:'#c9c3b5', movil:false,
+    desc:'Estiba de bultos de cemento sobre estibador de madera, lista para mezcla en obra.',
+    dibujar(g, c){
+      caja(g, 1.3, 0.12, 1.1, 0x8a6642, 0, 0.06, 0);
+      caja(g, 1.15, 0.22, 0.95, c, 0, 0.24, 0);
+      caja(g, 1.0, 0.22, 0.82, c, 0, 0.48, 0);
+      caja(g, 0.85, 0.22, 0.68, c, 0, 0.72, 0);
+      caja(g, 0.62, 0.22, 0.5, c, 0, 0.95, 0);
     } }
 ];
 function catalogoMaquina(id){ return CATALOGO_MAQUINAS.find(m => m.id === id) || CATALOGO_MAQUINAS[0]; }
@@ -807,11 +887,11 @@ function construirMaquina(def){
 const FABRICAS = {
   espacio: construirEspacio, edificio: construirEdificio, malacate: construirMalacate,
   gruaTorre: construirGruaTorre, gruaPluma: construirGruaPluma, mueble: construirMueble,
-  maquina: construirMaquina
+  maquina: construirMaquina, muro: construirMuro
 };
 const NOMBRE_TIPO = {
   espacio:'Espacio', edificio:'Edificio', malacate:'Malacate',
-  gruaTorre:'Torre grúa', gruaPluma:'Grúa pluma', mueble:'Mueble', maquina:'Maquinaria'
+  gruaTorre:'Torre grúa', gruaPluma:'Grúa pluma', mueble:'Mueble', maquina:'Maquinaria', muro:'Muro'
 };
 
 /* ============ ELEMENTOS DE LA OBRA ============ */
@@ -874,6 +954,10 @@ function normalizarDef(raw){
     d.color = /^#[0-9a-f]{6}$/i.test(raw.color || '') ? raw.color : item.color;
     d.movil = raw.movil === undefined ? item.movil : !!raw.movil;
     if (item.id === 'plantaConcreto') d.metaM3 = numLim(raw.metaM3, 0, 0, 100000);
+  } else if (tipo === 'muro'){
+    d.w = numLim(raw.w, 6, 1, 90); d.h = numLim(raw.h, 2.4, 0.5, 14); d.espesor = numLim(raw.espesor, 0.2, 0.1, 1.5);
+    d.d = d.espesor;   // alias: así cotas/áreas/zonas lo tratan igual que los demás elementos
+    d.color = /^#[0-9a-f]{6}$/i.test(raw.color || '') ? raw.color : '#9aa0a5';
   }
   return d;
 }
@@ -889,7 +973,7 @@ function crearElemento(raw){
   et.position.y = (def.tipo === 'gruaTorre' ? def.mastil : def.tipo === 'edificio' ? def.pisos*def.hPiso :
                    def.tipo === 'malacate' ? def.mastil : def.tipo === 'gruaPluma' ? 6 :
                    def.tipo === 'mueble' ? def.h + 0.6 :
-                   def.tipo === 'maquina' ? def.h + 1 : (def.h + 2)) + 3;
+                   def.tipo === 'maquina' ? def.h + 1 : def.tipo === 'muro' ? def.h + 0.6 : (def.h + 2)) + 3;
   g.add(et); g.userData.etiqueta = et;
   g.position.set(def.x, 0, def.z);
   g.rotation.y = def.rot;
@@ -1434,7 +1518,7 @@ function opcionesTipoVentana(){
         '<option value="mueble">Mueble</option>' +
       '</optgroup>';
   }
-  return '<option value="espacio">Espacio</option><option value="edificio">Edificio</option>';
+  return '<option value="espacio">Espacio</option><option value="edificio">Edificio</option><option value="muro">Muro (suelto)</option>';
 }
 function abrirVentanaEspacios(){
   modoVentana = 'espacios';
@@ -1455,7 +1539,7 @@ function renderVentana(){
     ? elementos.map((g, i) => {
         const d = g.userData.def;
         return '<div class="planoFila">' +
-          '<span class="planoNom">' + ic(d.tipo === 'edificio' ? 'edificio' : (d.tipo === 'gruaTorre' || d.tipo === 'gruaPluma') ? 'grua' : d.tipo === 'mueble' ? 'silla' : d.tipo === 'maquina' ? 'camion' : 'caja') +
+          '<span class="planoNom">' + ic(d.tipo === 'edificio' || d.tipo === 'muro' ? 'edificio' : (d.tipo === 'gruaTorre' || d.tipo === 'gruaPluma') ? 'grua' : d.tipo === 'mueble' ? 'silla' : d.tipo === 'maquina' ? 'camion' : 'caja') +
             ' <b class="txtFuerte">' + esc(d.nombre) + '</b> <small>· ' + NOMBRE_TIPO[d.tipo] + '</small></span>' +
           '<span>' +
             '<button class="planoBtn" title="Editar dimensiones" onclick="editarLibreIdx(' + i + ')">' + ic('editar') + '</button> ' +
@@ -1486,11 +1570,13 @@ function cambiarTipo(){
     '<label>' + lbl + ' <input type="number" id="' + id + '" value="' + val + '" min="' + min + '" max="' + max + '" step="' + (step||1) + '" style="width:66px"></label>';
   let html = '';
   if (t === 'espacio'){
-    html = num('libAncho','Ancho (m)',10,2,90,0.1) + num('libFondo','Fondo (m)',8,2,70,0.1) + num('libAlto','Altura (m)',2.5,1,14,0.1) +
+    html = '<label style="width:100%">Plantilla predeterminada <select id="libPreset" style="flex:1; min-width:180px" onchange="aplicarPresetEspacioLibre()">' +
+        '<option value="">Personalizado (definir medidas)</option>' + opcionesPresetEspacio() +
+      '</select></label>' +
+      num('libAncho','Ancho (m)',10,2,90,0.1) + num('libFondo','Fondo (m)',8,2,70,0.1) + num('libAlto','Altura (m)',2.5,1,14,0.1) +
       '<label>Color <input type="color" id="libColor" value="#3f7fbf"></label>' +
       '<label><input type="checkbox" id="libMuros" checked> Muros</label>' +
-      '<label><input type="checkbox" id="libTecho" checked> Techo</label>' +
-      '<label style="width:100%">Sistema estructural <select id="libSistemaEsp" style="flex:1">' + opcionesSistema('muros') + '</select></label>';
+      '<label><input type="checkbox" id="libTecho" checked> Techo</label>';
   } else if (t === 'edificio'){
     html = num('libAncho','Ancho (m)',20,3,90,0.1) + num('libFondo','Fondo (m)',12,3,70,0.1) +
       num('libPisos','Pisos',5,1,40,1) + num('libHPiso','Entrepiso (m)',2.65,2,5,0.05) +
@@ -1514,10 +1600,28 @@ function cambiarTipo(){
       num('libAncho','Ancho (m)',it0.w,0.4,30,0.1) + num('libFondo','Largo (m)',it0.d,0.4,40,0.1) + num('libAlto','Altura (m)',it0.h,0.4,30,0.1) +
       '<label>Color <input type="color" id="libColor" value="' + it0.color + '"></label>' +
       '<label><input type="checkbox" id="libMovil"' + (it0.movil ? ' checked' : '') + '> Móvil (se le puede asignar una ruta)</label>';
+  } else if (t === 'muro'){
+    html = num('libAncho','Largo (m)',6,1,90,0.1) + num('libAlto','Altura (m)',2.4,0.5,14,0.1) + num('libEspesor','Espesor (m)',0.2,0.1,1.5,0.05) +
+      '<label>Color <input type="color" id="libColor" value="#9aa0a5"></label>';
   }
   campos.innerHTML = html;
-  const ph = { espacio:'Espacio', edificio:'Edificio', malacate:'Malacate', gruaTorre:'Torre grúa', gruaPluma:'Grúa pluma', mueble:'Mueble', maquina:'Maquinaria' };
+  const ph = { espacio:'Espacio', edificio:'Edificio', malacate:'Malacate', gruaTorre:'Torre grúa', gruaPluma:'Grúa pluma', mueble:'Mueble', maquina:'Maquinaria', muro:'Muro' };
   document.getElementById('libNombre').placeholder = 'Nombre (ej: ' + ph[t] + ')';
+}
+/* rellena el formulario de "Espacio" con las medidas de una plantilla
+   predeterminada (Campamento, Almacén, Baños…) — igual que el proyecto Bambú */
+function aplicarPresetEspacioLibre(){
+  const k = document.getElementById('libPreset').value;
+  const p = PRESETS_ESPACIO[k];
+  if (!p) return;
+  document.getElementById('libNombre').value = p.nombre;
+  document.getElementById('libAncho').value = p.w;
+  document.getElementById('libFondo').value = p.d;
+  document.getElementById('libAlto').value = p.h;
+  document.getElementById('libColor').value = p.color;
+  document.getElementById('libMuros').checked = p.muros;
+  document.getElementById('libTecho').checked = p.techo;
+  document.getElementById('libDesc').value = p.descripcion || '';
 }
 function rellenarCamposMueble(){
   const item = CATALOGO_MUEBLES.find(m => m.id === document.getElementById('libMuebleId').value) || CATALOGO_MUEBLES[0];
@@ -1551,7 +1655,6 @@ function agregarElemento(){
   if (tipo === 'espacio'){
     raw.w = valNum('libAncho'); raw.d = valNum('libFondo'); raw.h = valNum('libAlto');
     raw.color = valNum('libColor'); raw.muros = document.getElementById('libMuros').checked; raw.techo = document.getElementById('libTecho').checked;
-    raw.sistema = (document.getElementById('libSistemaEsp') || {}).value;
   } else if (tipo === 'edificio'){
     raw.w = valNum('libAncho'); raw.d = valNum('libFondo'); raw.pisos = valNum('libPisos'); raw.hPiso = valNum('libHPiso');
     raw.sistema = (document.getElementById('libSistema') || {}).value;
@@ -1568,6 +1671,8 @@ function agregarElemento(){
     raw.catalogoId = (document.getElementById('libMaqId') || {}).value;
     raw.w = valNum('libAncho'); raw.d = valNum('libFondo'); raw.h = valNum('libAlto'); raw.color = valNum('libColor');
     raw.movil = !!(document.getElementById('libMovil') || {}).checked;
+  } else if (tipo === 'muro'){
+    raw.w = valNum('libAncho'); raw.h = valNum('libAlto'); raw.espesor = valNum('libEspesor'); raw.color = valNum('libColor');
   }
   const g = crearElemento(raw);
   guardar('Creado: ' + g.userData.def.nombre);
@@ -1604,8 +1709,7 @@ function renderEditorLibre(d){
     campos = num('edAncho','Ancho (m)',d.w,2,90,0.1) + num('edFondo','Fondo (m)',d.d,2,70,0.1) + num('edAlto','Altura (m)',d.h,1,14,0.1) +
       '<label>Color <input type="color" id="edColor" value="' + (d.color || '#3f7fbf') + '"></label>' +
       '<label><input type="checkbox" id="edMuros"' + (d.muros ? ' checked' : '') + '> Muros</label>' +
-      '<label><input type="checkbox" id="edTecho"' + (d.techo ? ' checked' : '') + '> Techo</label>' +
-      '<label style="width:100%">Sistema estructural <select id="edSistemaEsp" style="flex:1">' + opcionesSistema(d.sistema || 'muros') + '</select></label>';
+      '<label><input type="checkbox" id="edTecho"' + (d.techo ? ' checked' : '') + '> Techo</label>';
   } else if (d.tipo === 'edificio'){
     campos = num('edAncho','Ancho (m)',d.w,3,90,0.1) + num('edFondo','Fondo (m)',d.d,3,70,0.1) +
       num('edPisos','Pisos',d.pisos,1,40,1) + num('edHPiso','Entrepiso (m)',d.hPiso,2,5,0.05) +
@@ -1627,6 +1731,9 @@ function renderEditorLibre(d){
       num('edAncho','Ancho (m)',d.w,0.4,30,0.1) + num('edFondo','Largo (m)',d.d,0.4,40,0.1) + num('edAlto','Altura (m)',d.h,0.4,30,0.1) +
       '<label>Color <input type="color" id="edColor" value="' + (d.color || '#d9a521') + '"></label>' +
       '<label><input type="checkbox" id="edMovil"' + (d.movil ? ' checked' : '') + '> Móvil (se le puede asignar una ruta)</label>';
+  } else if (d.tipo === 'muro'){
+    campos = num('edAncho','Largo (m)',d.w,1,90,0.1) + num('edAlto','Altura (m)',d.h,0.5,14,0.1) + num('edEspesor','Espesor (m)',d.espesor,0.1,1.5,0.05) +
+      '<label>Color <input type="color" id="edColor" value="' + (d.color || '#9aa0a5') + '"></label>';
   }
   document.getElementById('libreBody').innerHTML =
     '<div class="desc">Editando <b class="txtAcento">' + esc(d.nombre) + '</b> (' + NOMBRE_TIPO[d.tipo] + '). ' +
@@ -1652,7 +1759,6 @@ function guardarEdicionLibre(){
   if (d.tipo === 'espacio'){
     raw.w = valNum('edAncho'); raw.d = valNum('edFondo'); raw.h = valNum('edAlto');
     raw.color = valNum('edColor'); raw.muros = document.getElementById('edMuros').checked; raw.techo = document.getElementById('edTecho').checked;
-    raw.sistema = (document.getElementById('edSistemaEsp') || {}).value;
   } else if (d.tipo === 'edificio'){
     raw.w = valNum('edAncho'); raw.d = valNum('edFondo'); raw.pisos = valNum('edPisos'); raw.hPiso = valNum('edHPiso');
     raw.sistema = (document.getElementById('edSistema') || {}).value;
@@ -1669,6 +1775,8 @@ function guardarEdicionLibre(){
     raw.catalogoId = (document.getElementById('edMaqId') || {}).value;
     raw.w = valNum('edAncho'); raw.d = valNum('edFondo'); raw.h = valNum('edAlto'); raw.color = valNum('edColor');
     raw.movil = !!(document.getElementById('edMovil') || {}).checked;
+  } else if (d.tipo === 'muro'){
+    raw.w = valNum('edAncho'); raw.h = valNum('edAlto'); raw.espesor = valNum('edEspesor'); raw.color = valNum('edColor');
   }
   if (amueblando === g) cerrarAmoblar();   // se editó el espacio que se estaba amoblando: se sale primero
   const i = elementos.indexOf(g);
@@ -1750,6 +1858,10 @@ function normalizarFicha(raw){
     // lados del cerramiento donde hay portones de acceso; [] = automático
     // (un solo portón en el lado más al sur) — admite varios a la vez
     portones: (Array.isArray(raw.portones) ? raw.portones : (Number.isInteger(raw.idxPorton) && raw.idxPorton >= 0 ? [raw.idxPorton] : []))
+      .filter(i => Number.isInteger(i) && i >= 0).slice(0, 12),
+    // lados del cerramiento dejados a propósito SIN muro (una abertura,
+    // distinta de un portón — no tiene puerta ni sirve de entrada oficial)
+    aberturas: (Array.isArray(raw.aberturas) ? raw.aberturas : [])
       .filter(i => Number.isInteger(i) && i >= 0).slice(0, 12),
     taller: String(raw.taller || 'Taller II').slice(0, 40),
     equipo: (Array.isArray(raw.equipo) ? raw.equipo : []).map(n => String(n).slice(0, 40)).filter(Boolean).slice(0, 12)
@@ -1884,6 +1996,7 @@ function construirCerramiento(){
   // (un solo portón automático: rectángulo → costado sur; libre → el lado
   // más al sur que alcance)
   const gates = portonesActivos();
+  const abiertos = aberturasActivas();
   const postes = [];
   const puertas = [];
   function tramoCerrLibre(x1, z1, x2, z2){
@@ -1925,6 +2038,12 @@ function construirCerramiento(){
       et.position.set(mx, H + 2, mz);
       cerrGrupo.add(et);
       puertas.push([mx + nx * 8, mz + nz * 8]);
+    } else if (abiertos.includes(i)){
+      // abertura: a propósito NO se construye muro en este lado — queda el
+      // espacio abierto (solo una etiqueta discreta para verlo en el plano)
+      const et = crearEtiqueta('ABIERTO (sin cerramiento)', 11, 'rgba(90,90,90,0.75)');
+      et.position.set((a[0] + b[0]) / 2, 1.6, (a[1] + b[1]) / 2);
+      cerrGrupo.add(et);
     } else {
       tramoCerrLibre(a[0], a[1], b[0], b[1]);
     }
@@ -1976,15 +2095,7 @@ function clicPorton(pRaw){
   }
   const esquinas = loteEsquinas();
   const n = esquinas.length;
-  let mejorI = -1, mejorD = Infinity;
-  for (let i = 0; i < n; i++){
-    const a = esquinas[i], b = esquinas[(i + 1) % n];
-    const dx = b[0] - a[0], dz = b[1] - a[1], len2 = dx * dx + dz * dz;
-    let t = len2 > 0 ? ((pRaw.x - a[0]) * dx + (pRaw.z - a[1]) * dz) / len2 : 0;
-    t = Math.max(0, Math.min(1, t));
-    const d = Math.hypot(pRaw.x - (a[0] + dx * t), pRaw.z - (a[1] + dz * t));
-    if (d < mejorD){ mejorD = d; mejorI = i; }
-  }
+  const mejorI = ladoMasCercano(pRaw);
   if (mejorI < 0) return;
   const a = esquinas[mejorI], b = esquinas[(mejorI + 1) % n];
   if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 7){
@@ -2029,6 +2140,80 @@ function quitarPortonLibre(idx){
   guardar('Portón quitado');
   panelHerramientaPorton();
   avisar('Portón quitado — quedan ' + (activos.length - 1));
+}
+/* índice del lado del cerramiento más cercano a un punto del terreno —
+   usado tanto por "Portones" como por "Aberturas" */
+function ladoMasCercano(pRaw){
+  const esquinas = loteEsquinas();
+  const n = esquinas.length;
+  let mejorI = -1, mejorD = Infinity;
+  for (let i = 0; i < n; i++){
+    const a = esquinas[i], b = esquinas[(i + 1) % n];
+    const dx = b[0] - a[0], dz = b[1] - a[1], len2 = dx * dx + dz * dz;
+    let t = len2 > 0 ? ((pRaw.x - a[0]) * dx + (pRaw.z - a[1]) * dz) / len2 : 0;
+    t = Math.max(0, Math.min(1, t));
+    const d = Math.hypot(pRaw.x - (a[0] + dx * t), pRaw.z - (a[1] + dz * t));
+    if (d < mejorD){ mejorD = d; mejorI = i; }
+  }
+  return mejorI;
+}
+/* ============ ABRIR / CERRAR UN LADO DEL CERRAMIENTO (herramienta "Aberturas") ============
+   Distinto de un portón: aquí simplemente no se construye muro en ese lado
+   — no tiene puerta ni cuenta como entrada oficial de camiones/caminar —
+   útil para conectar con un lote vecino o dejar un tramo abierto a propósito. */
+function aberturasActivas(){
+  const esquinas = loteEsquinas();
+  const n = esquinas.length;
+  const gates = portonesActivos();
+  if (!Array.isArray(ficha.aberturas)) return [];
+  return ficha.aberturas.filter(i => Number.isInteger(i) && i >= 0 && i < n && !gates.includes(i));
+}
+function clicAbertura(pRaw){
+  if (!cerrCfg.activo){
+    avisar('Activa el cerramiento en la Ficha técnica para poder dejar un lado abierto');
+    setHerramienta(null);
+    return;
+  }
+  const mejorI = ladoMasCercano(pRaw);
+  if (mejorI < 0) return;
+  const gates = portonesActivos();
+  if (gates.includes(mejorI)){
+    avisar('Ese lado ya tiene un portón — quítalo primero con la herramienta "Portones"');
+    return;
+  }
+  const abiertos = aberturasActivas();
+  if (abiertos.includes(mejorI)){
+    ficha.aberturas = abiertos.filter(i => i !== mejorI);
+    construirCerramiento();
+    guardar('Cerramiento cerrado en un lado');
+    avisar('Ese lado vuelve a tener cerramiento');
+  } else {
+    ficha.aberturas = abiertos.concat([mejorI]);
+    construirCerramiento();
+    guardar('Abertura agregada en el cerramiento');
+    avisar('Ese lado quedó abierto (sin cerramiento)');
+  }
+  panelHerramientaAbertura();
+}
+function panelHerramientaAbertura(){
+  const activos = cerrCfg.activo ? aberturasActivas() : [];
+  const filas = activos.map((idx, i) =>
+    '<div class="planoFila"><span class="planoNom">Abertura ' + (i + 1) + '</span>' +
+    '<button class="planoBtn peligro" style="width:auto; margin:0" title="Cerrar este lado (poner muro de nuevo)" onclick="quitarAberturaLibre(' + idx + ')">✕</button></div>').join('');
+  panelSel('Abrir/cerrar un lado del cerramiento',
+    '<div class="desc">Haz <b class="txtAcento">clic sobre un lado del cerramiento</b> (se ve mejor en el Plano 2D) para dejarlo ' +
+    '<b class="txtAcento">abierto</b> (sin muro, sin puerta); si ese lado ya está abierto, el mismo clic lo vuelve a cerrar. ' +
+    'No cuenta como entrada de camiones ni del modo Caminar — para eso usa "Portones".</div>' +
+    (cerrCfg.activo ? (activos.length ? filas : '<div class="desc">Aún no hay aberturas.</div>') :
+      '<div class="desc" style="color:var(--rojo-texto)">Activa el cerramiento en la Ficha técnica primero.</div>'));
+}
+function quitarAberturaLibre(idx){
+  const abiertos = aberturasActivas();
+  ficha.aberturas = abiertos.filter(i => i !== idx);
+  construirCerramiento();
+  guardar('Cerramiento cerrado en un lado');
+  panelHerramientaAbertura();
+  avisar('Ese lado vuelve a tener cerramiento');
 }
 
 /* ============ IMAGEN DE FONDO PARA CALCAR (plano de AutoCAD u otro) ============
@@ -3057,11 +3242,14 @@ function setHerramienta(h){
   if (btnLote) btnLote.classList.toggle('activo', herramienta === 'lote');
   const btnPorton = document.getElementById('btnPorton');
   if (btnPorton) btnPorton.classList.toggle('activo', herramienta === 'porton');
+  const btnAbertura = document.getElementById('btnAbertura');
+  if (btnAbertura) btnAbertura.classList.toggle('activo', herramienta === 'abertura');
   if (herramienta === 'via') panelHerramientaVia();
   else if (herramienta === 'ruta') panelHerramientaRuta();
   else if (herramienta === 'regla') panelHerramientaRegla();
   else if (herramienta === 'lote'){ if (!trazoLote) mostrarPuntosEditablesLote(); panelHerramientaLote(); }
   else if (herramienta === 'porton') panelHerramientaPorton();
+  else if (herramienta === 'abertura') panelHerramientaAbertura();
   else mostrarPanelVacio();
 }
 function clicHerramienta(p){
@@ -3070,6 +3258,7 @@ function clicHerramienta(p){
   else if (herramienta === 'regla') clicRegla(p);
   else if (herramienta === 'lote') clicLote(p);
   else if (herramienta === 'porton') clicPorton(p);
+  else if (herramienta === 'abertura') clicAbertura(p);
 }
 function deshacerPuntoHerramienta(){
   if (herramienta === 'via' && trazoVia){
@@ -4428,6 +4617,7 @@ document.getElementById('btnOrg').onclick = () => { setHerramienta(null); abrirO
 document.getElementById('btnRegla').onclick = () => setHerramienta('regla');
 document.getElementById('btnLote').onclick = () => setHerramienta('lote');
 document.getElementById('btnPorton').onclick = () => setHerramienta('porton');
+document.getElementById('btnAbertura').onclick = () => setHerramienta('abertura');
 document.getElementById('btnCotas').onclick = toggleCotas;
 document.getElementById('btn2D').onclick = toggleVista2D;
 document.getElementById('btnAreas').onclick = abrirCuadroAreas;
