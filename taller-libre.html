@@ -15,91 +15,28 @@
   document.documentElement.dataset.tema = localStorage.getItem('temaObra') || 'claro';
 </script>
 <style>
-  /* ====== Estilos propios del constructor libre (aislados, prefijo "libre") ======
-     Usa las variables de tema de css/estilos.css (claro/oscuro, acento verde
-     bambú + azul secundario, Fredoka en títulos y esquinas redondeadas). */
-  #libreUI {
-    position:absolute; top:12px; left:12px; z-index:10;
-    display:flex; flex-wrap:wrap; gap:8px; align-items:center;
-    background:var(--superficie); padding:10px 14px; border-radius:18px;
-    border:1px solid var(--borde); box-shadow:var(--sombra);
-    max-width:calc(100vw - 340px);
-  }
-  #libreUI .marca {
-    font-family:var(--fuente-display); color:var(--acento-texto); font-weight:700;
-    letter-spacing:1px; text-transform:uppercase; font-size:15px; margin-right:4px;
-    display:inline-flex; align-items:center; gap:6px;
-  }
-  #libreUI button, #libreUI a.btn {
-    background:var(--sup-alta); color:var(--texto); border:1px solid var(--borde);
-    padding:7px 12px; border-radius:var(--radio-boton); cursor:pointer; font-size:12.5px;
-    text-decoration:none; display:inline-flex; align-items:center; gap:6px;
-    transition:background .15s, color .15s, border-color .15s;
-  }
-  #libreUI button:hover, #libreUI a.btn:hover { background:var(--acento); color:var(--sobre-acento); border-color:var(--acento); }
-  #libreUI button.primario { background:var(--acento); border-color:var(--acento); color:var(--sobre-acento); font-weight:700; }
-  #libreUI button.primario:hover { background:var(--acento-hover); border-color:var(--acento-hover); }
-  #libreUI button.activo { background:var(--acento); border-color:var(--acento); color:var(--sobre-acento); font-weight:700; }
-  #libreUI svg { width:15px; height:15px; color:var(--acento-2); }
-  #libreUI button.activo svg, #libreUI button.primario svg { color:var(--sobre-acento); }
-
-  #librePanel {
-    position:absolute; top:12px; right:12px; z-index:10; width:300px;
-    background:var(--superficie); border:1px solid var(--borde); border-radius:18px;
-    box-shadow:var(--sombra);
-    padding:14px 16px; color:var(--texto); max-height:calc(100vh - 40px); overflow-y:auto;
-  }
-  #librePanel h2 {
-    margin:0 0 8px; font-size:16px; font-weight:700; color:var(--acento-texto);
-    font-family:var(--fuente-display); text-transform:uppercase; letter-spacing:1px;
-  }
-  #librePanel table { width:100%; border-collapse:collapse; font-size:12.5px; }
-  #librePanel td { padding:4px 2px; border-bottom:1px solid var(--linea); vertical-align:top; }
-  #librePanel td:first-child { color:var(--texto-2); width:40%; }
-  #librePanel .desc { font-size:12.5px; color:var(--texto-2); margin-top:8px; line-height:1.45; }
-  #librePanel .desc b { color:var(--texto); }
-  #librePanel label { color:var(--texto-2); font-size:12.5px; display:block; margin-top:8px; }
-  #librePanel label.chk { display:flex; align-items:center; margin-top:8px; }
-  #librePanel input, #librePanel select {
+  /* ====== Estilos propios del constructor libre ======
+     El sidebar (#ui), el panel derecho (#panel/#panelTabs), el mando móvil
+     (#pad) y los controles de vista (#viewCtrl) reusan EXACTAMENTE las
+     mismas clases/ids que el proyecto Bambú (css/estilos.css) — así el
+     panel de "Proyecto libre" luce igual, sin duplicar CSS. Aquí solo van
+     los complementos que Bambú no necesita (inputs sueltos en la pestaña
+     Selección, la ventana modal genérica y la pantalla de bienvenida). */
+  #panel input, #panel select {
     background:var(--campo); border:1px solid var(--borde); color:var(--texto);
-    border-radius:var(--radio-campo); padding:6px 9px; font-size:12.5px; width:100%; margin-top:4px;
+    border-radius:var(--radio-campo); padding:6px 9px; font-size:12.5px; width:100%; margin-top:4px; box-sizing:border-box;
   }
-  #librePanel input:focus, #librePanel select:focus { outline:none; border-color:var(--acento); }
-  #librePanel input[type="color"] { padding:2px 3px; height:30px; cursor:pointer; }
-  #librePanel input[type="checkbox"] { width:auto; accent-color:var(--acento); margin:0 6px 0 0; }
-  /* pestañas Selección / Modificar / Ficha técnica (mismo look del panel del proyecto Bambú) */
-  #libreTabs { display:flex; gap:2px; margin:2px 0 10px; border-bottom:1px solid var(--borde); }
-  #libreTabs .tabBtn {
-    flex:1; background:none; border:none; border-bottom:2px solid transparent; border-radius:0;
-    color:var(--texto-2); font-size:12px; font-weight:700; padding:7px 4px; cursor:pointer;
-    text-transform:uppercase; letter-spacing:.4px; width:auto; margin:0;
-  }
-  #libreTabs .tabBtn:hover { color:var(--acento-texto); background:none; }
-  #libreTabs .tabBtn.activo { color:var(--acento-texto); border-bottom-color:var(--acento); }
-  #librePanel .panelTab { display:none; }
-  #librePanel .panelTab.activo { display:block; }
-  #librePanel button.btnBloqueo.libre { background:var(--acento); border-color:var(--acento); color:var(--sobre-acento); font-weight:700; }
-  #librePanel button.btnBloqueo.libre:hover { background:var(--acento-hover); border-color:var(--acento-hover); }
-  #librePanel button.btnBloqueo.bloqueado { background:var(--rojo-fondo); border-color:var(--rojo); color:var(--rojo-texto); font-weight:700; }
-  #librePanel button.btnBloqueo.bloqueado:hover { background:var(--rojo); color:#fff; }
-  #librePanel button {
-    margin-top:10px; width:100%; background:var(--sup-alta); color:var(--texto);
-    border:1px solid var(--borde); padding:8px; border-radius:var(--radio-boton); cursor:pointer; font-size:13px;
-    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  #panel input:focus, #panel select:focus { outline:none; border-color:var(--acento); }
+  #panel input[type="color"] { padding:2px 3px; height:30px; cursor:pointer; }
+  #panel input[type="checkbox"] { width:auto; accent-color:var(--acento); margin:0 6px 0 0; }
+  #panel label.chk { display:flex; align-items:center; margin-top:8px; }
+  #ui a.btn {
+    background:var(--sup-alta); color:var(--texto); border:1px solid var(--borde);
+    padding:7px 10px; border-radius:var(--radio-boton); cursor:pointer; font-size:12.5px;
+    text-decoration:none; display:flex; align-items:center; gap:6px; font-family:var(--fuente-display);
     transition:background .15s, color .15s, border-color .15s;
   }
-  #librePanel button:hover { background:var(--acento); color:var(--sobre-acento); border-color:var(--acento); }
-  #librePanel button svg { width:14px; height:14px; color:var(--acento-2); }
-  #librePanel button.btnEliminar { background:var(--rojo-fondo); border-color:var(--rojo); color:var(--rojo-texto); }
-  #librePanel button.btnEliminar:hover { background:var(--rojo); color:#fff; border-color:var(--rojo); }
-
-  #libreAyuda {
-    position:absolute; bottom:12px; left:12px; z-index:10;
-    background:var(--superficie); border:1px solid var(--borde); border-radius:14px;
-    box-shadow:var(--sombra);
-    padding:8px 12px; color:var(--texto-2); font-size:11.5px; line-height:1.6; max-width:340px;
-  }
-  #libreAyuda b { color:var(--texto); }
+  #ui a.btn:hover { background:var(--acento); color:var(--sobre-acento); border-color:var(--acento); }
 
   #libreOverlay {
     position:fixed; inset:0; z-index:33; display:none;
@@ -159,7 +96,6 @@
   #libreComenzar:hover { background:var(--acento-hover); border-color:var(--acento-hover); }
   #libreInicioCard a.volver { display:block; margin-top:16px; color:var(--texto-2); font-size:13px; text-decoration:none; }
   #libreInicioCard a.volver:hover { color:var(--acento-texto); }
-  /* selector de tema dentro de la tarjeta de bienvenida (ícono sol/luna) */
   .btnTema svg { width:13px; height:13px; margin-right:5px; flex:none; }
   #libreInicioCard .btnTema {
     display:inline-flex; align-items:center; margin-top:12px; background:none; border:none;
@@ -172,12 +108,6 @@
     padding:7px 14px; font-size:11px; font-weight:700;
     text-transform:uppercase; letter-spacing:1px; display:none;
   }
-
-  @media (max-width:820px){
-    #libreUI { top:8px; left:8px; right:8px; max-width:none; }
-    #librePanel { width:auto; left:8px; right:8px; top:auto; bottom:8px; max-height:40vh; }
-    #libreAyuda { display:none; }
-  }
 </style>
 </head>
 <body>
@@ -186,17 +116,16 @@
 <div id="libreInicio">
   <div id="libreInicioCard">
     <h1>Proyecto libre</h1>
-    <p>Arma tu propia obra <b class="txtAcento">desde cero</b>, con las mismas herramientas del proyecto Bambú:
-       diligencia la ficha técnica con los m² de tu terreno, dibuja las vías, marca las rutas de los vehículos,
-       agrega la maquinaria y arma el organigrama. Tu trabajo se guarda aparte y <b>no afecta</b> el proyecto Bambú.</p>
+    <p>Arma tu propia obra <b class="txtAcento">desde cero</b>, con el mismo panel del proyecto Bambú:
+       diligencia la ficha técnica, dibuja vías y rutas, programa camiones, crea espacios y equipos,
+       arma el organigrama y elige la fase de la obra. Tu trabajo se guarda aparte y <b>no afecta</b> el proyecto Bambú.</p>
     <div class="chips">
       <span class="chipEspacio">Ficha técnica</span>
-      <span class="chipEspacio">Vías</span>
-      <span class="chipEspacio">Rutas de vehículos</span>
-      <span class="chipEspacio">Maquinaria</span>
-      <span class="chipEspacio">Cerramiento</span>
+      <span class="chipEspacio">Vías y rutas</span>
+      <span class="chipEspacio">Camiones</span>
+      <span class="chipEspacio">Espacios y equipos</span>
       <span class="chipEspacio">Organigrama</span>
-      <span class="chipEspacio">Edificios y grúas</span>
+      <span class="chipEspacio">Fase de obra</span>
     </div>
     <button id="libreComenzar">Comenzar a construir</button>
     <a class="volver" href="index.html">← Volver al proyecto Bambú</a>
@@ -204,55 +133,134 @@
   </div>
 </div>
 
-<!-- Barra de herramientas -->
-<div id="libreUI">
-  <span class="marca">Proyecto libre</span>
-  <button id="libreBtnAgregar" class="primario"></button>
-  <button id="libreBtnVia" title="Dibuja las vías por donde circulan los vehículos (clic sobre el terreno)"></button>
-  <button id="libreBtnRuta" title="Marca el recorrido de un vehículo; sigue las vías y nunca cruza edificios"></button>
-  <button id="libreBtnRegla" title="Regla: mide distancias con clics sobre el terreno"></button>
-  <button id="libreBtnFicha" title="Datos generales de la obra: m² del terreno, torres, lote y cerramiento"></button>
-  <button id="libreBtnOrg" title="Organigrama de la obra con roles y responsables"></button>
-  <button id="libreBtn2D" title="Plano 2D en planta: organiza las zonas viendo los m² del lote y de cada una"></button>
-  <button id="libreBtnZonas" title="Todas las zonas creadas: área (m²), aforo y ocupación del lote"></button>
-  <button id="libreBtnEtiquetas" title="Mostrar u ocultar los nombres flotantes"></button>
-  <button id="libreBtnCaminar" title="Camina por la obra en primera persona: W A S D o flechas + mouse · Esc para salir"></button>
-  <button id="libreBtnNoche" title="Alterna día y noche: de noche alumbran las torres de iluminación que instales"></button>
-  <button id="libreBtnGuardar"></button>
-  <button id="libreBtnCargar"></button>
-  <button id="libreBtnVaciar"></button>
-  <a class="btn" href="index.html" title="Volver al proyecto Bambú"></a>
-  <input type="file" id="libreArchivo" accept=".json" style="display:none">
-</div>
-
-<!-- Panel de obra (mismas 3 pestañas del proyecto Bambú) -->
-<div id="librePanel">
-  <h2 id="librePTitulo">Panel de obra</h2>
-  <div id="libreTabs">
-    <button class="tabBtn activo" data-tab="sel">Selección</button>
-    <button class="tabBtn" data-tab="mod">Modificar</button>
-    <button class="tabBtn" data-tab="fic">Ficha técnica</button>
-  </div>
-  <div class="panelTab activo" data-tab="sel">
-    <div id="librePBody" class="desc">
-      Pulsa <b class="txtAcento">Agregar</b> para crear tu primer elemento: espacio, edificio,
-      maquinaria, malacate o grúa. Luego haz clic sobre él para ver su ficha, arrástralo para
-      ubicarlo, gíralo o elimínalo.
+<!-- ============ BARRA DE HERRAMIENTAS (idéntica estructura al proyecto Bambú) ============ -->
+<div id="ui">
+  <div id="uiMarca">
+    <div class="marcaTxt">
+      <span class="marcaTitulo">Proyecto libre</span>
+      <span class="marcaSub">Plano 3D</span>
     </div>
   </div>
-  <div class="panelTab" data-tab="mod"><div id="libreMod" class="desc"></div></div>
-  <div class="panelTab" data-tab="fic"><div id="libreFic" class="desc"></div></div>
+  <button id="btnMenu"><span class="ic" data-ic="menu"></span>Menú</button>
+  <button id="btnMin" title="Minimizar el menú"><span class="ic" data-ic="menos"></span></button>
+  <button class="btnTema" title="Alternar entre fondo blanco y negro"></button>
+
+  <div class="uiGrupo" data-nombre="Ver la obra">
+    <button id="btnEtiquetas" title="Mostrar u ocultar los nombres flotantes de las zonas"><span class="ic" data-ic="etiqueta"></span>Etiquetas</button>
+    <button id="btnCotas" title="Mostrar u ocultar las medidas (cotas) de zonas y edificios"><span class="ic" data-ic="cota"></span>Cotas</button>
+    <button id="btnOrg" title="Organigrama de la obra con roles y responsables"><span class="ic" data-ic="equipo"></span>Organigrama</button>
+    <button id="btnZonas" title="Ver todas las zonas creadas: área (m²) y aforo máximo"><span class="ic" data-ic="plano"></span>Zonas y aforo</button>
+    <button id="btn2D" title="Plano 2D en planta: organiza las zonas viendo los m² del lote y de cada una"><span class="ic" data-ic="plano"></span>Plano 2D</button>
+    <button id="btnAreas" style="display:none" title="Cuadro de áreas: total del terreno, por categoría y por zona"><span class="ic" data-ic="cota"></span>Cuadro de áreas</button>
+    <button id="btnHistorial" title="Historial de cambios: revisa qué se movió o se eliminó y vuelve a cualquier paso"><span class="ic" data-ic="historial"></span>Historial</button>
+  </div>
+
+  <div class="uiGrupo" data-nombre="Materiales y rutas">
+    <button id="btnRuta" title="Marca el recorrido de un vehículo; sigue las vías y nunca cruza edificios"><span class="ic" data-ic="ruta"></span>Dibujar ruta</button>
+    <button id="btnBorrarRutas" title="Elimina todas las rutas dibujadas"><span class="ic" data-ic="basura"></span>Borrar rutas</button>
+    <button id="btnCamiones" title="Programa la hora de entrada de los camiones de materiales"><span class="ic" data-ic="camion"></span>Camiones</button>
+    <button id="btnVia" title="Dibuja las vías por donde circulan los vehículos (clic sobre el terreno)"><span class="ic" data-ic="ruta"></span>Dibujar vía</button>
+    <button id="btnBorrarVias" title="Elimina todas las vías dibujadas"><span class="ic" data-ic="basura"></span>Borrar vías</button>
+    <button id="btnRegla" title="Regla: mide distancias con clics sobre el terreno"><span class="ic" data-ic="regla"></span>Regla</button>
+  </div>
+
+  <div class="uiGrupo" data-nombre="Crear en obra">
+    <button id="btnEspacios" title="Crea espacios y edificios con su sistema estructural"><span class="ic" data-ic="mas"></span>Espacios</button>
+    <button id="btnEquipos" title="Crea maquinaria de transporte vertical y horizontal, grúas y muebles"><span class="ic" data-ic="herramienta"></span>Equipos</button>
+  </div>
+
+  <div class="uiGrupo" data-nombre="Fase de obra">
+    <select id="selFaseLibre" title="La fase se guarda en la ficha técnica de tu obra">
+      <option value="excavacion">Excavación</option>
+      <option value="estructura">Estructura</option>
+      <option value="acabados" selected>Acabados</option>
+    </select>
+  </div>
+
+  <div class="uiGrupo" data-nombre="Guardar y cargar">
+    <button id="btnGuardar" title="Descarga el archivo JSON con todos los cambios"><span class="ic" data-ic="guardar"></span>Guardar</button>
+    <button id="btnCargar" title="Carga un respaldo descargado"><span class="ic" data-ic="carpeta"></span>Cargar</button>
+    <button id="btnExportar" title="Descarga el plano en planta 2D como imagen"><span class="ic" data-ic="abrir"></span>Exportar plano</button>
+  </div>
+
+  <div class="uiGrupo" data-nombre="Reloj y ubicar">
+    <label id="relojObraLibre" title="Hora simulada de la obra"><span class="ic" data-ic="reloj"></span><b id="horaObraTxtLibre">06:00</b></label>
+    <select id="selElemLibre" title="Lleva la cámara hasta la zona elegida"><option value="">— Ir a elemento —</option></select>
+  </div>
+
+  <div class="uiGrupo" data-nombre="Tu obra">
+    <button id="btnFichaLibre" title="Datos generales de la obra: m² del terreno, torres, lote y cerramiento"><span class="ic" data-ic="ficha"></span>Ficha técnica</button>
+    <button id="btnCaminar" title="Camina por la obra en primera persona: W A S D o flechas + mouse · Esc para salir"><span class="ic" data-ic="caminar"></span>Caminar</button>
+    <button id="btnNoche" title="Alterna día y noche: de noche alumbran las torres de iluminación que instales"><span class="ic" data-ic="luna"></span>Noche</button>
+    <button id="btnVaciar" title="Vacía toda la obra"><span class="ic" data-ic="basura"></span>Vaciar</button>
+  </div>
+
+  <div class="uiGrupo" data-nombre="Proyecto Bambú">
+    <a class="btn" href="index.html" title="Volver al proyecto Bambú"><span class="ic" data-ic="volver"></span>Volver a Bambú</a>
+  </div>
+  <input type="file" id="libreArchivo" accept=".json" style="display:none">
+
+  <!-- Pie del sidebar: equipo del proyecto -->
+  <div id="uiPie">
+    <span class="pieTitulo" id="uiPieTitulo">Equipo · Taller II</span>
+    <div id="uiPieNombres"></div>
+    <span class="pieUni">Universidad Nacional de Colombia</span>
+    <button id="btnEditarEquipo" style="margin-top:8px; width:auto; padding:4px 8px; font-size:11px" title="Cambiar el nombre del taller y del equipo"><span class="ic" data-ic="editar"></span>Editar</button>
+  </div>
 </div>
 
-<div id="libreAyuda">
-  <b>Controles:</b> Arrastrar (clic izq. en vacío) = rotar · Clic derecho = mover cámara · Rueda = zoom<br>
-  <b>Elementos:</b> clic y arrastrar para mover · clic corto = ficha<br>
-  <b>Teclado:</b> <b>R</b> = girar · <b>Supr</b> = eliminar · <b>Ctrl+C / Ctrl+V</b> = copiar y pegar · <b>Esc</b> = salir / deseleccionar<br>
-  <b>Vías / Rutas / Regla:</b> clic sobre el terreno marca puntos · «Deshacer» quita el último<br>
-  <b>Caminar:</b> W A S D o flechas para moverte · mouse para mirar · Esc para salir
+<!-- ============ PANEL DE OBRA (idéntico al del proyecto Bambú: 3 pestañas) ============ -->
+<div id="panel">
+  <button id="panelToggle" title="Ocultar el panel">–</button>
+  <h2 id="pTitulo">Panel de obra</h2>
+  <div id="panelTabs">
+    <button class="tabBtn activo" data-tab="sel">Selección</button>
+    <button class="tabBtn" data-tab="bim">Modificar</button>
+    <button class="tabBtn" data-tab="equipo">Ficha técnica</button>
+  </div>
+  <div class="panelTab activo" data-tab="sel"><div id="pInfoGeneral" class="desc"></div></div>
+  <div class="panelTab" data-tab="bim"><div id="pModificar" class="desc"></div></div>
+  <div class="panelTab" data-tab="equipo"><div id="pFichaTecnica" class="desc"></div></div>
 </div>
 
-<!-- Ventana de creación / lista -->
+<!-- ============ PAD DE NAVEGACIÓN (móvil) ============ -->
+<div id="pad" class="contraido">
+  <button id="padToggle" class="ic solo" data-ic="mando" title="Mostrar el mando" aria-label="Mostrar u ocultar el mando"></button>
+  <div id="padCruz">
+    <button data-mover="arriba" aria-label="Mover adelante" class="ic solo" data-ic="flechaArriba"></button>
+    <button data-mover="izquierda" aria-label="Mover a la izquierda" class="ic solo" data-ic="flechaIzq"></button>
+    <button data-mover="derecha" aria-label="Mover a la derecha" class="ic solo" data-ic="flechaDer"></button>
+    <button data-mover="abajo" aria-label="Mover atrás" class="ic solo" data-ic="flechaAbajo"></button>
+  </div>
+  <div id="padZoom">
+    <button data-mover="acercar" aria-label="Acercar" class="ic solo" data-ic="mas"></button>
+    <button data-mover="alejar" aria-label="Alejar" class="ic solo" data-ic="menos"></button>
+    <button id="padEtiquetas" aria-label="Mostrar u ocultar etiquetas" class="ic solo" data-ic="ojo"></button>
+  </div>
+</div>
+
+<!-- Barra flotante de controles de vista (escritorio) -->
+<div id="viewCtrl">
+  <button data-vc="zin" title="Acercar"><span class="ic solo" data-ic="mas"></span></button>
+  <button data-vc="zout" title="Alejar"><span class="ic solo" data-ic="menos"></span></button>
+  <span class="vcSep"></span>
+  <button data-vc="rot" title="Rotar la vista"><span class="ic solo" data-ic="refrescar"></span></button>
+  <button data-vc="reset" title="Vista general de la obra"><span class="ic solo" data-ic="edificio"></span></button>
+</div>
+
+<div id="ayuda">
+  <button id="ayudaToggle" title="Ocultar esta ayuda">✕</button>
+  <div id="ayudaContenido">
+    <b>Controles:</b> Arrastrar (clic izq. en vacío) = rotar · Clic derecho = mover cámara · Rueda = zoom<br>
+    <b>Elementos:</b> clic y arrastrar para mover · clic corto = ficha<br>
+    <b>Teclado:</b> <b>R</b> girar · <b>Supr</b> eliminar · <b>Ctrl+C/V</b> copiar y pegar · <b>Ctrl+Z</b> deshacer · <b>Ctrl+Shift+Z</b> rehacer · <b>E</b> subir/bajar de un vehículo · <b>Esc</b> salir/deseleccionar<br>
+    <b>Vías / Rutas / Regla:</b> clic sobre el terreno marca puntos · «Deshacer» quita el último<br>
+    <b>Caminar:</b> W A S D o flechas para moverte (mantén para acelerar) · mouse para mirar · Esc para salir<br>
+    <b>Manejar:</b> acércate a un carro, malacate o torre grúa y pulsa <b>E</b> para subirte
+  </div>
+</div>
+
+<!-- Ventana de creación / lista (genérica: catálogos, ficha, organigrama, camiones, cuadro de áreas) -->
 <div id="libreOverlay">
   <div id="libreVentana">
     <div id="libreCabecera">

@@ -37,10 +37,33 @@ const ICO = {
   regla:    '<path d="M3 17L17 3l4 4L7 21zM7.5 12.5l2 2M10.5 9.5l2 2M13.5 6.5l2 2"/>',
   caminar:  '<circle cx="13" cy="4.2" r="1.7"/><path d="M12.6 7.5l-2.1 5 2.5 3.2V21M10.5 12.3l-2.6 1.2V17M13 9.4l2.6 2 2.6.6M10.4 15.8L8 21"/>',
   sol:      '<circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/>',
-  luna:     '<path d="M20 14.5A8 8 0 119.5 4a6.5 6.5 0 0010.5 10.5z"/>'
+  luna:     '<path d="M20 14.5A8 8 0 119.5 4a6.5 6.5 0 0010.5 10.5z"/>',
+  areas:    '<rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 15h18M9 15V3"/><path d="M13 19h6M13 15.5v7"/>',
+  /* icónos que reproducen exactamente el trazo de js/config.js (mismo panel del proyecto Bambú) */
+  menu:     '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  menos:    '<path d="M5 12h14"/>',
+  refrescar:'<path d="M20 11a8 8 0 10.6 4.5M20 5v6h-6"/>',
+  flechaArriba: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+  flechaAbajo:  '<path d="M12 5v14M6 13l6 6 6-6"/>',
+  flechaIzq:    '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  flechaDer:    '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  mando:    '<rect x="2.5" y="6.5" width="19" height="11" rx="4.5"/><path d="M6.5 10v4M4.5 12h4"/><circle cx="15.5" cy="10.5" r="1.1"/><circle cx="18" cy="13" r="1.1"/>',
+  reloj:    '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+  cota:     '<path d="M4 12h16M4 8v8M20 8v8M9 12v-2M13 12v2"/>',
+  herramienta: '<path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.7 2.7-2-2z"/>',
+  abrir:    '<path d="M14 4h6v6M20 4l-9 9M20 13.5V20H4V4h6.5"/>',
+  equipo:   '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.2 2.3-5.2 5.5-5.2s5.5 2 5.5 5.2"/><circle cx="17.5" cy="9" r="2.4"/><path d="M16 14.6c2.8 0 4.5 1.8 4.5 4.6"/>',
+  historial: '<path d="M3 12a9 9 0 109-9M3 12V6M3 12h6"/><path d="M12 7v5l3.5 2"/>',
+  volante:  '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2"/><path d="M12 5.5V9.5M6.4 15.2l3.5-2M17.6 15.2l-3.5-2"/>'
 };
 function ic(n){
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICO[n] || '') + '</svg>';
+}
+/* llena cualquier <span class="ic" data-ic="nombre"> con su SVG — mismo
+   mecanismo que aplicarIconos() de js/config.js (Bambú), reutilizando
+   nuestro propio catálogo ICO en vez de duplicar config.js entero aquí */
+function aplicarIconosLibre(){
+  document.querySelectorAll('.ic[data-ic]').forEach(el => { el.innerHTML = ic(el.dataset.ic); });
 }
 function esc(s){
   return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -58,7 +81,7 @@ scene.background = new THREE.Color(0x1a2030);
 scene.fog = new THREE.Fog(0x1a2030, 400, 900);
 
 const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.5, 1600);
-const renderer = new THREE.WebGLRenderer({ antialias: !ES_MOVIL, powerPreference:'high-performance' });
+const renderer = new THREE.WebGLRenderer({ antialias: !ES_MOVIL, powerPreference:'high-performance', preserveDrawingBuffer:true });
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio, ES_MOVIL ? 1.2 : 1.5));
 renderer.shadowMap.enabled = true;
@@ -163,6 +186,7 @@ function construirEspacio(def){
     caja(g, seg, H, t, cm,  (puerta+seg)/2, H/2, D/2 - t/2, 0.92);
   }
   if (def.techo) caja(g, W + 0.5, 0.1, D + 0.5, 0x8a8f96, 0, H + 0.1, 0, 0.35);
+  (def.muebles || []).forEach((m, i) => agregarMuebleInteriorAGrupo(g, m, i));
   const area = Math.round(W*D);
   g.userData.info = {
     dimensiones: W + ' × ' + D + ' m ≈ ' + area + ' m²',
@@ -183,7 +207,9 @@ const SISTEMAS = {
   acero: { nombre:'Acero',
     desc:'Sistema de Acero: usa perfiles metálicos. Más ligero y rápido de construir; frecuente en naves industriales y rascacielos.' },
   madera: { nombre:'Madera',
-    desc:'Sistema de Madera: ecológico y flexible; usado sobre todo en construcciones de baja altura y viviendas residenciales.' }
+    desc:'Sistema de Madera: ecológico y flexible; usado sobre todo en construcciones de baja altura y viviendas residenciales.' },
+  muroPantalla: { nombre:'Muro pantalla',
+    desc:'Sistema de Muro Pantalla: muros de contención perimetral vaciados en el terreno antes de excavar. Se usa en sótanos profundos y contención de tierras; actúa como muro definitivo y como apoyo temporal durante la excavación.' }
 };
 function opcionesSistema(sel){
   return Object.keys(SISTEMAS).map(k =>
@@ -209,6 +235,14 @@ function pisoSistema(g, sis, w, d, hP, y){
       caja(g, 0.06, hP*0.4, Math.min(1.1, d/nz*0.45), vent,  w/2 + 0.02, y + hP*0.58, z, 0.9);
       caja(g, 0.06, hP*0.4, Math.min(1.1, d/nz*0.45), vent, -w/2 - 0.02, y + hP*0.58, z, 0.9);
     }
+    return;
+  }
+  if (sis === 'muroPantalla'){
+    const cm = 0x6d7075;   // concreto gris oscuro, muro sólido sin ventanas (contención)
+    caja(g, w, hP, t, cm, 0, y + hP/2, -d/2, 0.99);
+    caja(g, w, hP, t, cm, 0, y + hP/2,  d/2, 0.99);
+    caja(g, t, hP, d, cm, -w/2, y + hP/2, 0, 0.99);
+    caja(g, t, hP, d, cm,  w/2, y + hP/2, 0, 0.99);
     return;
   }
   let colC, vidC, vidO, cw;
@@ -512,6 +546,54 @@ function construirMueble(def){
   return g;
 }
 
+/* ============ AMOBLAR ESPACIOS POR DENTRO (muebles del catálogo dentro de
+   un "espacio" creado) ============
+   Cada espacio guarda su propia lista def.muebles en coordenadas LOCALES
+   (relativas al centro y giro del espacio, como cualquier hijo de un
+   THREE.Group rotado): así la habitación se puede mover/girar en la obra sin
+   que sus muebles se desordenen. Se editan desde el modo "Amoblar" (2D,
+   zoom sobre ese espacio) — ver más abajo, junto al resto de herramientas. */
+function catalogoMuebleInterior(id){ return CATALOGO_MUEBLES.find(m => m.id === id) || CATALOGO_MUEBLES[0]; }
+function normalizarMueblesInterior(lista, w, d){
+  if (!Array.isArray(lista)) return [];
+  const hw = w / 2 - 0.1, hd = d / 2 - 0.1;
+  return lista.filter(m => m && typeof m === 'object').slice(0, 60).map(raw => {
+    const item = catalogoMuebleInterior(raw.catalogoId);
+    return {
+      id: isFinite(Number(raw.id)) ? Number(raw.id) : idSec++,
+      catalogoId: item.id,
+      x: numLim(raw.x, 0, -hw, hw),
+      z: numLim(raw.z, 0, -hd, hd),
+      rot: numLim(raw.rot, 0, -Math.PI * 4, Math.PI * 4),
+      w: numLim(raw.w, item.w, 0.2, 6), d: numLim(raw.d, item.d, 0.2, 6), h: numLim(raw.h, item.h, 0.1, 3.5),
+      color: /^#[0-9a-f]{6}$/i.test(raw.color || '') ? raw.color : item.color
+    };
+  });
+}
+/* construye UNA pieza y la agrega como hija del grupo del espacio (se usa
+   tanto al construir el espacio completo como al agregar una pieza nueva
+   sin reconstruir todo lo demás) */
+function agregarMuebleInteriorAGrupo(roomGroup, m, idx){
+  const item = catalogoMuebleInterior(m.catalogoId);
+  const sub = new THREE.Group();
+  item.dibujar(sub, m.w, m.d, m.h, m.color);
+  sub.position.set(m.x, 0, m.z);
+  sub.rotation.y = m.rot;
+  sub.userData.esMuebleInterior = true;
+  sub.userData.muebleIdx = idx;
+  roomGroup.add(sub);
+  return sub;
+}
+/* convierte un punto del MUNDO a coordenadas locales del espacio (inversa de
+   la rotación+posición del grupo) — necesario porque los muebles son hijos
+   de un grupo que puede estar girado, a diferencia de los elementos de nivel
+   superior que viven directo en coordenadas del mundo */
+function mundoALocalRoom(p, d){
+  const dx = p.x - d.x, dz = p.z - d.z;
+  const cos = Math.cos(d.rot), sin = Math.sin(d.rot);
+  return { x: dx * cos - dz * sin, z: dx * sin + dz * cos };
+}
+
 /* ============ CATÁLOGO DE MAQUINARIA Y TRANSPORTE ============
    Equipos reales de la obra, agrupados como en el proyecto Bambú (transporte
    horizontal / vertical / planta e instalaciones). Cada pieza se dibuja a su
@@ -520,6 +602,7 @@ function construirMueble(def){
    con movil:true se pueden asignar a una RUTA para verlos recorrer la obra;
    los fijos (planta, silo) son instalaciones. El frente de todos apunta a +z
    (mismo criterio que el camión de camiones.js) para que giren bien al rodar. */
+const TASA_CONCRETO_DIA = 240;   // 30 m³/h × 8 h/día — ritmo de la planta DOMAT del catálogo
 const CATALOGO_MAQUINAS = [
   { id:'volquetaDobletroque', nombre:'Volqueta dobletroque', grupo:'Transporte horizontal', w:2.6, d:9, h:3, color:'#d9a521', movil:true,
     desc:'Volqueta de dos ejes traseros (dobletroque) para retiro de excavación y suministro de granulares.',
@@ -767,6 +850,8 @@ function normalizarDef(raw){
     d.w = numLim(raw.w, 10, 2, 90); d.d = numLim(raw.d, 8, 2, 70); d.h = numLim(raw.h, 2.5, 1, 14);
     d.color = /^#[0-9a-f]{6}$/i.test(raw.color || '') ? raw.color : '#3f7fbf';
     d.muros = raw.muros !== false; d.techo = raw.techo !== false;
+    d.sistema = SISTEMAS[raw.sistema] ? raw.sistema : 'muros';
+    d.muebles = normalizarMueblesInterior(raw.muebles, d.w, d.d);
   } else if (tipo === 'edificio'){
     d.w = numLim(raw.w, 20, 3, 90); d.d = numLim(raw.d, 12, 3, 70);
     d.pisos = Math.round(numLim(raw.pisos, 5, 1, 40)); d.hPiso = numLim(raw.hPiso, 2.65, 2, 5);
@@ -788,6 +873,7 @@ function normalizarDef(raw){
     d.w = numLim(raw.w, item.w, 0.4, 30); d.d = numLim(raw.d, item.d, 0.4, 40); d.h = numLim(raw.h, item.h, 0.4, 30);
     d.color = /^#[0-9a-f]{6}$/i.test(raw.color || '') ? raw.color : item.color;
     d.movil = raw.movil === undefined ? item.movil : !!raw.movil;
+    if (item.id === 'plantaConcreto') d.metaM3 = numLim(raw.metaM3, 0, 0, 100000);
   }
   return d;
 }
@@ -798,7 +884,7 @@ function crearElemento(raw){
   g.userData.tipo = def.tipo;
   g.userData.info.nombre = def.nombre;
   if (def.colorPersonalizado) aplicarColorLibre(g, def.colorPersonalizado);
-  const et = crearEtiqueta(textoEtiqueta(def), 12);
+  const et = crearEtiqueta(textoEtiqueta(def), anchoEtiquetaLibre());
   et.visible = etiquetasVisibles;
   et.position.y = (def.tipo === 'gruaTorre' ? def.mastil : def.tipo === 'edificio' ? def.pisos*def.hPiso :
                    def.tipo === 'malacate' ? def.mastil : def.tipo === 'gruaPluma' ? 6 :
@@ -809,11 +895,14 @@ function crearElemento(raw){
   g.rotation.y = def.rot;
   scene.add(g);
   elementos.push(g);
+  refrescarSelectorUbicar();
   return g;
 }
 function eliminarElemento(g){
   const i = elementos.indexOf(g);
   if (i < 0) return;
+  if (amueblando === g) cerrarAmoblar();
+  if (manejando === g) manejando = null;   // no se guarda posición: el vehículo ya no existe
   // si estaba recorriendo una ruta, se baja de ella
   for (let k = rutasActivas.length - 1; k >= 0; k--){
     if (rutasActivas[k].g === g) rutasActivas.splice(k, 1);
@@ -822,7 +911,9 @@ function eliminarElemento(g){
   g.traverse(n => { if (n.geometry) n.geometry.dispose(); });
   scene.remove(g);
   elementos.splice(i, 1);
-  guardar();
+  guardar('Eliminado: ' + g.userData.def.nombre);
+  if (mostrarCotas) redibujarCotas2D();
+  refrescarSelectorUbicar();
   avisar('"' + g.userData.def.nombre + '" eliminado');
   if (document.getElementById('libreOverlay').style.display === 'flex') renderVentana();
 }
@@ -904,11 +995,24 @@ renderer.domElement.addEventListener('pointerdown', e => {
   rayo(e);
   if (e.button === 2 || e.shiftKey){ paneando = true; return; }
   if (e.button !== 0) return;
-  // con la herramienta Vía/Ruta activa, el clic izquierdo marca puntos en el terreno
+  // con la herramienta Vía/Ruta/Regla activa, el clic izquierdo marca puntos en el terreno
   if (herramienta){
     movido = 999;
     const p = puntoSuelo();
     if (p) clicHerramienta(p);
+    return;
+  }
+  // amoblando un espacio: el clic izquierdo coloca o arrastra muebles DENTRO de él
+  if (amueblando){
+    const piezas = amueblando.children.filter(c => c.userData.esMuebleInterior);
+    const hitsM = raycaster.intersectObjects(piezas, true);
+    if (hitsM.length){
+      let obj = hitsM[0].object;
+      while (obj && !obj.userData.esMuebleInterior) obj = obj.parent;
+      arrastrandoInterior = obj;
+    } else {
+      arrastrandoInterior = null;
+    }
     return;
   }
   const hits = raycaster.intersectObjects(elementos, true);
@@ -943,6 +1047,21 @@ renderer.domElement.addEventListener('pointermove', e => {
     const p = puntoSuelo();
     if (p) actualizarPreviewHerramienta(p);
   }
+  if (arrastrandoInterior){
+    rayo(e);
+    const p = puntoSuelo();
+    if (p){
+      const d = amueblando.userData.def;
+      const loc = mundoALocalRoom(p, d);
+      const hw = d.w / 2 - 0.15, hd = d.d / 2 - 0.15;
+      loc.x = Math.min(hw, Math.max(-hw, loc.x));
+      loc.z = Math.min(hd, Math.max(-hd, loc.z));
+      arrastrandoInterior.position.set(loc.x, arrastrandoInterior.position.y, loc.z);
+      const idx = arrastrandoInterior.userData.muebleIdx;
+      if (d.muebles && d.muebles[idx]){ d.muebles[idx].x = red2(loc.x); d.muebles[idx].z = red2(loc.z); }
+    }
+    return;
+  }
   if (arrastrando){
     rayo(e);
     const p = puntoSuelo();
@@ -951,6 +1070,10 @@ renderer.domElement.addEventListener('pointermove', e => {
       arrastrando.userData.def.x = Math.round(p.x*100)/100;
       arrastrando.userData.def.z = Math.round(p.z*100)/100;
       if (seleccionado === arrastrando) refrescarUbic();
+      if (mostrarCotas && performance.now() - ultimaActualizacionCotas > 120){
+        ultimaActualizacionCotas = performance.now();
+        redibujarCotas2D();
+      }
     }
     return;
   }
@@ -967,6 +1090,26 @@ function finPointer(e){
     punterosTactiles.delete(e.pointerId);
     if (punterosTactiles.size < 2) pinza = null;
   }
+  if (amueblando){
+    const eraInterior = arrastrandoInterior;
+    arrastrandoInterior = null;
+    if (eraInterior){
+      guardar();
+    } else if (movido < 6 && e.button === 0){
+      rayo(e);
+      const piezas = amueblando.children.filter(c => c.userData.esMuebleInterior);
+      const hitsM = raycaster.intersectObjects(piezas, true);
+      if (hitsM.length){
+        let obj = hitsM[0].object;
+        while (obj && !obj.userData.esMuebleInterior) obj = obj.parent;
+        seleccionarMuebleInterior(obj);
+      } else {
+        const p = puntoSuelo();
+        if (p) clicAmoblar(p);
+      }
+    }
+    return;
+  }
   const eraArrastre = arrastrando;
   arrastrando = null; rotando = false; paneando = false;
   if (movido < 6 && e.button === 0 && !herramienta){
@@ -977,12 +1120,13 @@ function finPointer(e){
       seleccionado = null; actualizarTinte(null); mostrarPanelVacio(); elementos.forEach(actualizarTinte);
     }
   } else if (eraArrastre){
-    guardar();
+    guardar('Movido: ' + eraArrastre.userData.def.nombre);
     // aviso si el elemento quedó atravesado sobre una vía
     const d = eraArrastre.userData.def;
     if (typeof elementoSobreVia === 'function' && elementoSobreVia(eraArrastre)){
       avisar('Ojo: "' + d.nombre + '" quedó sobre una vía — los vehículos no podrán pasar por ahí');
     }
+    if (mostrarCotas) redibujarCotas2D();
   }
 }
 renderer.domElement.addEventListener('pointerup', finPointer);
@@ -995,13 +1139,13 @@ renderer.domElement.addEventListener('wheel', e => {
 
 /* ============ PANEL DE OBRA (3 pestañas: Selección / Modificar / Ficha técnica,
    la misma estructura del panel del proyecto Bambú) ============ */
-const pTitulo = document.getElementById('librePTitulo');
-const pBody = document.getElementById('librePBody');   // pestaña Selección
-const pMod = document.getElementById('libreMod');      // pestaña Modificar
-const pFic = document.getElementById('libreFic');      // pestaña Ficha técnica
+const pTitulo = document.getElementById('pTitulo');
+const pBody = document.getElementById('pInfoGeneral');   // pestaña Selección
+const pMod = document.getElementById('pModificar');      // pestaña Modificar
+const pFic = document.getElementById('pFichaTecnica');      // pestaña Ficha técnica
 function mostrarTabLibre(nombre){
-  document.querySelectorAll('#libreTabs .tabBtn').forEach(b => b.classList.toggle('activo', b.dataset.tab === nombre));
-  document.querySelectorAll('#librePanel .panelTab').forEach(t => t.classList.toggle('activo', t.dataset.tab === nombre));
+  document.querySelectorAll('#panelTabs .tabBtn').forEach(b => b.classList.toggle('activo', b.dataset.tab === nombre));
+  document.querySelectorAll('#panel .panelTab').forEach(t => t.classList.toggle('activo', t.dataset.tab === nombre));
 }
 /* escribe las 3 pestañas de una vez (mod/fic opcionales) y vuelve a "Selección" */
 function panelSel(titulo, selHtml, modHtml, ficHtml){
@@ -1079,8 +1223,22 @@ function renderModificarLibre(g){
           '<button style="width:auto; margin:0" title="Aplicar" onclick="recolorearSelLibre()">' + ic('check') + ' Aplicar</button>' +
         '</div>' +
       '</label>' +
+      (d.catalogoId === 'plantaConcreto'
+        ? '<label>Cantidad a producir (m³)' +
+            '<div style="display:flex; gap:6px; margin-top:3px">' +
+              '<input type="number" id="modMetaM3Libre" min="0" max="100000" step="1" value="' + (d.metaM3 || 0) + '" style="flex:1; margin:0">' +
+              '<button style="width:auto; margin:0" title="Aplicar" onclick="cambiarMetaM3Libre()">' + ic('check') + '</button>' +
+            '</div>' +
+            '<small class="txtSuave">A ' + TASA_CONCRETO_DIA + ' m³/día (30 m³/h × 8 h)' +
+              (d.metaM3 > 0 ? ' → ' + Math.ceil(d.metaM3 / TASA_CONCRETO_DIA) + ' día(s)' : '') + '</small>' +
+          '</label>'
+        : '') +
     '</div>' +
     '<button onclick="editarSel()">' + ic('editar') + 'Editar dimensiones</button>' +
+    (d.tipo === 'espacio'
+      ? '<button onclick="abrirAmoblar()">' + ic('silla') + 'Amoblar por dentro' + ((d.muebles || []).length ? ' (' + d.muebles.length + ')' : '') + '</button>'
+      : '') +
+    '<button onclick="programarCamionZonaLibre(seleccionado.userData.def.nombre)">' + ic('camion') + 'Programar camión a esta zona</button>' +
     '<button class="btnEliminar" onclick="eliminarSel()">' + ic('basura') + 'Eliminar de la obra</button>';
 }
 /* pestaña "Ficha técnica": dimensiones, material, cerramiento, aforo (mismas
@@ -1105,7 +1263,8 @@ function renderFichaTecnicaLibre(g){
   let material = info.detalle, cerr = '—', aforo = '—', extra = '';
   if (d.tipo === 'espacio'){
     const area = Math.round(d.w * d.d);
-    material = 'Espacio creado por el equipo — ' + d.w + ' × ' + d.d + ' m ≈ ' + area + ' m²';
+    const sis = SISTEMAS[d.sistema] || SISTEMAS.muros;
+    material = d.muros ? ('Sistema ' + sis.nombre + ' — ' + sis.desc) : ('Espacio creado por el equipo — ' + d.w + ' × ' + d.d + ' m ≈ ' + area + ' m²');
     cerr = d.muros ? ('Con muros' + (d.techo ? ' y techo' : ', sin techo')) : (d.techo ? 'Cubierta abierta' : 'Área demarcada, sin cerramiento');
     aforo = d.muros ? (Math.max(1, Math.floor(area / 2)) + ' personas (estimado: 2 m²/persona)') : '—';
   } else if (d.tipo === 'edificio'){
@@ -1118,6 +1277,12 @@ function renderFichaTecnicaLibre(g){
     extra = '<tr><td>Movilidad</td><td>' + (d.movil
       ? 'Móvil — asígnale una ruta con el botón "Rutas"'
       : 'Instalación fija (no se asigna a rutas)') + '</td></tr>';
+    if (item.id === 'plantaConcreto'){
+      const dias = d.metaM3 > 0 ? Math.ceil(d.metaM3 / TASA_CONCRETO_DIA) : 0;
+      extra += '<tr><td>Producción</td><td>' + (d.metaM3 > 0
+        ? d.metaM3 + ' m³ a ' + TASA_CONCRETO_DIA + ' m³/día (30 m³/h × 8 h) → ' + dias + ' día(s)'
+        : 'Sin cantidad definida — ponla en la pestaña "Modificar"') + '</td></tr>';
+    }
   } else if (d.tipo === 'malacate' || d.tipo === 'gruaTorre' || d.tipo === 'gruaPluma'){
     aforo = 'Operador: 1 persona';
     cerr = 'Equipo de izaje — señaliza su zona de influencia';
@@ -1152,7 +1317,7 @@ function toggleBloqueoLibre(){
   if (!seleccionado) return;
   const d = seleccionado.userData.def;
   d.bloqueado = !d.bloqueado;
-  guardar();
+  guardar((d.bloqueado ? 'Bloqueado: ' : 'Desbloqueado: ') + d.nombre);
   seleccionar(seleccionado);
   mostrarTabLibre('mod');
   avisar(d.bloqueado ? '"' + d.nombre + '" bloqueado: ya no se puede arrastrar' : '"' + d.nombre + '" desbloqueado');
@@ -1186,11 +1351,13 @@ function renombrarSelLibre(){
   seleccionado.userData.def.nombre = nuevo;
   seleccionado.userData.info.nombre = nuevo;
   regenerarEtiquetaLibre(seleccionado);
-  // las rutas que usaban este vehículo siguen apuntando al mismo
+  // las rutas y camiones que usaban/apuntaban a este nombre siguen apuntando al mismo
   rutas.forEach(r => { if (r.vehiculo === actual) r.vehiculo = nuevo; });
-  guardar();
+  camionesLibre.forEach(c => { if (c.zona === actual) c.zona = nuevo; });
+  guardar('Renombrado: ' + actual + ' → ' + nuevo);
   seleccionar(seleccionado);
   mostrarTabLibre('mod');
+  refrescarSelectorUbicar();
   avisar('Renombrado a "' + nuevo + '"');
 }
 function recolorearSelLibre(){
@@ -1201,13 +1368,31 @@ function recolorearSelLibre(){
   aplicarColorLibre(seleccionado, input.value);
   d.colorPersonalizado = input.value;
   if (d.color !== undefined) d.color = input.value;
-  guardar();
+  guardar('Color cambiado: ' + d.nombre);
   avisar('Color actualizado');
 }
+/* cantidad de m³ a producir en la planta de concreto: calcula los días
+   necesarios a la tasa fija de la planta (30 m³/h × 8 h = 240 m³/día) */
+function cambiarMetaM3Libre(){
+  if (!seleccionado || seleccionado.userData.def.catalogoId !== 'plantaConcreto') return;
+  const input = document.getElementById('modMetaM3Libre');
+  if (!input) return;
+  const d = seleccionado.userData.def;
+  d.metaM3 = numLim(input.value, d.metaM3 || 0, 0, 100000);
+  guardar('Producción de concreto: ' + d.metaM3 + ' m³');
+  seleccionar(seleccionado);
+  mostrarTabLibre('mod');
+  const dias = d.metaM3 > 0 ? Math.ceil(d.metaM3 / TASA_CONCRETO_DIA) : 0;
+  avisar(d.metaM3 > 0 ? d.metaM3 + ' m³ programados — tomará ' + dias + ' día(s) a este ritmo' : 'Cantidad borrada');
+}
 /* reconstruye la etiqueta flotante conservando posición y visibilidad */
+/* en el Plano 2D el texto se ve más pequeño en pantalla (la cámara ortho
+   suele abarcar todo el lote), así que las etiquetas y las cotas crecen un
+   poco para seguir siendo legibles desde arriba */
+function anchoEtiquetaLibre(){ return modo2D ? 18 : 12; }
 function regenerarEtiquetaLibre(g){
   const vieja = g.userData.etiqueta;
-  const nueva = crearEtiqueta(textoEtiqueta(g.userData.def), vieja ? vieja.scale.x : 12);
+  const nueva = crearEtiqueta(textoEtiqueta(g.userData.def), anchoEtiquetaLibre());
   if (vieja){
     nueva.position.copy(vieja.position);
     nueva.visible = vieja.visible;
@@ -1225,12 +1410,46 @@ function girarSel(dir){
   if (seleccionado.userData.def.bloqueado){ avisar('Elemento bloqueado: desbloquéalo para girarlo'); return; }
   seleccionado.rotation.y += dir * Math.PI/4;
   seleccionado.userData.def.rot = seleccionado.rotation.y;
-  guardar();
+  guardar('Girado: ' + seleccionado.userData.def.nombre);
+  if (mostrarCotas) redibujarCotas2D();
   avisar(seleccionado.userData.def.nombre + ' girado');
 }
 function eliminarSel(){ if (seleccionado) eliminarElemento(seleccionado); }
 
-/* ============ VENTANA DE CREACIÓN + LISTA ============ */
+/* ============ VENTANA DE CREACIÓN + LISTA ============
+   Dos puertas de entrada, como en el proyecto Bambú: "Espacios" (espacio /
+   edificio, con su sistema estructural) y "Equipos" (maquinaria de
+   transporte vertical/horizontal, grúas, malacate y mobiliario). Ambas
+   abren la MISMA ventana; solo cambia qué tipos ofrece el selector. */
+let modoVentana = 'espacios';   // 'espacios' | 'equipos' — filtra el <select id="libTipo">
+function opcionesTipoVentana(){
+  if (modoVentana === 'equipos'){
+    return '<optgroup label="Maquinaria y grúas">' +
+        '<option value="maquina">Maquinaria / transporte</option>' +
+        '<option value="malacate">Malacate</option>' +
+        '<option value="gruaTorre">Torre grúa</option>' +
+        '<option value="gruaPluma">Grúa pluma</option>' +
+      '</optgroup>' +
+      '<optgroup label="Mobiliario">' +
+        '<option value="mueble">Mueble</option>' +
+      '</optgroup>';
+  }
+  return '<option value="espacio">Espacio</option><option value="edificio">Edificio</option>';
+}
+function abrirVentanaEspacios(){
+  modoVentana = 'espacios';
+  setHerramienta(null);
+  document.getElementById('libreVentTitulo').textContent = 'Crear espacios y edificios';
+  renderVentana();
+  document.getElementById('libreOverlay').style.display = 'flex';
+}
+function abrirVentanaEquipos(){
+  modoVentana = 'equipos';
+  setHerramienta(null);
+  document.getElementById('libreVentTitulo').textContent = 'Crear equipos y maquinaria';
+  renderVentana();
+  document.getElementById('libreOverlay').style.display = 'flex';
+}
 function renderVentana(){
   const filas = elementos.length
     ? elementos.map((g, i) => {
@@ -1250,15 +1469,7 @@ function renderVentana(){
     '<div style="margin-top:14px; display:flex; flex-direction:column; gap:8px">' +
       '<b>Agregar nuevo</b>' +
       '<div style="display:flex; gap:6px; flex-wrap:wrap">' +
-        '<select id="libTipo" onchange="cambiarTipo()">' +
-          '<option value="espacio">Espacio</option>' +
-          '<option value="edificio">Edificio</option>' +
-          '<option value="maquina">Maquinaria / transporte</option>' +
-          '<option value="malacate">Malacate</option>' +
-          '<option value="gruaTorre">Torre grúa</option>' +
-          '<option value="gruaPluma">Grúa pluma</option>' +
-          '<option value="mueble">Mueble</option>' +
-        '</select>' +
+        '<select id="libTipo" onchange="cambiarTipo()">' + opcionesTipoVentana() + '</select>' +
         '<input id="libNombre" maxlength="40" placeholder="Nombre" style="flex:1; min-width:150px">' +
       '</div>' +
       '<div id="libCampos" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center"></div>' +
@@ -1278,7 +1489,8 @@ function cambiarTipo(){
     html = num('libAncho','Ancho (m)',10,2,90,0.1) + num('libFondo','Fondo (m)',8,2,70,0.1) + num('libAlto','Altura (m)',2.5,1,14,0.1) +
       '<label>Color <input type="color" id="libColor" value="#3f7fbf"></label>' +
       '<label><input type="checkbox" id="libMuros" checked> Muros</label>' +
-      '<label><input type="checkbox" id="libTecho" checked> Techo</label>';
+      '<label><input type="checkbox" id="libTecho" checked> Techo</label>' +
+      '<label style="width:100%">Sistema estructural <select id="libSistemaEsp" style="flex:1">' + opcionesSistema('muros') + '</select></label>';
   } else if (t === 'edificio'){
     html = num('libAncho','Ancho (m)',20,3,90,0.1) + num('libFondo','Fondo (m)',12,3,70,0.1) +
       num('libPisos','Pisos',5,1,40,1) + num('libHPiso','Entrepiso (m)',2.65,2,5,0.05) +
@@ -1339,6 +1551,7 @@ function agregarElemento(){
   if (tipo === 'espacio'){
     raw.w = valNum('libAncho'); raw.d = valNum('libFondo'); raw.h = valNum('libAlto');
     raw.color = valNum('libColor'); raw.muros = document.getElementById('libMuros').checked; raw.techo = document.getElementById('libTecho').checked;
+    raw.sistema = (document.getElementById('libSistemaEsp') || {}).value;
   } else if (tipo === 'edificio'){
     raw.w = valNum('libAncho'); raw.d = valNum('libFondo'); raw.pisos = valNum('libPisos'); raw.hPiso = valNum('libHPiso');
     raw.sistema = (document.getElementById('libSistema') || {}).value;
@@ -1357,10 +1570,11 @@ function agregarElemento(){
     raw.movil = !!(document.getElementById('libMovil') || {}).checked;
   }
   const g = crearElemento(raw);
-  guardar();
+  guardar('Creado: ' + g.userData.def.nombre);
   document.getElementById('libreOverlay').style.display = 'none';
   seleccionar(g);
   irA(g.position.x, g.position.z, 70);
+  if (mostrarCotas) redibujarCotas2D();
   avisar(NOMBRE_TIPO[tipo] + ' "' + g.userData.def.nombre + '" creado — arrástralo para ubicarlo');
 }
 function irAElemIdx(i){
@@ -1390,7 +1604,8 @@ function renderEditorLibre(d){
     campos = num('edAncho','Ancho (m)',d.w,2,90,0.1) + num('edFondo','Fondo (m)',d.d,2,70,0.1) + num('edAlto','Altura (m)',d.h,1,14,0.1) +
       '<label>Color <input type="color" id="edColor" value="' + (d.color || '#3f7fbf') + '"></label>' +
       '<label><input type="checkbox" id="edMuros"' + (d.muros ? ' checked' : '') + '> Muros</label>' +
-      '<label><input type="checkbox" id="edTecho"' + (d.techo ? ' checked' : '') + '> Techo</label>';
+      '<label><input type="checkbox" id="edTecho"' + (d.techo ? ' checked' : '') + '> Techo</label>' +
+      '<label style="width:100%">Sistema estructural <select id="edSistemaEsp" style="flex:1">' + opcionesSistema(d.sistema || 'muros') + '</select></label>';
   } else if (d.tipo === 'edificio'){
     campos = num('edAncho','Ancho (m)',d.w,3,90,0.1) + num('edFondo','Fondo (m)',d.d,3,70,0.1) +
       num('edPisos','Pisos',d.pisos,1,40,1) + num('edHPiso','Entrepiso (m)',d.hPiso,2,5,0.05) +
@@ -1437,6 +1652,7 @@ function guardarEdicionLibre(){
   if (d.tipo === 'espacio'){
     raw.w = valNum('edAncho'); raw.d = valNum('edFondo'); raw.h = valNum('edAlto');
     raw.color = valNum('edColor'); raw.muros = document.getElementById('edMuros').checked; raw.techo = document.getElementById('edTecho').checked;
+    raw.sistema = (document.getElementById('edSistemaEsp') || {}).value;
   } else if (d.tipo === 'edificio'){
     raw.w = valNum('edAncho'); raw.d = valNum('edFondo'); raw.pisos = valNum('edPisos'); raw.hPiso = valNum('edHPiso');
     raw.sistema = (document.getElementById('edSistema') || {}).value;
@@ -1454,15 +1670,17 @@ function guardarEdicionLibre(){
     raw.w = valNum('edAncho'); raw.d = valNum('edFondo'); raw.h = valNum('edAlto'); raw.color = valNum('edColor');
     raw.movil = !!(document.getElementById('edMovil') || {}).checked;
   }
+  if (amueblando === g) cerrarAmoblar();   // se editó el espacio que se estaba amoblando: se sale primero
   const i = elementos.indexOf(g);
   g.traverse(n => { if (n.geometry) n.geometry.dispose(); });
   scene.remove(g);
   elementos.splice(i, 1);
   const ng = crearElemento(raw);
   editandoLibre = null;
-  guardar();
+  guardar('Editado: ' + ng.userData.def.nombre);
   document.getElementById('libreOverlay').style.display = 'none';
   seleccionar(ng);
+  if (mostrarCotas) redibujarCotas2D();
   avisar('Dimensiones actualizadas: ' + ng.userData.def.nombre);
 }
 
@@ -1492,6 +1710,19 @@ function vaciarGrupo(grupo){
    Antes de empezar, el usuario escribe los m² del terreno y los datos
    generales (como el "Panel de obra" del proyecto Bambú). El lote se dibuja
    a esas medidas y el cerramiento perimetral lo envuelve. */
+/* ---- Fase de obra (selector del sidebar, como el "Fase de obra" de Bambú):
+   excavación / estructura / acabados. Fija el texto de "Fase actual" en la
+   ficha técnica; si quieres una descripción más específica, edítala luego
+   desde "Ficha técnica". */
+const FASES_OBRA = { excavacion: 'Excavación', estructura: 'Estructura', acabados: 'Acabados' };
+function cambiarFaseObra(v){
+  if (!FASES_OBRA[v]) return;
+  ficha.faseObra = v;
+  ficha.fase = FASES_OBRA[v];
+  guardar();
+  if (fichaCompleta && !amueblando && !herramienta) mostrarPanelVacio();
+  avisar('Fase de la obra: ' + FASES_OBRA[v]);
+}
 let ficha = normalizarFicha(null);
 let fichaCompleta = false;
 let cerrCfg = { activo: true, material: 'lona', altura: 2.4 };
@@ -1508,10 +1739,25 @@ function normalizarFicha(raw){
     niveles: String(raw.niveles || '').slice(0, 90),
     alturaTxt: String(raw.alturaTxt || '').slice(0, 90),
     fase: String(raw.fase || '').slice(0, 90),
+    faseObra: FASES_OBRA[raw.faseObra] ? raw.faseObra : 'acabados',
     personal: String(raw.personal || '').slice(0, 90),
     loteLargo: numLim(raw.loteLargo, 120, 20, 400),
-    loteAncho: numLim(raw.loteAncho, 60, 20, 300)
+    loteAncho: numLim(raw.loteAncho, 60, 20, 300),
+    taller: String(raw.taller || 'Taller II').slice(0, 40),
+    equipo: (Array.isArray(raw.equipo) ? raw.equipo : []).map(n => String(n).slice(0, 40)).filter(Boolean).slice(0, 12)
   };
+}
+/* pie del sidebar: nombre del taller + integrantes definidos en la ficha
+   técnica (reemplaza el equipo fijo de la plantilla original) */
+function actualizarPieEquipo(){
+  const titulo = document.getElementById('uiPieTitulo');
+  const nombres = document.getElementById('uiPieNombres');
+  if (titulo) titulo.textContent = 'Equipo · ' + (ficha.taller || 'Taller II');
+  if (nombres){
+    nombres.innerHTML = (ficha.equipo && ficha.equipo.length)
+      ? ficha.equipo.map(n => '<span class="pieNom">' + esc(n) + '</span>').join('')
+      : '<span class="pieNom" style="opacity:.6">Agrega tu equipo en Ficha técnica</span>';
+  }
 }
 function construirLote(){
   vaciarGrupo(loteGrupo);
@@ -1605,6 +1851,14 @@ function abrirFicha(){
     'El lote se dibuja en el terreno con las medidas que escribas y el cerramiento perimetral lo envuelve.</div>' +
     campo('fxNombre', 'Nombre del proyecto', ficha.nombre === 'Mi obra' ? '' : ficha.nombre, 'ej: Proyecto Bambú') +
     campo('fxUbicacion', 'Ubicación', ficha.ubicacion, 'ej: Marinilla, Antioquia') +
+    '<div style="margin-top:14px; border-top:1px solid var(--linea); padding-top:10px">' +
+      '<b>Taller y equipo</b>' +
+      '<div class="desc">Estos datos reemplazan el pie del sidebar ("Equipo · …") por los tuyos.</div>' +
+      campo('fxTaller', 'Nombre del taller', ficha.taller, 'ej: Taller II') +
+      '<label style="display:block; margin-top:8px">Integrantes del equipo (uno por línea)' +
+        '<textarea id="fxEquipo" rows="3" style="width:100%; margin-top:3px; resize:vertical; font-family:inherit; background:var(--campo); border:1px solid var(--borde); color:var(--texto); border-radius:var(--radio-campo); padding:7px 9px; font-size:13px" placeholder="Nombre 1' + String.fromCharCode(10) + 'Nombre 2">' + esc((ficha.equipo || []).join('\n')) + '</textarea>' +
+      '</label>' +
+    '</div>' +
     '<div style="display:flex; gap:8px; margin-top:8px; align-items:flex-end">' +
       '<label style="flex:1">Largo del lote (m)<input type="number" id="fxLoteLargo" value="' + ficha.loteLargo + '" min="20" max="400" step="0.5" style="width:100%; margin-top:3px" oninput="refrescarM2Ficha()"></label>' +
       '<label style="flex:1">Ancho del lote (m)<input type="number" id="fxLoteAncho" value="' + ficha.loteAncho + '" min="20" max="300" step="0.5" style="width:100%; margin-top:3px" oninput="refrescarM2Ficha()"></label>' +
@@ -1642,7 +1896,8 @@ function guardarFicha(){
     nombre: v('fxNombre') || 'Mi obra',
     ubicacion: v('fxUbicacion'), torres: v('fxTorres'), apartamentos: v('fxApartamentos'),
     niveles: v('fxNiveles'), alturaTxt: v('fxAltura'), fase: v('fxFase'), personal: v('fxPersonal'),
-    loteLargo: v('fxLoteLargo'), loteAncho: v('fxLoteAncho')
+    loteLargo: v('fxLoteLargo'), loteAncho: v('fxLoteAncho'),
+    taller: v('fxTaller'), equipo: v('fxEquipo').split('\n').map(s => s.trim()).filter(Boolean)
   });
   cerrCfg = {
     activo: !!document.getElementById('fxCerrActivo').checked,
@@ -1652,7 +1907,8 @@ function guardarFicha(){
   fichaCompleta = true;
   construirLote();
   construirCerramiento();
-  guardar();
+  actualizarPieEquipo();
+  guardar('Ficha técnica guardada');
   cerrarVentanaLibre();
   mostrarPanelVacio();
   avisar('Ficha técnica guardada — lote de ' + Math.round(ficha.loteLargo * ficha.loteAncho).toLocaleString('es-CO') + ' m²');
@@ -1931,14 +2187,14 @@ function cambiarAnchoVia(id, val){
 function eliminarTramoVia(id){
   vias = vias.filter(v => v.id !== id);
   selVia = null;
-  redibujarVias(); redibujarRutas(); guardar(); mostrarPanelVacio();
+  redibujarVias(); redibujarRutas(); guardar('Tramo de vía eliminado'); mostrarPanelVacio();
   avisar('Tramo eliminado — el resto de la vía sigue intacto');
 }
 function eliminarViaCompleta(id){
   const comp = new Set(componenteVia(id));
   vias = vias.filter(v => !comp.has(v.id));
   selVia = null;
-  redibujarVias(); redibujarRutas(); guardar(); mostrarPanelVacio();
+  redibujarVias(); redibujarRutas(); guardar('Vía eliminada (' + comp.size + ' tramos)'); mostrarPanelVacio();
   avisar('Vía eliminada (' + comp.size + ' tramos) — las demás vías no se tocaron');
 }
 function borrarTodasLasVias(){
@@ -2013,7 +2269,7 @@ function redibujarRutas(){
 function clicRuta(pRaw){
   const p = [red2(pRaw.x), red2(pRaw.z)];
   if (!trazoRuta){
-    trazoRuta = { id: idSec++, nombre: nombreRutaLibre(), color: PALETA_RUTAS[rutas.length % PALETA_RUTAS.length], vehiculo: '', vel: 3, puntos: [p] };
+    trazoRuta = { id: idSec++, nombre: nombreRutaLibre(), color: PALETA_RUTAS[rutas.length % PALETA_RUTAS.length], vehiculo: '', vel: 3, sentido: 'vaiven', puntos: [p] };
     rutas.push(trazoRuta);
     redibujarRutas(); guardar(); panelHerramientaRuta();
     avisar('"' + trazoRuta.nombre + '" creada — sigue marcando por dónde pasa el vehículo');
@@ -2078,11 +2334,16 @@ function renderPanelRuta(){
       '<tr><td>Puntos marcados</td><td>' + r.puntos.length + '</td></tr>' +
     '</table>' +
     '<label>Vehículo que la recorre<select onchange="cambiarRuta(' + r.id + ', \'vehiculo\', this.value)">' + opcionesVehiculos(r.vehiculo) + '</select></label>' +
+    '<label>Dirección del recorrido<select onchange="cambiarRuta(' + r.id + ', \'sentido\', this.value)">' +
+      '<option value="vaiven"' + (r.sentido === 'vaiven' ? ' selected' : '') + '>Vaivén (ida y vuelta)</option>' +
+      '<option value="ida"' + (r.sentido === 'ida' ? ' selected' : '') + '>Solo ida (punto 1 → último)</option>' +
+      '<option value="vuelta"' + (r.sentido === 'vuelta' ? ' selected' : '') + '>Solo vuelta (último → punto 1)</option>' +
+    '</select></label>' +
     '<div style="display:flex; gap:6px">' +
       '<label style="flex:1">Velocidad (m/s)<input type="number" value="' + r.vel + '" min="0.5" max="20" step="0.5" onchange="cambiarRuta(' + r.id + ', \'vel\', this.value)"></label>' +
       '<label style="flex:1">Color<input type="color" value="' + r.color + '" onchange="cambiarRuta(' + r.id + ', \'color\', this.value)"></label>' +
     '</div>' +
-    '<button onclick="toggleRecorrido(' + r.id + ')">' + ic(enMarcha ? 'stop' : 'play') + (enMarcha ? 'Detener el vehículo' : 'Recorrer la ruta (ida y vuelta)') + '</button>' +
+    '<button onclick="toggleRecorrido(' + r.id + ')">' + ic(enMarcha ? 'stop' : 'play') + (enMarcha ? 'Detener el vehículo' : 'Recorrer la ruta') + '</button>' +
     '<button onclick="continuarRuta(' + r.id + ')">' + ic('mas') + 'Seguir agregando puntos</button>' +
     '<b style="display:block; margin-top:10px">Puntos de la ruta</b>' + listaPts +
     '<button class="btnEliminar" onclick="eliminarRuta(' + r.id + ')">' + ic('basura') + 'Eliminar SOLO esta ruta</button>' +
@@ -2096,6 +2357,10 @@ function cambiarRuta(id, campo, val){
   else if (campo === 'vehiculo') r.vehiculo = String(val || '');
   else if (campo === 'vel') r.vel = numLim(val, r.vel, 0.5, 20);
   else if (campo === 'color' && /^#[0-9a-f]{6}$/i.test(val)) r.color = val;
+  else if (campo === 'sentido' && ['vaiven', 'ida', 'vuelta'].includes(val)){
+    r.sentido = val;
+    detenerRecorrido(id);   // el cambio de sentido aplica desde el próximo "Recorrer"
+  }
   guardar(); redibujarRutas();
   if (selRuta === id) renderPanelRuta();
 }
@@ -2115,7 +2380,7 @@ function eliminarRuta(id){
   rutas = rutas.filter(x => x.id !== id);
   if (trazoRuta && trazoRuta.id === id) trazoRuta = null;
   if (selRuta === id) selRuta = null;
-  guardar(); redibujarRutas();
+  guardar('Ruta eliminada: ' + (r ? r.nombre : id)); redibujarRutas();
   if (herramienta === 'ruta') panelHerramientaRuta(); else mostrarPanelVacio();
   avisar((r ? '"' + r.nombre + '" eliminada' : 'Ruta eliminada') + ' — las demás rutas no se tocaron');
 }
@@ -2142,7 +2407,9 @@ function iniciarRecorrido(id){
   const pts = tz.map(p => ({ x: p[0], z: p[1] }));
   const acum = [0];
   for (let i = 1; i < pts.length; i++) acum.push(acum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z));
-  rutasActivas.push({ rutaId: id, g, pts, acum, len: acum[acum.length - 1], s: 0, dir: 1 });
+  const len = acum[acum.length - 1];
+  const vuelta = r.sentido === 'vuelta';
+  rutasActivas.push({ rutaId: id, g, pts, acum, len, s: vuelta ? len : 0, dir: vuelta ? -1 : 1 });
   avisar('"' + r.vehiculo + '" recorriendo "' + r.nombre + '"');
 }
 function detenerRecorrido(id){
@@ -2158,8 +2425,15 @@ function moverVehiculoRuta(a, dt){
   const r = rutas.find(rr => rr.id === a.rutaId);
   if (!r || a.len < 0.5) return;
   a.s += (r.vel || 3) * dt * a.dir;
-  if (a.s >= a.len){ a.s = a.len; a.dir = -1; }
-  if (a.s <= 0){ a.s = 0; a.dir = 1; }
+  const vaiven = r.sentido !== 'ida' && r.sentido !== 'vuelta';
+  if (a.s >= a.len){
+    a.s = a.len;
+    if (vaiven) a.dir = -1; else { detenerRecorrido(a.rutaId); if (selRuta === a.rutaId) renderPanelRuta(); return; }
+  }
+  if (a.s <= 0){
+    a.s = 0;
+    if (vaiven) a.dir = 1; else { detenerRecorrido(a.rutaId); if (selRuta === a.rutaId) renderPanelRuta(); return; }
+  }
   let i = 1;
   while (i < a.acum.length - 1 && a.acum[i] < a.s) i++;
   const t = (a.s - a.acum[i - 1]) / Math.max(0.001, a.acum[i] - a.acum[i - 1]);
@@ -2172,18 +2446,298 @@ function detenerTodosLosRecorridos(){
   rutasActivas.slice().forEach(a => detenerRecorrido(a.rutaId));
 }
 
+/* ============ RELOJ DE OBRA + CAMIONES DE MATERIALES (mismo sistema del
+   proyecto Bambú, adaptado a las zonas creadas en el proyecto libre) ============
+   Programas el día y la hora en que entra cada camión y a qué zona lleva el
+   material; al llegar ese momento en el reloj de la obra, el camión entra
+   por el portón sur, recorre la obra SIGUIENDO LAS VÍAS hasta esa zona
+   (dibuja su recorrido), descarga y vuelve a salir. */
+let camionesLibre = [];             // [{fecha, hora, material, zona}]
+let horaObraLibre = 6 * 60;         // minutos desde medianoche
+let relojCorriendoLibre = true;
+let velRelojLibre = 12;             // minutos de obra por segundo real
+const camionesActivosLibre = [];
+const colaCamionesLibre = [];
+let ultimoDespachoLibre = -Infinity;
+const SEPARACION_CAMIONES_LIBRE = 8;
+let zonaCamionSelLibre = '';
+let elHoraObraTxtLibre = null;
+
+function minutosAHoraLibre(m){
+  m = ((Math.floor(m) % 1440) + 1440) % 1440;
+  return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+}
+function horaAMinutosLibre(h){
+  const p = String(h || '').split(':');
+  return ((parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0)) % 1440;
+}
+function fechaISOLibre(d){
+  d = d || new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function sumarDiaISOLibre(iso){
+  const p = String(iso || '').split('-').map(Number);
+  const d = new Date(p[0] || 1970, (p[1] || 1) - 1, p[2] || 1);
+  d.setDate(d.getDate() + 1);
+  return fechaISOLibre(d);
+}
+let fechaObraLibre = fechaISOLibre();
+
+/* camión de materiales a escala 1:1, reutilizando los mismos helpers caja()/cilindro()/rueda() */
+function crearCamion3DLibre(){
+  const cam = new THREE.Group();
+  caja(cam, 2.3, 0.5, 8.4, 0x2b2f36, 0, 0.75, -0.2);
+  caja(cam, 2.4, 1.9, 2.0, 0x2e6db8, 0, 2.0, 3.1);
+  caja(cam, 2.2, 0.8, 0.06, 0x9fc4e8, 0, 2.45, 4.1);
+  caja(cam, 2.5, 1.9, 5.4, 0xe6e2d8, 0, 1.75, -1.4);
+  [3.0, -2.2, -3.6].forEach(z => [-1.1, 1.1].forEach(x => rueda(cam, x, 0.6, z, 0.6, 0.5)));
+  return cam;
+}
+/* ubicación de cualquier zona por su nombre — el destino del camión */
+function posicionZonaLibre(nombre){
+  const g = elementos.find(el => el.userData.def.nombre === nombre);
+  if (g) return { x: g.position.x, z: g.position.z, w: g.userData.def.w || 3, d: g.userData.def.d || 3 };
+  return { x: 0, z: 0, w: 6, d: 6 };
+}
+/* entrada/salida de la obra: el mismo portón sur que usa el modo Caminar */
+function entradaObraLibre(){ return [0, ficha.loteAncho / 2 + 8]; }
+function tramoConViasLibre(desde, hasta){
+  return rutaPorViasLibre(desde, hasta) || [desde, hasta];
+}
+function encadenarConViasLibre(puntos){
+  let out = [puntos[0]];
+  for (let i = 0; i < puntos.length - 1; i++){
+    out = out.concat(tramoConViasLibre(puntos[i], puntos[i + 1]).slice(1));
+  }
+  return out;
+}
+function recorridoCamionLibre(nombreZona){
+  const zona = posicionZonaLibre(nombreZona);
+  const entrada = entradaObraLibre();
+  const aprox = [zona.x, zona.z - zona.d / 2 - 3];
+  const ida = encadenarConViasLibre([entrada, aprox]);
+  const vuelta = encadenarConViasLibre([aprox, entrada]);
+  return { ida, vuelta, descarga: aprox };
+}
+function curvaTerrenoLibre(paresXZ, altura){
+  return new THREE.CatmullRomCurve3(paresXZ.map(([x, z]) => new THREE.Vector3(x, altura || 0.05, z)));
+}
+function dibujarRecorridoCamionLibre(grupo, paresXZ){
+  const curva = curvaTerrenoLibre(paresXZ, 0.25);
+  const pts = curva.getPoints(160);
+  const linea = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineDashedMaterial({ color: 0x2e9bff, dashSize: 2.4, gapSize: 1.6 }));
+  linea.computeLineDistances();
+  grupo.add(linea);
+}
+
+/* ---- fila de acceso: los camiones nunca se chocan entre sí ---- */
+function zonaOcupadaLibre(nombreZona){
+  return camionesActivosLibre.some(a => a.zona === nombreZona);
+}
+function lanzarCamionLibre(c){ colaCamionesLibre.push(c); }
+function procesarColaCamionesLibre(){
+  if (!colaCamionesLibre.length) return;
+  if (performance.now() - ultimoDespachoLibre < SEPARACION_CAMIONES_LIBRE * 1000) return;
+  const idx = colaCamionesLibre.findIndex(c => !zonaOcupadaLibre((c && c.zona) || ''));
+  if (idx === -1) return;
+  const c = colaCamionesLibre.splice(idx, 1)[0];
+  ultimoDespachoLibre = performance.now();
+  despacharCamionLibre(c);
+}
+function despacharCamionLibre(c){
+  const nombreZona = (c && c.zona) || '';
+  const material = (c && c.material) || 'materiales';
+  const rec = recorridoCamionLibre(nombreZona);
+  const grupo = crearCamion3DLibre();
+  scene.add(grupo);
+  const rutaG = new THREE.Group();
+  dibujarRecorridoCamionLibre(rutaG, [...rec.ida, ...rec.vuelta.slice(1)]);
+  scene.add(rutaG);
+  camionesActivosLibre.push({
+    grupo, rutaG, material, zona: nombreZona,
+    curva: curvaTerrenoLibre(rec.ida, 0.05), rec,
+    t: 0, dur: 26, fase: 'entrando', espera: 0
+  });
+  avisar('Camión ingresando con ' + material + ' → ' + (nombreZona || '(zona no encontrada)'));
+}
+const camTmpPLibre = new THREE.Vector3(), camTmpTLibre = new THREE.Vector3();
+function moverCamionLibre(a, dt){
+  if (a.fase === 'descargando'){
+    a.espera -= dt;
+    if (a.espera <= 0){ a.fase = 'saliendo'; a.curva = curvaTerrenoLibre(a.rec.vuelta, 0.05); a.t = 0; a.dur = 24; }
+    return;
+  }
+  a.t += dt / a.dur;
+  if (a.t >= 1){
+    if (a.fase === 'entrando'){
+      a.fase = 'descargando'; a.espera = 6;
+      avisar('Camión descargando ' + a.material + ' en ' + a.zona);
+    } else {
+      scene.remove(a.grupo); scene.remove(a.rutaG);
+      a.grupo.traverse(n => { if (n.geometry) n.geometry.dispose(); });
+      a.terminado = true;
+    }
+    return;
+  }
+  const u = Math.min(a.t, 0.9999);
+  a.curva.getPointAt(u, camTmpPLibre);
+  a.curva.getTangentAt(u, camTmpTLibre);
+  a.grupo.position.set(camTmpPLibre.x, 0.05, camTmpPLibre.z);
+  a.grupo.rotation.y = Math.atan2(camTmpTLibre.x, camTmpTLibre.z);
+}
+/* avance del reloj + disparo de camiones programados (llamado desde el bucle de animación) */
+function actualizarCamionesLibre(dt){
+  if (relojCorriendoLibre && dt > 0){
+    let restante = dt * velRelojLibre;
+    while (restante > 0){
+      const antes = horaObraLibre;
+      const paso = Math.min(restante, 1440 - antes);
+      horaObraLibre = antes + paso;
+      camionesLibre.forEach(c => {
+        const m = horaAMinutosLibre(c.hora);
+        if (c.fecha === fechaObraLibre && m > antes && m <= horaObraLibre) lanzarCamionLibre(c);
+      });
+      restante -= paso;
+      if (horaObraLibre >= 1440){ horaObraLibre -= 1440; fechaObraLibre = sumarDiaISOLibre(fechaObraLibre); }
+    }
+    const hh = minutosAHoraLibre(horaObraLibre);
+    const txt = elHoraObraTxtLibre || (elHoraObraTxtLibre = document.getElementById('horaObraTxtLibre'));
+    if (txt && txt.textContent !== hh){
+      txt.textContent = hh;
+      txt.parentElement.title = fechaObraLibre;
+      const enOverlay = document.getElementById('camHoraActualLibre');
+      if (enOverlay) enOverlay.textContent = hh;
+      const fechaOverlay = document.getElementById('camFechaActualLibre');
+      if (fechaOverlay) fechaOverlay.textContent = fechaObraLibre;
+    }
+  }
+  for (let i = camionesActivosLibre.length - 1; i >= 0; i--){
+    moverCamionLibre(camionesActivosLibre[i], dt);
+    if (camionesActivosLibre[i].terminado) camionesActivosLibre.splice(i, 1);
+  }
+  procesarColaCamionesLibre();
+}
+
+/* ---- ventana de programación (reutiliza #libreOverlay) ---- */
+function opcionesZonasCamionLibre(sel){
+  return elementos.map(g => g.userData.def.nombre).map(n =>
+    '<option value="' + esc(n) + '"' + (n === sel ? ' selected' : '') + '>' + esc(n) + '</option>').join('');
+}
+const VELOCIDADES_LIBRE = [4, 12, 30, 60, 120];
+function opcionesVelocidadLibre(){
+  return VELOCIDADES_LIBRE.map(v => '<option value="' + v + '"' + (v === velRelojLibre ? ' selected' : '') + '>' + v + ' min/s</option>').join('');
+}
+function resumenCamionesLibre(){
+  if (!camionesLibre.length) return '';
+  const porFecha = {}, porZona = {};
+  camionesLibre.forEach(c => {
+    const f = c.fecha || fechaObraLibre, z = c.zona || '(sin zona)';
+    porFecha[f] = (porFecha[f] || 0) + 1;
+    porZona[z] = (porZona[z] || 0) + 1;
+  });
+  const chips = obj => Object.entries(obj).sort((a, b) => a[0] < b[0] ? -1 : 1)
+    .map(([k, n]) => '<span class="chipEspacio">' + esc(k) + ' · ' + n + '</span>').join('');
+  return '<div class="desc" style="margin:6px 0 12px"><b class="txtAcento">Resumen:</b> ' + camionesLibre.length +
+    ' camión(es) programado(s).<br><div style="margin-top:5px; display:flex; flex-wrap:wrap; gap:5px">' + chips(porFecha) + '</div>' +
+    '<div style="margin-top:5px; display:flex; flex-wrap:wrap; gap:5px">' + chips(porZona) + '</div></div>';
+}
+function renderCamionesLibre(){
+  document.getElementById('libreVentTitulo').textContent = 'Camiones de materiales';
+  const lista = [...camionesLibre].sort((a, b) =>
+    (a.fecha || '') !== (b.fecha || '') ? ((a.fecha || '') < (b.fecha || '') ? -1 : 1) : horaAMinutosLibre(a.hora) - horaAMinutosLibre(b.hora));
+  const filas = lista.length
+    ? lista.map(c => {
+        const i = camionesLibre.indexOf(c);
+        return '<div class="planoFila"><span class="planoNom">' + ic('camion') + ' <b class="txtFuerte">' + esc(c.fecha || fechaObraLibre) + ' ' + esc(c.hora) + '</b> · ' +
+            esc(c.material) + ' <small>→ ' + esc(c.zona || '(sin zona)') + '</small></span>' +
+          '<span style="white-space:nowrap">' +
+            '<button class="planoBtn" style="width:auto; margin:0" title="Enviar el camión ya" onclick="lanzarCamionLibre(camionesLibre[' + i + '])">' + ic('ruta') + '</button> ' +
+            '<button class="planoBtn peligro" style="width:auto; margin:0" title="Quitar de la programación" onclick="quitarCamionLibre(' + i + ')">' + ic('basura') + '</button>' +
+          '</span></div>';
+      }).join('')
+    : '<div class="desc">Aún no hay camiones programados.</div>';
+  document.getElementById('libreBody').innerHTML =
+    '<div class="desc">Programa el día y la hora en que entra cada camión y a qué zona lleva el material. Al llegar ese momento en el reloj de la obra, ' +
+      'el camión entra por el portón sur, recorre la obra hasta esa zona SIGUIENDO LAS VÍAS que dibujaste (se ve su recorrido) y descarga. ' +
+      'Si dos camiones coinciden, esperan su turno: nunca se cruzan ni se encima uno con otro.</div>' +
+    '<div style="display:flex; align-items:center; gap:8px; margin:12px 0; flex-wrap:wrap">' +
+      '<b>Reloj de obra:</b> <span id="camFechaActualLibre" class="txtSuave">' + fechaObraLibre + '</span>' +
+      '<span id="camHoraActualLibre" style="font-variant-numeric:tabular-nums">' + minutosAHoraLibre(horaObraLibre) + '</span>' +
+      '<button class="orgAccion" style="margin:0" onclick="toggleRelojLibre()">' + (relojCorriendoLibre ? 'Pausar' : 'Reanudar') + '</button>' +
+      '<label class="txtSuave" style="font-size:12.5px">Velocidad <select onchange="cambiarVelocidadLibre(this.value)">' + opcionesVelocidadLibre() + '</select></label>' +
+    '</div>' +
+    '<div style="display:flex; align-items:center; gap:6px; margin:0 0 14px; flex-wrap:wrap">' +
+      '<input type="date" id="camFechaSetLibre" value="' + fechaObraLibre + '">' +
+      '<input type="time" id="camHoraSetLibre" value="' + minutosAHoraLibre(horaObraLibre) + '">' +
+      '<button class="orgAccion" style="margin:0" onclick="fijarHoraObraLibre()">Fijar día y hora</button>' +
+    '</div>' +
+    resumenCamionesLibre() +
+    '<b>Camiones programados</b>' + filas +
+    '<div style="margin-top:12px; display:flex; flex-direction:column; gap:6px">' +
+      '<div style="display:flex; gap:6px; flex-wrap:wrap">' +
+        '<input type="date" id="camFechaLibre" value="' + fechaObraLibre + '">' +
+        '<input type="time" id="camHoraLibre" value="08:00">' +
+        '<input id="camMaterialLibre" maxlength="60" placeholder="Material (ej: Cemento)" style="flex:1; min-width:140px">' +
+      '</div>' +
+      '<div style="display:flex; gap:6px; align-items:center">' +
+        '<span class="txtSuave">Destino:</span>' +
+        '<select id="camZonaLibre" style="flex:1">' + opcionesZonasCamionLibre(zonaCamionSelLibre) + '</select>' +
+        '<button class="orgAccion primario" style="margin:0" onclick="agregarCamionLibre()">' + ic('mas') + 'Agregar</button>' +
+      '</div>' +
+    '</div>';
+}
+function cambiarVelocidadLibre(v){ velRelojLibre = parseFloat(v) || 12; guardar(); }
+function agregarCamionLibre(){
+  const fecha = document.getElementById('camFechaLibre').value || fechaObraLibre;
+  const hora = document.getElementById('camHoraLibre').value;
+  const material = (document.getElementById('camMaterialLibre').value || '').trim().slice(0, 60) || 'Materiales';
+  const zona = document.getElementById('camZonaLibre').value || '';
+  if (!hora){ avisar('Elige la hora del camión'); return; }
+  if (!zona){ avisar('Crea al menos una zona primero (Espacios o Equipos)'); return; }
+  camionesLibre.push({ fecha, hora, material, zona });
+  zonaCamionSelLibre = zona;
+  guardar('Camión programado: ' + material + ' → ' + zona);
+  renderCamionesLibre();
+  avisar('Camión programado: ' + material + ' el ' + fecha + ' ' + hora + ' → ' + zona);
+}
+function quitarCamionLibre(i){ const c = camionesLibre[i]; camionesLibre.splice(i, 1); guardar('Camión quitado de la programación' + (c ? ': ' + c.material : '')); renderCamionesLibre(); }
+function toggleRelojLibre(){ relojCorriendoLibre = !relojCorriendoLibre; renderCamionesLibre(); }
+function fijarHoraObraLibre(){
+  const v = document.getElementById('camHoraSetLibre').value;
+  const f = document.getElementById('camFechaSetLibre').value;
+  if (!v) return;
+  horaObraLibre = horaAMinutosLibre(v);
+  if (f) fechaObraLibre = f;
+  guardar();
+  renderCamionesLibre();
+  avisar('Reloj de obra fijado en ' + fechaObraLibre + ' ' + v);
+}
+function abrirCamionesLibre(){
+  setHerramienta(null);
+  zonaCamionSelLibre = zonaCamionSelLibre || (elementos[0] ? elementos[0].userData.def.nombre : '');
+  renderCamionesLibre();
+  document.getElementById('libreOverlay').style.display = 'flex';
+}
+/* llamada desde la ficha de un elemento: preselecciona ese destino */
+function programarCamionZonaLibre(nombreZona){
+  zonaCamionSelLibre = nombreZona;
+  abrirCamionesLibre();
+}
+
 /* ============ HERRAMIENTAS VÍA / RUTA / REGLA: modo, clics y previsualización ============ */
 let herramienta = null;   // null | 'via' | 'ruta' | 'regla'
 let previewMesh = null;
 function setHerramienta(h){
+  salirDeAmoblarSiActivo();
   if (herramienta === h) h = null;
   herramienta = h;
   trazoVia = null; trazoRuta = null; trazoRegla = null;
   redibujarMediciones();
   quitarPreviewHerramienta();
-  document.getElementById('libreBtnVia').classList.toggle('activo', herramienta === 'via');
-  document.getElementById('libreBtnRuta').classList.toggle('activo', herramienta === 'ruta');
-  document.getElementById('libreBtnRegla').classList.toggle('activo', herramienta === 'regla');
+  document.getElementById('btnVia').classList.toggle('activo', herramienta === 'via');
+  document.getElementById('btnRuta').classList.toggle('activo', herramienta === 'ruta');
+  document.getElementById('btnRegla').classList.toggle('activo', herramienta === 'regla');
   if (herramienta === 'via') panelHerramientaVia();
   else if (herramienta === 'ruta') panelHerramientaRuta();
   else if (herramienta === 'regla') panelHerramientaRegla();
@@ -2328,8 +2882,8 @@ function redibujarMediciones(){
     linea.rotation.y = -Math.atan2(dz, dx);
     reglaGrupo.add(linea);
     disco(me.x1, me.z1); disco(me.x2, me.z2);
-    const et = crearEtiqueta(Math.round(len * 100) / 100 + ' m', 9, 'rgba(120,85,10,0.88)');
-    et.position.set((me.x1 + me.x2) / 2, 1.8, (me.z1 + me.z2) / 2);
+    const et = crearEtiqueta(Math.round(len * 100) / 100 + ' m', modo2D ? 13 : 9, 'rgba(120,85,10,0.88)');
+    et.position.set((me.x1 + me.x2) / 2, modo2D ? 2.2 : 1.8, (me.z1 + me.z2) / 2);
     reglaGrupo.add(et);
   });
   if (trazoRegla) disco(trazoRegla.x, trazoRegla.z);
@@ -2337,19 +2891,32 @@ function redibujarMediciones(){
 }
 function panelHerramientaRegla(){
   const total = Math.round(mediciones.reduce((s, m) => s + Math.hypot(m.x2 - m.x1, m.z2 - m.z1), 0) * 100) / 100;
+  const filas = mediciones.map((m, i) =>
+    '<div class="planoFila"><span class="planoNom">Medición ' + (i + 1) + ' <small>· ' + (Math.round(Math.hypot(m.x2 - m.x1, m.z2 - m.z1) * 100) / 100) + ' m</small></span>' +
+    '<button class="planoBtn peligro" style="width:auto; margin:0" title="Eliminar SOLO esta medición" onclick="quitarMedicionLibre(' + i + ')">✕</button></div>').join('');
   panelSel('Regla — medir distancias',
     '<div class="desc">Haz <b class="txtAcento">clic sobre el terreno</b> en dos puntos para medir la distancia entre ellos; ' +
-    'cada clic siguiente encadena otra medición. Las cotas quedan en pantalla hasta que las borres ' +
-    '(no se guardan con el proyecto).</div>' +
-    (mediciones.length
-      ? '<table>' + mediciones.map((m, i) =>
-          '<tr><td>Medición ' + (i + 1) + '</td><td>' + (Math.round(Math.hypot(m.x2 - m.x1, m.z2 - m.z1) * 100) / 100) + ' m</td></tr>').join('') +
-        '<tr><td><b>Total</b></td><td><b>' + total + ' m</b></td></tr></table>'
-      : '') +
+    'cada clic siguiente encadena otra medición. <b class="txtAcento">Esc</b> quita la última medición (o sal de la herramienta si ya no queda ninguna). ' +
+    'Las cotas quedan en pantalla hasta que las borres (no se guardan con el proyecto).</div>' +
+    (mediciones.length ? filas + '<div class="desc" style="margin-top:6px"><b class="txtFuerte">Total: ' + total + ' m</b></div>' : '') +
     (trazoRegla ? '<div class="desc"><b class="txtAcento">Midiendo…</b> haz clic en el siguiente punto.</div>' : '') +
     '<button onclick="deshacerPuntoHerramienta()">' + ic('girarIzq') + 'Deshacer última medición</button>' +
     '<button onclick="terminarTrazo()">' + ic('check') + 'Terminar (empezar otra medición)</button>' +
     (mediciones.length ? '<button class="btnEliminar" onclick="borrarMediciones()">' + ic('basura') + 'Borrar todas las mediciones</button>' : ''));
+}
+function quitarMedicionLibre(i){
+  if (!mediciones[i]) return;
+  mediciones.splice(i, 1);
+  redibujarMediciones();
+  if (herramienta === 'regla') panelHerramientaRegla();
+  avisar('Medición eliminada');
+}
+/* Esc con la regla activa: quita la ÚLTIMA medición (o el punto en curso);
+   con todo limpio, un Esc más sale de la herramienta (lo maneja el keydown) */
+function escRegla(){
+  if (trazoRegla){ trazoRegla = null; redibujarMediciones(); panelHerramientaRegla(); avisar('Punto en curso cancelado'); return true; }
+  if (mediciones.length){ mediciones.pop(); redibujarMediciones(); panelHerramientaRegla(); avisar('Última medición eliminada'); return true; }
+  return false;
 }
 function borrarMediciones(){
   mediciones = []; trazoRegla = null;
@@ -2373,7 +2940,7 @@ function aplicarCielo(){
     if (n.isLight && n.userData.esReflector) n.intensity = esNoche ? 1.8 : 0;
     if (n.isMesh && n.userData.esFocoReflector && n.material.emissive) n.material.emissive.setHex(esNoche ? 0xffdd88 : 0x000000);
   });
-  const btn = document.getElementById('libreBtnNoche');
+  const btn = document.getElementById('btnNoche');
   if (btn){
     btn.classList.toggle('activo', esNoche);
     btn.innerHTML = esNoche ? ic('sol') + 'Día' : ic('luna') + 'Noche';
@@ -2398,9 +2965,10 @@ const camWalk = { x: 0, z: 30, yaw: Math.PI, pitch: 0 };
 const teclasCaminar = {};
 let portapapeles = null;   // def copiada con Ctrl+C
 function toggleCaminar(){
+  if (manejando) bajarDeVehiculo();   // no se puede alternar caminar mientras se maneja
   if (!caminando && modo2D) toggleVista2D();   // caminar es en 3D
   caminando = !caminando;
-  const btn = document.getElementById('libreBtnCaminar');
+  const btn = document.getElementById('btnCaminar');
   btn.classList.toggle('activo', caminando);
   btn.innerHTML = caminando ? ic('volver') + 'Salir' : ic('caminar') + 'Caminar';
   if (caminando){
@@ -2427,15 +2995,23 @@ document.addEventListener('mousemove', e => {
   camWalk.yaw -= (e.movementX || 0) * 0.0024;
   camWalk.pitch = Math.min(1.25, Math.max(-1.25, camWalk.pitch - (e.movementY || 0) * 0.0022));
 });
+/* mantener presionada una tecla de movimiento ACELERA progresivamente hasta
+   el tope (caminando o corriendo con Shift); soltarla frena rápido —
+   se siente como acelerar un personaje, no un interruptor de dos posiciones */
+let velCaminarActual = 0;
 function moverCaminante(dt){
   const t = teclasCaminar;
   const adelante = ((t.KeyW || t.ArrowUp) ? 1 : 0) - ((t.KeyS || t.ArrowDown) ? 1 : 0);
   const lado = ((t.KeyD || t.ArrowRight) ? 1 : 0) - ((t.KeyA || t.ArrowLeft) ? 1 : 0);
-  const vel = (t.ShiftLeft || t.ShiftRight) ? 9 : 4.5;
-  if (adelante || lado){
+  const activo = adelante || lado;
+  const velMax = (t.ShiftLeft || t.ShiftRight) ? 9 : 4.5;
+  velCaminarActual = activo
+    ? Math.min(velMax, velCaminarActual + dt * velMax * 2.2)
+    : Math.max(0, velCaminarActual - dt * velMax * 3.5);
+  if (activo && velCaminarActual > 0.01){
     const fx = Math.sin(camWalk.yaw), fz = Math.cos(camWalk.yaw);
-    camWalk.x = Math.min(290, Math.max(-290, camWalk.x + (fx * adelante - fz * lado) * vel * dt));
-    camWalk.z = Math.min(190, Math.max(-190, camWalk.z + (fz * adelante + fx * lado) * vel * dt));
+    camWalk.x = Math.min(290, Math.max(-290, camWalk.x + (fx * adelante - fz * lado) * velCaminarActual * dt));
+    camWalk.z = Math.min(190, Math.max(-190, camWalk.z + (fz * adelante + fx * lado) * velCaminarActual * dt));
   }
   camera.position.set(camWalk.x, 1.7, camWalk.z);
   camera.lookAt(
@@ -2443,6 +3019,91 @@ function moverCaminante(dt){
     1.7 + Math.sin(camWalk.pitch),
     camWalk.z + Math.cos(camWalk.yaw) * Math.cos(camWalk.pitch)
   );
+}
+
+/* ============ MODO MANEJAR (subirse a un carro, malacate o torre grúa) ============
+   Presiona E cerca de un vehículo móvil, un malacate o una torre grúa para
+   "subirte": la cámara pasa a tercera persona detrás de él y W A S D /
+   flechas lo mueven de verdad (los vehículos avanzan y giran; el malacate y
+   la torre grúa son estructuras fijas, así que solo sirven de mirador
+   elevado). Mantener la tecla también acelera progresivamente. E o Esc para
+   bajarte — la posición nueva del vehículo queda guardada. */
+let manejando = null;
+let velManejarActual = 0;
+const RADIO_SUBIR = 7;   // metros de cercanía para poder subirse con E
+function esVehiculoManejable(d){
+  return (d.tipo === 'maquina' && d.movil) || d.tipo === 'malacate' || d.tipo === 'gruaTorre';
+}
+function elementoCercanoParaSubir(){
+  const px = caminando ? camWalk.x : camCtrl.target.x;
+  const pz = caminando ? camWalk.z : camCtrl.target.z;
+  let mejor = null, mejorD = RADIO_SUBIR;
+  elementos.forEach(g => {
+    if (!esVehiculoManejable(g.userData.def)) return;
+    const dist = Math.hypot(g.position.x - px, g.position.z - pz);
+    if (dist < mejorD){ mejorD = dist; mejor = g; }
+  });
+  return mejor;
+}
+function toggleManejar(){
+  if (manejando){ bajarDeVehiculo(); return; }
+  if (modo2D || amueblando || herramienta) return;
+  const g = elementoCercanoParaSubir();
+  if (!g){ avisar('Acércate a un vehículo móvil, un malacate o una torre grúa y presiona E'); return; }
+  if (g.userData.def.bloqueado){ avisar('"' + g.userData.def.nombre + '" está bloqueado — desbloquéalo para manejarlo'); return; }
+  manejando = g;
+  velManejarActual = 0;
+  seleccionar(g);
+  if (!caminando){
+    caminando = true;
+    document.getElementById('btnCaminar').classList.add('activo');
+    try { renderer.domElement.requestPointerLock(); } catch (e) {}
+  }
+  const esFijo = g.userData.def.tipo === 'malacate' || g.userData.def.tipo === 'gruaTorre';
+  avisar('Subido a "' + g.userData.def.nombre + '"' + (esFijo
+    ? ' (mirador fijo) — E o Esc para bajarte'
+    : ': W A S D / flechas para manejar, mantén para acelerar — E o Esc para bajarte'));
+}
+function bajarDeVehiculo(){
+  if (!manejando) return;
+  const nombre = manejando.userData.def.nombre;
+  // el jugador queda parado justo al lado de donde se bajó, no donde
+  // hubiera quedado camWalk por un mousemove perdido mientras manejaba
+  camWalk.x = manejando.position.x + Math.sin(manejando.rotation.y + Math.PI / 2) * 3;
+  camWalk.z = manejando.position.z + Math.cos(manejando.rotation.y + Math.PI / 2) * 3;
+  camWalk.yaw = manejando.rotation.y; camWalk.pitch = 0;
+  guardar('Movido: ' + nombre);
+  manejando = null;
+  avisar('Bajaste de "' + nombre + '"');
+}
+function moverVehiculoManejado(dt){
+  if (!manejando || !elementos.includes(manejando)){ manejando = null; return; }
+  const d = manejando.userData.def;
+  const t = teclasCaminar;
+  const puedeAvanzar = d.tipo === 'maquina' && d.movil && !d.bloqueado;
+  if (puedeAvanzar){
+    const adelante = ((t.KeyW || t.ArrowUp) ? 1 : 0) - ((t.KeyS || t.ArrowDown) ? 1 : 0);
+    const girar = ((t.KeyA || t.ArrowLeft) ? 1 : 0) - ((t.KeyD || t.ArrowRight) ? 1 : 0);
+    const velMax = (t.ShiftLeft || t.ShiftRight) ? 16 : 8;
+    velManejarActual = adelante
+      ? Math.min(velMax, velManejarActual + dt * velMax * 1.8)
+      : Math.max(0, velManejarActual - dt * velMax * 2.5);
+    if (velManejarActual > 0.05){
+      d.rot += girar * dt * 1.1 * Math.sign(adelante || 1);
+      manejando.rotation.y = d.rot;
+      const fx = Math.sin(d.rot), fz = Math.cos(d.rot);
+      d.x = Math.min(260, Math.max(-260, d.x + fx * velManejarActual * dt * adelante));
+      d.z = Math.min(180, Math.max(-180, d.z + fz * velManejarActual * dt * adelante));
+      manejando.position.set(d.x, manejando.position.y, d.z);
+      if (mostrarCotas) redibujarCotas2D();
+    }
+  }
+  // cámara en tercera persona, siguiendo detrás y arriba del vehículo
+  const alto = (d.h || 3) + 3.5, dist = Math.max(8, (d.d || 5) * 1.1);
+  const cx = manejando.position.x - Math.sin(manejando.rotation.y) * dist;
+  const cz = manejando.position.z - Math.cos(manejando.rotation.y) * dist;
+  camera.position.set(cx, manejando.position.y + alto * 0.55, cz);
+  camera.lookAt(manejando.position.x, manejando.position.y + (d.h || 2) * 0.4, manejando.position.z);
 }
 
 /* ============ VISTA 2D EN PLANTA (organizar zonas viendo los m²) ============
@@ -2474,18 +3135,295 @@ function refrescarEtiquetas(){ elementos.forEach(regenerarEtiquetaLibre); }
 function toggleVista2D(){
   if (caminando) toggleCaminar();   // el plano 2D apaga el modo caminar
   modo2D = !modo2D;
-  const btn = document.getElementById('libreBtn2D');
+  const btn = document.getElementById('btn2D');
   btn.classList.toggle('activo', modo2D);
   btn.innerHTML = modo2D ? ic('caja') + 'Vista 3D' : ic('plano') + 'Plano 2D';
+  document.getElementById('btnAreas').style.display = modo2D ? '' : 'none';
   if (modo2D){
     camCtrl.target.set(0, 0, 0);
     zoom2D = Math.max(ficha.loteAncho * 0.72, ficha.loteLargo * 0.42, 55);
     animCam = null;
+  } else if (amueblando){
+    cerrarAmoblar();
   }
   refrescarEtiquetas();
+  redibujarCotas2D();
   avisar(modo2D
     ? 'Plano 2D: arrastra las zonas para organizarlas · arrastrar en vacío mueve el plano · rueda = zoom'
     : 'Vista 3D');
+}
+
+/* ============ EXPORTAR PLANO (PDF, mismo truco del proyecto Bambú) ============
+   No usa ninguna librería de PDF: abre una ventana nueva con la foto de la
+   obra en planta + el cuadro de áreas (m² ejecutados por zona y el espacio
+   disponible del lote) en una hoja con estilo de impresión, y llama a
+   window.print() — el usuario elige "Guardar como PDF" en el diálogo del
+   navegador. Igual de confiable que una librería, sin pesar la página. */
+function capturarPlantaLibre(){
+  const eraModo2D = modo2D, eraCotas = mostrarCotas, eraEtiquetas = etiquetasVisibles;
+  const eraTarget = camCtrl.target.clone(), eraZoom = zoom2D;
+  if (!modo2D){ modo2D = true; camCtrl.target.set(0, 0, 0); }
+  zoom2D = Math.max(ficha.loteAncho * 0.72, ficha.loteLargo * 0.42, 55);
+  if (!mostrarCotas) setCotas(true);
+  if (!etiquetasVisibles) toggleEtiquetasLibre();
+  animCam = null;
+  actualizarCamara2D();
+  redibujarCotas2D();
+  renderer.render(scene, cam2D);
+  const url = renderer.domElement.toDataURL('image/png');
+  modo2D = eraModo2D; camCtrl.target.copy(eraTarget); zoom2D = eraZoom;
+  if (mostrarCotas !== eraCotas) setCotas(eraCotas);
+  if (etiquetasVisibles !== eraEtiquetas) toggleEtiquetasLibre();
+  const btn2d = document.getElementById('btn2D');
+  btn2d.classList.toggle('activo', modo2D);
+  btn2d.innerHTML = modo2D ? ic('caja') + 'Vista 3D' : ic('plano') + 'Plano 2D';
+  document.getElementById('btnAreas').style.display = modo2D ? '' : 'none';
+  redibujarCotas2D();
+  return url;
+}
+function exportarPlanoLibre(){
+  const img = capturarPlantaLibre();
+  const L = ficha.loteLargo, A = ficha.loteAncho, loteM2 = Math.round(L * A);
+  const filas = elementos.map(g => {
+    const d = g.userData.def;
+    const area = tieneMedidasCota(d) ? Math.round(d.w * d.d * 10) / 10 : null;
+    return { nombre: d.nombre, tipo: NOMBRE_TIPO[d.tipo] || d.tipo, area };
+  });
+  const totalArea = Math.round(filas.reduce((s, f) => s + (f.area || 0), 0) * 10) / 10;
+  const disponible = Math.max(0, Math.round((loteM2 - totalArea) * 10) / 10);
+  const ocupacion = loteM2 > 0 ? Math.round(totalArea / loteM2 * 1000) / 10 : 0;
+  const filasHtml = filas.map(f =>
+    '<tr><td>' + esc(f.nombre) + '</td><td>' + esc(f.tipo) + '</td><td class="num">' + (f.area !== null ? f.area : '—') + '</td></tr>').join('');
+  const fecha = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
+  const equipoHtml = (ficha.equipo && ficha.equipo.length) ? esc(ficha.equipo.join(' · ')) : '—';
+  const html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">' +
+    '<title>Plano de obra — ' + esc(ficha.nombre || 'Proyecto libre') + '</title>' +
+    '<style>' +
+      '@page { size: A4 landscape; margin: 12mm; }' +
+      'body { font-family: "Nunito", Arial, sans-serif; color: #1f241b; margin: 24px; }' +
+      'header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #3E8E5A; padding-bottom: 8px; margin-bottom: 14px; }' +
+      'h1 { font-family: "Fredoka", sans-serif; font-size: 19px; margin: 0; color: #2E6B44; text-transform: uppercase; letter-spacing: 1px; }' +
+      'h2 { font-family: "Fredoka", sans-serif; font-size: 13px; margin: 18px 0 6px; color: #2E6B44; text-transform: uppercase; letter-spacing: 1px; }' +
+      'header small { color: #6a7260; font-size: 12px; }' +
+      'img.planta { width: 100%; max-height: 56vh; object-fit: contain; border: 1px solid #d9ddd1; }' +
+      '.resumen { display:flex; gap:14px; margin-top:10px; flex-wrap:wrap; }' +
+      '.resumen div { background:#f3f5ee; border:1px solid #d9ddd1; border-radius:8px; padding:8px 14px; }' +
+      '.resumen b { display:block; font-size:16px; color:#2E6B44; }' +
+      '.resumen span { font-size:10.5px; color:#6a7260; text-transform:uppercase; letter-spacing:.5px; }' +
+      'table { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-top: 4px; }' +
+      'th { text-align: left; color: #6a7260; border-bottom: 2px solid #c3c9b8; padding: 4px 6px; text-transform: uppercase; font-size: 10px; letter-spacing: .6px; }' +
+      'td { border-bottom: 1px solid #e4e8dd; padding: 4px 6px; }' +
+      'td.num, th.num { text-align: right; }' +
+      'tr.total td { font-weight: bold; color: #2E6B44; border-top: 2px solid #c3c9b8; }' +
+      '.acciones { margin: 14px 0; display: flex; gap: 10px; }' +
+      '.acciones button, .acciones a { font-family: "Fredoka", sans-serif; font-size: 12px; padding: 8px 16px; border: 1px solid #3E8E5A; background: #3E8E5A; color: #fff; border-radius: 999px; cursor: pointer; text-decoration: none; text-transform: uppercase; letter-spacing: .5px; }' +
+      '.acciones a { background: transparent; color: #2E6B44; }' +
+      '@media print { .acciones { display: none; } body { margin: 0; } }' +
+    '</style></head><body>' +
+    '<header><div><h1>' + esc(ficha.nombre || 'Proyecto libre') + ' — Plano de obra</h1>' +
+      '<small>' + esc(ficha.ubicacion || 'Sin ubicación') + ' · ' + esc(ficha.taller || 'Taller II') + ' · Equipo: ' + equipoHtml + '</small></div>' +
+      '<small>Fase: <b>' + esc(FASES_OBRA[ficha.faseObra] || ficha.fase || '—') + '</b> · ' + esc(fecha) + '</small></header>' +
+    '<div class="acciones">' +
+      '<button onclick="window.print()">Imprimir / Guardar PDF</button>' +
+      '<a href="' + img + '" download="plano_2d.png">Descargar PNG</a>' +
+    '</div>' +
+    '<img class="planta" src="' + img + '" alt="Vista en planta de la obra">' +
+    '<div class="resumen">' +
+      '<div><b>' + loteM2.toLocaleString('es-CO') + ' m²</b><span>Terreno total (' + L + ' × ' + A + ' m)</span></div>' +
+      '<div><b>' + totalArea.toLocaleString('es-CO') + ' m²</b><span>Ejecutado / construido (' + ocupacion + '%)</span></div>' +
+      '<div><b>' + disponible.toLocaleString('es-CO') + ' m²</b><span>Espacio disponible</span></div>' +
+    '</div>' +
+    '<h2>Descripción de zonas y espacios</h2>' +
+    '<table><tr><th>Zona</th><th>Tipo</th><th class="num">Área (m²)</th></tr>' +
+      filasHtml +
+      '<tr class="total"><td>Total (' + filas.length + ' elementos)</td><td></td><td class="num">' + totalArea + '</td></tr>' +
+    '</table>' +
+    '<script>window.addEventListener("load", function(){ setTimeout(function(){ window.print(); }, 400); });<\/script>' +
+    '</body></html>';
+  const w = window.open('', '_blank');
+  if (!w){ avisar('Permite las ventanas emergentes para exportar el plano'); return; }
+  w.document.write(html);
+  w.document.close();
+  avisar('Plano listo — usa "Imprimir / Guardar PDF" en la ventana nueva');
+}
+
+/* ============ COTAS (acotado de cada zona, botón "Cotas" — apagadas por
+   defecto, igual que en el proyecto Bambú) ============
+   Cada zona con ancho/fondo (espacio, edificio, maquinaria…) muestra el
+   ancho y el fondo como cotas de un plano arquitectónico — visibles tanto
+   en 3D como en el Plano 2D. Si quedó girada en un ángulo que no es
+   múltiplo de 90° (0/90/180/270°) se marca además el ángulo exacto en
+   rojo, para que un giro "raro" nunca pase desapercibido. */
+const cotasGrupo = new THREE.Group(); scene.add(cotasGrupo);
+let mostrarCotas = false;
+let ultimaActualizacionCotas = 0;
+function setCotas(on){
+  mostrarCotas = on;
+  const btn = document.getElementById('btnCotas');
+  if (btn) btn.classList.toggle('activo', mostrarCotas);
+  redibujarCotas2D();
+}
+function toggleCotas(){
+  setCotas(!mostrarCotas);
+  avisar(mostrarCotas ? 'Cotas visibles' : 'Cotas ocultas');
+}
+function tieneMedidasCota(d){ return typeof d.w === 'number' && typeof d.d === 'number'; }
+function anguloRaro(rot){
+  const grados = ((rot * 180 / Math.PI) % 360 + 360) % 360;
+  const resto = grados % 90;
+  const distancia = Math.min(resto, 90 - resto);
+  return distancia > 1.5 ? Math.round(grados * 10) / 10 : null;
+}
+function dibujarCota(p1, p2, medida){
+  const dx = p2.x - p1.x, dz = p2.z - p1.z, len = Math.hypot(dx, dz);
+  if (len < 0.1) return;
+  const grosor = modo2D ? 0.09 : 0.02;   // más gruesa en 2D: se ve mejor desde arriba
+  const linea = new THREE.Mesh(new THREE.BoxGeometry(len, grosor, grosor * 2.5),
+    new THREE.MeshBasicMaterial({ color: modo2D ? 0x2c3038 : 0x5a6270 }));
+  linea.position.set((p1.x + p2.x) / 2, modo2D ? 0.3 : 0.22, (p1.z + p2.z) / 2);
+  linea.rotation.y = -Math.atan2(dz, dx);
+  cotasGrupo.add(linea);
+  const et = crearEtiqueta(Math.round(medida * 100) / 100 + ' m', modo2D ? 11 : 7, modo2D ? 'rgba(20,23,28,0.92)' : 'rgba(40,45,55,0.85)');
+  et.position.set((p1.x + p2.x) / 2, modo2D ? 1.8 : 1.4, (p1.z + p2.z) / 2);
+  cotasGrupo.add(et);
+}
+function redibujarCotas2D(){
+  vaciarGrupo(cotasGrupo);
+  if (!mostrarCotas) return;
+  const off = 1.4;
+  elementos.forEach(g => {
+    if (amueblando === g) return;   // dentro del amoblado no se acota el espacio, solo se ven los muebles
+    const d = g.userData.def;
+    if (!tieneMedidasCota(d)) return;
+    const hw = d.w / 2, hd = d.d / 2;
+    const cos = Math.cos(d.rot), sin = Math.sin(d.rot);
+    const aMundo = (lx, lz) => ({ x: d.x + lx * cos + lz * sin, z: d.z - lx * sin + lz * cos });
+    dibujarCota(aMundo(-hw, -hd - off), aMundo(hw, -hd - off), d.w);
+    dibujarCota(aMundo(hw + off, -hd), aMundo(hw + off, hd), d.d);
+    const angulo = anguloRaro(d.rot);
+    if (angulo !== null){
+      const et = crearEtiqueta('∠ ' + angulo + '°', modo2D ? 12 : 8, 'rgba(150,40,20,0.9)');
+      et.position.set(d.x, modo2D ? 3.2 : 2.6, d.z);
+      cotasGrupo.add(et);
+    }
+  });
+  aplicarVisibilidadEtiquetas(cotasGrupo);
+}
+
+/* ============ AMOBLAR ESPACIOS POR DENTRO (interacción) ============
+   Modo especial dentro del plano 2D: se hace zoom sobre un espacio elegido y
+   el clic izquierdo pasa a colocar/mover muebles de su catálogo DENTRO de
+   ese espacio (coordenadas locales), en vez de mover zonas de la obra. */
+let amueblando = null;            // THREE.Group del espacio abierto, o null
+let muebleArmadoInterior = null;  // catalogoId elegido para colocar en el siguiente clic
+let arrastrandoInterior = null;   // pieza interior que se está arrastrando
+let interiorSeleccionado = null;  // pieza interior elegida (para girar/eliminar con teclado)
+function salirDeAmoblarSiActivo(){ if (amueblando) cerrarAmoblar(); }
+function actualizarTinteInterior(obj){
+  if (!obj) return;
+  const emi = obj === interiorSeleccionado ? 0x554400 : 0x000000;
+  obj.traverse(n => { if (n.isMesh && n.material && n.material.emissive !== undefined) n.material.emissive.setHex(emi); });
+}
+function abrirAmoblar(){
+  if (!seleccionado || seleccionado.userData.def.tipo !== 'espacio') return;
+  const objetivo = seleccionado;
+  setHerramienta(null);
+  if (!modo2D) toggleVista2D();
+  amueblando = objetivo;
+  muebleArmadoInterior = null;
+  interiorSeleccionado = null;
+  const d = amueblando.userData.def;
+  camCtrl.target.set(d.x, 0, d.z);
+  zoom2D = Math.max(d.w, d.d) * 0.75 + 2;
+  animCam = null;
+  redibujarCotas2D();
+  renderPanelAmoblar();
+  avisar('Amoblando "' + d.nombre + '": elige una pieza y haz clic dentro del espacio · Esc para salir');
+}
+function cerrarAmoblar(){
+  amueblando = null;
+  muebleArmadoInterior = null;
+  interiorSeleccionado = null;
+  arrastrandoInterior = null;
+  redibujarCotas2D();
+  mostrarPanelVacio();
+}
+function elegirMuebleInterior(id){
+  muebleArmadoInterior = id;
+  renderPanelAmoblar();
+}
+function renderPanelAmoblar(){
+  if (!amueblando) return;
+  const d = amueblando.userData.def;
+  const lista = (d.muebles || []).map((m, i) => {
+    const item = catalogoMuebleInterior(m.catalogoId);
+    return '<div class="planoFila"><span class="planoNom">' + ic('silla') + ' <b class="txtFuerte">' + esc(item.nombre) + '</b></span>' +
+      '<span style="white-space:nowrap">' +
+        '<button class="planoBtn" style="width:auto; margin:0" title="Girar 45°" onclick="girarMuebleInterior(' + i + ')">' + ic('girarDer') + '</button> ' +
+        '<button class="planoBtn peligro" style="width:auto; margin:0" title="Eliminar" onclick="eliminarMuebleInterior(' + i + ')">' + ic('basura') + '</button>' +
+      '</span></div>';
+  }).join('');
+  panelSel('Amoblar: ' + d.nombre,
+    '<div class="desc">Elige una pieza del catálogo y haz <b class="txtAcento">clic dentro del espacio</b> para colocarla. ' +
+    'Arrastra las que ya pusiste para reorganizarlas, o usa <b class="txtAcento">R</b> / <b class="txtAcento">Supr</b> sobre la seleccionada. ' +
+    '<b class="txtAcento">Esc</b> para salir.</div>' +
+    '<select onchange="elegirMuebleInterior(this.value)">' +
+      '<option value="">— elige una pieza —</option>' + opcionesCatalogoMueble(muebleArmadoInterior) +
+    '</select>' +
+    (muebleArmadoInterior ? '<div class="desc">Pieza armada: haz clic dentro del espacio para colocarla.</div>' : '') +
+    '<button onclick="cerrarAmoblar()">' + ic('volver') + 'Salir de amoblar</button>' +
+    (lista ? '<b style="display:block; margin-top:10px">Muebles colocados</b>' + lista
+           : '<div class="desc">Aún no has agregado muebles a este espacio.</div>'));
+}
+function clicAmoblar(p){
+  const d = amueblando.userData.def;
+  const loc = mundoALocalRoom(p, d);
+  const hw = d.w / 2 - 0.2, hd = d.d / 2 - 0.2;
+  if (Math.abs(loc.x) > hw || Math.abs(loc.z) > hd){
+    if (!muebleArmadoInterior) avisar('Elige primero una pieza del catálogo arriba');
+    else avisar('Coloca la pieza dentro del espacio');
+    return;
+  }
+  if (!muebleArmadoInterior){ avisar('Elige primero una pieza del catálogo arriba'); return; }
+  const item = catalogoMuebleInterior(muebleArmadoInterior);
+  const nuevo = { id: idSec++, catalogoId: item.id, x: red2(loc.x), z: red2(loc.z), rot: 0, w: item.w, d: item.d, h: item.h, color: item.color };
+  d.muebles = d.muebles || [];
+  d.muebles.push(nuevo);
+  agregarMuebleInteriorAGrupo(amueblando, nuevo, d.muebles.length - 1);
+  guardar();
+  renderPanelAmoblar();
+  avisar(item.nombre + ' colocado — sigue haciendo clic para agregar otro, o arrástralo para moverlo');
+}
+function seleccionarMuebleInterior(obj){
+  actualizarTinteInterior(interiorSeleccionado);
+  interiorSeleccionado = obj;
+  actualizarTinteInterior(obj);
+}
+function girarMuebleInterior(i){
+  const d = amueblando.userData.def;
+  const m = d.muebles[i];
+  if (!m) return;
+  m.rot = (m.rot || 0) + Math.PI / 4;
+  const obj = amueblando.children.find(c => c.userData.esMuebleInterior && c.userData.muebleIdx === i);
+  if (obj) obj.rotation.y = m.rot;
+  guardar();
+  avisar('Pieza girada');
+}
+function eliminarMuebleInterior(i){
+  const d = amueblando.userData.def;
+  if (!d.muebles || !d.muebles[i]) return;
+  const obj = amueblando.children.find(c => c.userData.esMuebleInterior && c.userData.muebleIdx === i);
+  if (obj){
+    amueblando.remove(obj);
+    obj.traverse(n => { if (n.geometry) n.geometry.dispose(); if (n.material && n.material.dispose) n.material.dispose(); });
+  }
+  d.muebles.splice(i, 1);
+  // reindexar las piezas restantes (sus índices se corrieron un puesto)
+  amueblando.children.forEach(c => { if (c.userData.esMuebleInterior && c.userData.muebleIdx > i) c.userData.muebleIdx--; });
+  if (interiorSeleccionado === obj) interiorSeleccionado = null;
+  guardar();
+  renderPanelAmoblar();
+  avisar('Mueble eliminado del espacio');
 }
 
 /* ============ ETIQUETAS (mostrar/ocultar nombres flotantes) ============ */
@@ -2500,7 +3438,7 @@ function toggleEtiquetasLibre(){
   elementos.forEach(g => { if (g.userData.etiqueta) g.userData.etiqueta.visible = etiquetasVisibles; });
   [loteGrupo, cerrGrupo, viasGrupo, rutasGrupo].forEach(gr => gr.traverse(n => { if (n.isSprite) n.visible = etiquetasVisibles; }));
   // resaltado solo cuando están OCULTOS (estado no predeterminado)
-  document.getElementById('libreBtnEtiquetas').classList.toggle('activo', !etiquetasVisibles);
+  document.getElementById('btnEtiquetas').classList.toggle('activo', !etiquetasVisibles);
   avisar(etiquetasVisibles ? 'Nombres y medidas visibles' : 'Nombres y medidas ocultos');
 }
 
@@ -2532,6 +3470,71 @@ function abrirZonasLibre(){
     '<div class="desc" style="margin-top:10px"><b class="txtFuerte">' + filas.length + ' elementos · ' + totalArea + ' m² ocupados · ' +
       ocupacion + '% del lote (' + Math.round(L * A).toLocaleString('es-CO') + ' m²)</b><br>' +
       'Vías: ' + stVias.tramos + ' tramo(s) · ' + stVias.total + ' m lineales ≈ ' + areaVias + ' m² · Rutas de vehículos: ' + rutas.length + '</div>';
+  document.getElementById('libreOverlay').style.display = 'flex';
+}
+
+/* ============ CUADRO DE ÁREAS (solo dentro del Plano 2D) ============
+   Botón que aparece únicamente mientras estás en el plano 2D: resumen al
+   estilo de un cuadro de áreas arquitectónico — el terreno completo,
+   cuánto ocupa cada categoría de elemento, y el detalle (m² y %) de cada
+   zona creada, con relación al total ocupado de la obra. */
+function abrirCuadroAreas(){
+  setHerramienta(null);
+  document.getElementById('libreVentTitulo').textContent = 'Cuadro de áreas';
+  const L = ficha.loteLargo, A = ficha.loteAncho, loteM2 = Math.round(L * A);
+  const filas = elementos.map(g => {
+    const d = g.userData.def;
+    const area = tieneMedidasCota(d) ? Math.round(d.w * d.d * 10) / 10 : 0;
+    const perimetro = tieneMedidasCota(d) ? Math.round(2 * (d.w + d.d) * 10) / 10 : 0;
+    return { d, area, perimetro };
+  });
+  const totalArea = Math.round(filas.reduce((s, f) => s + f.area, 0) * 10) / 10;
+  const totalPerimetro = Math.round(filas.reduce((s, f) =>
+    s + ((f.d.tipo === 'espacio' || f.d.tipo === 'edificio') ? f.perimetro : 0), 0) * 10) / 10;
+  const accesos = filas.filter(f => f.d.tipo === 'espacio' && f.d.muros).length;
+  const ocupacion = loteM2 > 0 ? Math.round(totalArea / loteM2 * 1000) / 10 : 0;
+
+  const categorias = {};
+  filas.forEach(f => {
+    const cat = NOMBRE_TIPO[f.d.tipo] || f.d.tipo;
+    if (!categorias[cat]) categorias[cat] = { n: 0, area: 0 };
+    categorias[cat].n++; categorias[cat].area += f.area;
+  });
+
+  const tile = (num, lbl) =>
+    '<div style="flex:1; min-width:110px; background:var(--sup-alta); border-radius:var(--radio-boton); padding:10px; text-align:center">' +
+    '<div style="font-size:19px; font-weight:700; color:var(--acento-texto)">' + num + '</div>' +
+    '<div style="font-size:11px; color:var(--texto-2); margin-top:2px">' + lbl + '</div></div>';
+  const barra = pct => '<div style="background:var(--sup-baja); border-radius:6px; height:8px; margin-top:4px; overflow:hidden">' +
+    '<div style="width:' + Math.min(100, pct) + '%; height:100%; background:var(--acento)"></div></div>';
+
+  const detalle = filas.filter(f => f.area > 0).sort((a, b) => b.area - a.area).map(f => {
+    const pct = totalArea > 0 ? Math.round(f.area / totalArea * 1000) / 10 : 0;
+    return '<div style="margin-top:10px">' +
+      '<div style="display:flex; justify-content:space-between; font-size:12.5px">' +
+        '<b class="txtFuerte">' + esc(f.d.nombre) + '</b><span>' + f.area + ' m² · ' + pct + '%</span></div>' +
+      barra(pct) + '</div>';
+  }).join('');
+  const categoriasHtml = Object.keys(categorias).map(cat => {
+    const c = categorias[cat];
+    const pct = totalArea > 0 ? Math.round(c.area / totalArea * 1000) / 10 : 0;
+    return '<div class="planoFila"><span class="planoNom"><b class="txtFuerte">' + esc(cat) + '</b> <small>(' + c.n + ')</small></span>' +
+      '<small style="white-space:nowrap">' + Math.round(c.area * 10) / 10 + ' m² · ' + pct + '%</small></div>';
+  }).join('');
+
+  document.getElementById('libreBody').innerHTML =
+    '<div class="desc">Terreno total: <b class="txtFuerte">' + L + ' × ' + A + ' m ≈ ' + loteM2.toLocaleString('es-CO') + ' m²</b> · ' +
+      'Ocupado: <b class="txtFuerte">' + totalArea.toLocaleString('es-CO') + ' m² (' + ocupacion + '%)</b></div>' +
+    '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">' +
+      tile(filas.length, 'Zonas creadas') +
+      tile(totalArea.toLocaleString('es-CO') + ' m²', 'Área total') +
+      tile(accesos, 'Accesos (puertas)') +
+      tile(totalPerimetro + ' m', 'Long. de muros') +
+    '</div>' +
+    '<b style="display:block; margin-top:16px">Por categoría</b>' +
+    (categoriasHtml || '<div class="desc">Aún no hay zonas creadas.</div>') +
+    '<b style="display:block; margin-top:16px">Detalle por zona</b>' +
+    (detalle || '<div class="desc">Aún no hay zonas con área.</div>');
   document.getElementById('libreOverlay').style.display = 'flex';
 }
 
@@ -2683,11 +3686,77 @@ function estadoActual(){
     cerramiento: cerrCfg,
     noche: esNoche,
     elementos: elementos.map(g => g.userData.def),
-    vias, rutas, organigrama
+    vias, rutas, organigrama,
+    camiones: camionesLibre,
+    reloj: { hora: horaObraLibre, fecha: fechaObraLibre, corriendo: relojCorriendoLibre, vel: velRelojLibre }
   };
 }
-function guardar(){
-  try { localStorage.setItem(CLAVE, JSON.stringify(estadoActual())); } catch (e) {}
+/* ============ HISTORIAL DE CAMBIOS (navegable) ============
+   Cada guardar() agrega un paso con una etiqueta legible ("Elemento creado:
+   X", "Movido: X", "Eliminado: X"…). Ctrl+Z / Ctrl+Shift+Z retroceden y
+   avanzan un paso; el botón "Historial" (sidebar) abre la lista completa
+   con "Paso N de TOTAL" y permite saltar a cualquier paso con un clic —
+   ideal para revisar qué se movió o se borró y volver atrás si hace falta. */
+let historialPasos = [];      // [{ etiqueta, estado: JSON string }]
+let historialIndice = -1;     // paso actual (0-based)
+let aplicandoHistorial = false;   // true mientras se restaura un paso (evita reentradas)
+function guardar(etiqueta){
+  const nuevo = JSON.stringify(estadoActual());
+  try { localStorage.setItem(CLAVE, nuevo); } catch (e) {}
+  if (aplicandoHistorial) return;
+  historialPasos = historialPasos.slice(0, historialIndice + 1);
+  historialPasos.push({ etiqueta: etiqueta || 'Cambio en la obra', estado: nuevo });
+  if (historialPasos.length > 60) historialPasos.shift();
+  historialIndice = historialPasos.length - 1;
+  actualizarBotonHistorial();
+}
+function actualizarBotonHistorial(){
+  const b = document.getElementById('btnHistorial');
+  if (b) b.title = 'Historial de cambios — Paso ' + (historialIndice + 1) + ' de ' + historialPasos.length;
+}
+function irAPasoHistorial(i){
+  if (i < 0 || i >= historialPasos.length || i === historialIndice) return;
+  historialIndice = i;
+  aplicandoHistorial = true;
+  try { localStorage.setItem(CLAVE, historialPasos[i].estado); } catch (e) {}
+  aplicarEstado(JSON.parse(historialPasos[i].estado));
+  aplicandoHistorial = false;
+  actualizarBotonHistorial();
+  const titulo = document.getElementById('libreVentTitulo');
+  if (document.getElementById('libreOverlay').style.display === 'flex' && titulo && titulo.textContent.indexOf('Historial') === 0) renderHistorialLibre();
+}
+function deshacer(){
+  if (historialIndice <= 0){ avisar('Nada más para deshacer'); return; }
+  irAPasoHistorial(historialIndice - 1);
+  avisar('Deshecho (Ctrl+Z)');
+}
+function rehacer(){
+  if (historialIndice >= historialPasos.length - 1){ avisar('Nada más para rehacer'); return; }
+  irAPasoHistorial(historialIndice + 1);
+  avisar('Rehecho (Ctrl+Shift+Z)');
+}
+function abrirHistorialLibre(){
+  setHerramienta(null);
+  renderHistorialLibre();
+  document.getElementById('libreOverlay').style.display = 'flex';
+}
+function renderHistorialLibre(){
+  document.getElementById('libreVentTitulo').textContent = 'Historial de cambios — Paso ' + (historialIndice + 1) + ' de ' + historialPasos.length;
+  const filas = historialPasos.map((p, i) => {
+    const activo = i === historialIndice;
+    return '<div class="planoFila"' + (activo ? ' style="background:var(--sup-alta); border-radius:8px"' : '') + '>' +
+      '<span class="planoNom">' + (activo ? '▶ ' : '') + '<b class="txtFuerte">Paso ' + (i + 1) + '</b> <small>· ' + esc(p.etiqueta) + '</small></span>' +
+      (activo ? '<small class="txtAcento">actual</small>'
+              : '<button class="planoBtn" style="width:auto; margin:0" onclick="irAPasoHistorial(' + i + ')">Volver aquí</button>') +
+    '</div>';
+  }).join('');
+  document.getElementById('libreBody').innerHTML =
+    '<div class="desc">Cada vez que mueves, giras, creas o eliminas algo queda un paso guardado aquí. Haz clic en <b class="txtAcento">"Volver aquí"</b> para regresar a ese momento, o usa <b class="txtAcento">Ctrl+Z</b> / <b class="txtAcento">Ctrl+Shift+Z</b>.</div>' +
+    '<div style="display:flex; gap:6px; margin:10px 0">' +
+      '<button style="flex:1; margin:0" onclick="deshacer()">' + ic('girarIzq') + 'Deshacer</button>' +
+      '<button style="flex:1; margin:0" onclick="rehacer()">' + ic('girarDer') + 'Rehacer</button>' +
+    '</div>' +
+    '<div style="max-height:55vh; overflow-y:auto">' + filas + '</div>';
 }
 /* acepta el estado v2 completo, un {elementos:[...]} v1 o una lista suelta de defs */
 function aplicarEstado(o){
@@ -2717,6 +3786,7 @@ function aplicarEstado(o){
       color: /^#[0-9a-f]{6}$/i.test(r.color || '') ? r.color : PALETA_RUTAS[0],
       vehiculo: String(r.vehiculo || ''),
       vel: numLim(r.vel, 3, 0.5, 20),
+      sentido: ['vaiven', 'ida', 'vuelta'].includes(r.sentido) ? r.sentido : 'vaiven',
       puntos: r.puntos.filter(p => Array.isArray(p) && isFinite(p[0]) && isFinite(p[1])).map(p => [red2(p[0]), red2(p[1])])
     }));
   organigrama = (Array.isArray(o.organigrama) && o.organigrama.length)
@@ -2725,6 +3795,17 @@ function aplicarEstado(o){
   const maxId = Math.max(0,
     ...vias.map(v => v.id), ...rutas.map(r => r.id), ...organigrama.map(r => r.id));
   idSec = Math.max(idSec, maxId + 1);
+  camionesActivosLibre.forEach(a => { scene.remove(a.grupo); scene.remove(a.rutaG); });
+  camionesActivosLibre.length = 0;
+  colaCamionesLibre.length = 0;
+  camionesLibre = (Array.isArray(o.camiones) ? o.camiones : [])
+    .filter(c => c && c.hora)
+    .map(c => ({ fecha: String(c.fecha || fechaISOLibre()).slice(0, 10), hora: String(c.hora).slice(0, 5), material: String(c.material || 'Materiales').slice(0, 60), zona: String(c.zona || '').slice(0, 40) }));
+  const relojRaw = o.reloj || {};
+  horaObraLibre = numLim(relojRaw.hora, 6 * 60, 0, 1439);
+  fechaObraLibre = String(relojRaw.fecha || fechaISOLibre()).slice(0, 10);
+  relojCorriendoLibre = relojRaw.corriendo !== false;
+  velRelojLibre = numLim(relojRaw.vel, 12, 1, 200);
   esNoche = !!o.noche;
   aplicarCielo();
   construirLote();
@@ -2732,6 +3813,10 @@ function aplicarEstado(o){
   redibujarVias();
   redibujarRutas();
   mostrarPanelVacio();
+  const selFase = document.getElementById('selFaseLibre');
+  if (selFase) selFase.value = ficha.faseObra;
+  refrescarSelectorUbicar();
+  actualizarPieEquipo();
 }
 function cargarLocal(){
   let txt = null;
@@ -2741,33 +3826,139 @@ function cargarLocal(){
   aplicarEstado(obj);
 }
 
-document.getElementById('libreBtnAgregar').innerHTML = ic('mas') + 'Agregar';
-document.getElementById('libreBtnVia').innerHTML = ic('via') + 'Vías';
-document.getElementById('libreBtnRuta').innerHTML = ic('ruta') + 'Rutas';
-document.getElementById('libreBtnFicha').innerHTML = ic('ficha') + 'Ficha';
-document.getElementById('libreBtnOrg').innerHTML = ic('org') + 'Organigrama';
-document.getElementById('libreBtnRegla').innerHTML = ic('regla') + 'Regla';
-document.getElementById('libreBtn2D').innerHTML = ic('plano') + 'Plano 2D';
-document.getElementById('libreBtnZonas').innerHTML = ic('edificio') + 'Zonas';
-document.getElementById('libreBtnEtiquetas').innerHTML = ic('etiqueta') + 'Etiquetas';
-document.getElementById('libreBtnCaminar').innerHTML = ic('caminar') + 'Caminar';
-document.getElementById('libreBtnNoche').innerHTML = ic('luna') + 'Noche';
-document.getElementById('libreBtnGuardar').innerHTML = ic('guardar') + 'Guardar';
-document.getElementById('libreBtnCargar').innerHTML = ic('carpeta') + 'Cargar';
-document.getElementById('libreBtnVaciar').innerHTML = ic('basura') + 'Vaciar';
-document.querySelector('#libreUI a.btn').innerHTML = ic('volver') + 'Bambú';
+/* iconos: los botones ya traen su <span class="ic" data-ic="..."> en el
+   HTML (igual que el proyecto Bambú) — un solo barrido los llena */
+aplicarIconosLibre();
 
-document.getElementById('libreBtnVia').onclick = () => setHerramienta('via');
-document.getElementById('libreBtnRuta').onclick = () => setHerramienta('ruta');
-document.getElementById('libreBtnFicha').onclick = () => { setHerramienta(null); abrirFicha(); };
-document.getElementById('libreBtnOrg').onclick = () => { setHerramienta(null); abrirOrganigrama(); };
-document.getElementById('libreBtnRegla').onclick = () => setHerramienta('regla');
-document.getElementById('libreBtn2D').onclick = toggleVista2D;
-document.getElementById('libreBtnZonas').onclick = abrirZonasLibre;
-document.getElementById('libreBtnEtiquetas').onclick = toggleEtiquetasLibre;
-document.getElementById('libreBtnCaminar').onclick = toggleCaminar;
-document.getElementById('libreBtnNoche').onclick = toggleNoche;
-document.querySelectorAll('#libreTabs .tabBtn').forEach(b => { b.onclick = () => mostrarTabLibre(b.dataset.tab); });
+document.getElementById('btnVia').onclick = () => setHerramienta('via');
+document.getElementById('btnRuta').onclick = () => setHerramienta('ruta');
+document.getElementById('btnBorrarRutas').onclick = () => {
+  if (!rutas.length){ avisar('No hay rutas dibujadas'); return; }
+  if (confirm('¿Eliminar TODAS las rutas dibujadas (' + rutas.length + ')? Para borrar solo una, selecciónala y usa "Eliminar SOLO esta ruta".')){
+    detenerTodosLosRecorridos();
+    rutas = []; trazoRuta = null; selRuta = null;
+    redibujarRutas(); guardar();
+    if (herramienta === 'ruta') panelHerramientaRuta(); else mostrarPanelVacio();
+    avisar('Rutas eliminadas');
+  }
+};
+document.getElementById('btnCamiones').onclick = abrirCamionesLibre;
+document.getElementById('btnFichaLibre').onclick = () => { setHerramienta(null); abrirFicha(); };
+document.getElementById('btnOrg').onclick = () => { setHerramienta(null); abrirOrganigrama(); };
+document.getElementById('btnRegla').onclick = () => setHerramienta('regla');
+document.getElementById('btnCotas').onclick = toggleCotas;
+document.getElementById('btn2D').onclick = toggleVista2D;
+document.getElementById('btnAreas').onclick = abrirCuadroAreas;
+document.getElementById('btnHistorial').onclick = abrirHistorialLibre;
+document.getElementById('btnEditarEquipo').onclick = () => { setHerramienta(null); abrirFicha(); };
+document.getElementById('btnZonas').onclick = abrirZonasLibre;
+document.getElementById('btnEtiquetas').onclick = toggleEtiquetasLibre;
+document.getElementById('btnCaminar').onclick = toggleCaminar;
+document.getElementById('btnNoche').onclick = toggleNoche;
+document.getElementById('btnEspacios').onclick = abrirVentanaEspacios;
+document.getElementById('btnEquipos').onclick = abrirVentanaEquipos;
+document.getElementById('btnExportar').onclick = exportarPlanoLibre;
+document.getElementById('selFaseLibre').onchange = e => cambiarFaseObra(e.target.value);
+document.querySelectorAll('#panelTabs .tabBtn').forEach(b => { b.onclick = () => mostrarTabLibre(b.dataset.tab); });
+
+/* ---- "Ir a elemento" (Ubicar): mismo selector que en el proyecto Bambú ---- */
+function refrescarSelectorUbicar(){
+  const sel = document.getElementById('selElemLibre');
+  if (!sel) return;
+  const actual = sel.value;
+  sel.innerHTML = '<option value="">— Ir a elemento —</option>' +
+    elementos.map((g, i) => '<option value="' + i + '">' + esc(g.userData.def.nombre) + '</option>').join('');
+  sel.value = elementos[actual] ? actual : '';
+}
+document.getElementById('selElemLibre').onchange = function(){
+  const i = this.value;
+  if (i === '') return;
+  const g = elementos[i];
+  if (g){ setHerramienta(null); if (modo2D) toggleVista2D(); seleccionar(g); irA(g.position.x, g.position.z, 60); }
+  this.value = '';
+};
+
+/* ---- Menú móvil (cajón) y minimizar el sidebar (escritorio) — igual que Bambú ---- */
+document.getElementById('btnMenu').onclick = () => { document.getElementById('ui').classList.toggle('abierto'); };
+(function(){
+  const ui = document.getElementById('ui');
+  const btn = document.getElementById('btnMin');
+  let minimizado = false;
+  try { minimizado = localStorage.getItem('tallerLibre_menuMin') === '1'; } catch (e) {}
+  function set(v){
+    minimizado = v;
+    ui.classList.toggle('minimizado', minimizado);
+    btn.innerHTML = minimizado ? ic('menu') + 'Menú' : ic('menos');
+    btn.title = minimizado ? 'Mostrar el menú' : 'Minimizar el menú';
+    try { localStorage.setItem('tallerLibre_menuMin', minimizado ? '1' : '0'); } catch (e) {}
+  }
+  btn.onclick = () => set(!minimizado);
+  set(minimizado);
+})();
+/* ---- Ocultar/mostrar el panel de información (escritorio) ---- */
+(function(){
+  const panel = document.getElementById('panel');
+  const btn = document.getElementById('panelToggle');
+  let plegado = false;
+  try { plegado = localStorage.getItem('tallerLibre_panelPlegado') === '1'; } catch (e) {}
+  function set(v){
+    plegado = v;
+    panel.classList.toggle('plegado', plegado);
+    btn.textContent = plegado ? '+' : '–';
+    btn.title = plegado ? 'Mostrar el panel' : 'Ocultar el panel';
+    try { localStorage.setItem('tallerLibre_panelPlegado', plegado ? '1' : '0'); } catch (e) {}
+  }
+  btn.onclick = e => { e.stopPropagation(); set(!plegado); };
+  set(plegado);
+})();
+document.getElementById('pTitulo').onclick = () => { document.getElementById('panel').classList.toggle('abierto'); };
+/* ---- Ayuda de controles: se puede ocultar ---- */
+(function(){
+  const ayuda = document.getElementById('ayuda');
+  const toggle = document.getElementById('ayudaToggle');
+  let oculta = false;
+  try { oculta = localStorage.getItem('tallerLibre_ayudaOculta') === '1'; } catch (e) {}
+  function set(v){
+    oculta = v;
+    ayuda.classList.toggle('colapsada', oculta);
+    toggle.textContent = oculta ? '?' : '✕';
+    toggle.title = oculta ? 'Mostrar la ayuda de controles' : 'Ocultar esta ayuda';
+    try { localStorage.setItem('tallerLibre_ayudaOculta', oculta ? '1' : '0'); } catch (e) {}
+  }
+  toggle.onclick = () => set(!oculta);
+  set(oculta);
+})();
+/* ---- Pad de navegación táctil (móvil) + controles de vista (escritorio) ---- */
+const PAD_ACCIONES_LIBRE = {
+  arriba:    () => moverCamaraPantalla(0, 16),
+  abajo:     () => moverCamaraPantalla(0, -16),
+  izquierda: () => moverCamaraPantalla(16, 0),
+  derecha:   () => moverCamaraPantalla(-16, 0),
+  acercar:   () => { if (modo2D) zoom2D = Math.max(12, zoom2D * 0.95); else camCtrl.radius = Math.max(12, camCtrl.radius * 0.95); },
+  alejar:    () => { if (modo2D) zoom2D = Math.min(400, zoom2D * 1.055); else camCtrl.radius = Math.min(560, camCtrl.radius * 1.055); }
+};
+document.querySelectorAll('#pad button[data-mover]').forEach(btn => {
+  const accion = PAD_ACCIONES_LIBRE[btn.dataset.mover];
+  let repetidor = null;
+  const iniciar = e => { e.preventDefault(); e.stopPropagation(); accion(); clearInterval(repetidor); repetidor = setInterval(accion, 70); };
+  const detener = () => { clearInterval(repetidor); repetidor = null; };
+  btn.addEventListener('pointerdown', iniciar);
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, detener));
+});
+document.getElementById('padToggle').addEventListener('click', () => {
+  const contraido = document.getElementById('pad').classList.toggle('contraido');
+  document.getElementById('padToggle').innerHTML = ic(contraido ? 'mando' : 'menos');
+});
+document.getElementById('padEtiquetas').onclick = toggleEtiquetasLibre;
+const ACCIONES_VISTA_LIBRE = {
+  zin:   () => { if (modo2D) zoom2D = Math.max(12, zoom2D * 0.88); else camCtrl.radius = Math.max(12, camCtrl.radius * 0.88); },
+  zout:  () => { if (modo2D) zoom2D = Math.min(400, zoom2D * 1.14); else camCtrl.radius = Math.min(560, camCtrl.radius * 1.14); },
+  rot:   () => { if (!modo2D) camCtrl.theta += Math.PI / 6; },
+  reset: () => { modo2D ? (camCtrl.target.set(0, 0, 0)) : irA(0, 0, 110); }
+};
+document.querySelectorAll('#viewCtrl button[data-vc]').forEach(btn => {
+  btn.addEventListener('click', () => { const fn = ACCIONES_VISTA_LIBRE[btn.dataset.vc]; if (fn) fn(); });
+});
 /* ---- atajos de teclado: Esc (salir/deseleccionar), R (girar), Supr
    (eliminar lo seleccionado: elemento, tramo de vía o ruta), Ctrl+C/Ctrl+V
    (copiar y pegar el elemento seleccionado) + teclas del modo caminar ---- */
@@ -2781,9 +3972,12 @@ addEventListener('keydown', e => {
   if (e.key === 'Escape'){
     const overlay = document.getElementById('libreOverlay');
     if (overlay.style.display === 'flex'){ overlay.style.display = 'none'; return; }
+    if (amueblando){ cerrarAmoblar(); return; }
+    if (manejando){ bajarDeVehiculo(); return; }
     if (caminando){ toggleCaminar(); return; }
     if (herramienta){
-      if (trazoVia || trazoRuta || trazoRegla) terminarTrazo();
+      if (herramienta === 'regla'){ if (escRegla()) return; setHerramienta(null); return; }
+      if (trazoVia || trazoRuta) terminarTrazo();
       else setHerramienta(null);
       return;
     }
@@ -2796,6 +3990,20 @@ addEventListener('keydown', e => {
     return;
   }
   if (enCampo) return;
+  // dentro del amoblado, R y Supr actúan sobre el MUEBLE seleccionado (no
+  // sobre el espacio completo) y el resto de atajos generales no aplican
+  if (amueblando){
+    if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.metaKey && interiorSeleccionado){
+      girarMuebleInterior(interiorSeleccionado.userData.muebleIdx);
+    } else if (e.key === 'Delete' && interiorSeleccionado){
+      eliminarMuebleInterior(interiorSeleccionado.userData.muebleIdx);
+    }
+    return;
+  }
+  if ((e.key === 'e' || e.key === 'E') && !e.ctrlKey && !e.metaKey){
+    toggleManejar();
+    return;
+  }
   if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.metaKey && seleccionado){
     girarSel(1);
     return;
@@ -2829,17 +4037,21 @@ addEventListener('keydown', e => {
     }
     return;
   }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')){
+    e.preventDefault();
+    if (e.shiftKey) rehacer(); else deshacer();
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')){
+    e.preventDefault();
+    rehacer();
+    return;
+  }
 });
 addEventListener('keyup', e => { delete teclasCaminar[e.code]; });
-document.getElementById('libreBtnAgregar').onclick = () => {
-  setHerramienta(null);
-  document.getElementById('libreVentTitulo').textContent = 'Agregar elemento a la obra';
-  renderVentana();
-  document.getElementById('libreOverlay').style.display = 'flex';
-};
 document.getElementById('libreCerrar').onclick = () => { document.getElementById('libreOverlay').style.display = 'none'; };
 document.getElementById('libreOverlay').addEventListener('click', e => { if (e.target.id === 'libreOverlay') e.target.style.display = 'none'; });
-document.getElementById('libreBtnGuardar').onclick = () => {
+document.getElementById('btnGuardar').onclick = () => {
   guardar();
   const blob = new Blob([JSON.stringify(estadoActual(), null, 2)], { type:'application/json' });
   const a = document.createElement('a');
@@ -2847,7 +4059,7 @@ document.getElementById('libreBtnGuardar').onclick = () => {
   URL.revokeObjectURL(a.href);
   avisar('Guardado (+ respaldo proyecto_libre.json)');
 };
-document.getElementById('libreBtnCargar').onclick = () => document.getElementById('libreArchivo').click();
+document.getElementById('btnCargar').onclick = () => document.getElementById('libreArchivo').click();
 document.getElementById('libreArchivo').onchange = e => {
   const f = e.target.files[0]; if (!f) return;
   const lector = new FileReader();
@@ -2857,10 +4069,14 @@ document.getElementById('libreArchivo').onchange = e => {
   };
   lector.readAsText(f); e.target.value = '';
 };
-document.getElementById('libreBtnVaciar').onclick = () => {
+document.getElementById('btnVaciar').onclick = () => {
   if (!elementos.length && !vias.length && !rutas.length){ avisar('La obra ya está vacía'); return; }
-  if (confirm('¿Vaciar toda la obra? Se eliminan los elementos, las vías y las rutas (la ficha técnica y el organigrama se conservan).')){
-    aplicarEstado({ ficha, fichaCompleta, cerramiento: cerrCfg, organigrama, elementos: [], vias: [], rutas: [] });
+  if (confirm('¿Vaciar toda la obra? Se eliminan los elementos, las vías y las rutas (la ficha técnica, el organigrama y los camiones programados se conservan).')){
+    aplicarEstado({
+      ficha, fichaCompleta, cerramiento: cerrCfg, organigrama, elementos: [], vias: [], rutas: [],
+      camiones: camionesLibre, noche: esNoche,
+      reloj: { hora: horaObraLibre, fecha: fechaObraLibre, corriendo: relojCorriendoLibre, vel: velRelojLibre }
+    });
     guardar();
     avisar('Obra vaciada');
   }
@@ -2906,7 +4122,9 @@ function animar(){
     if (!elementos.includes(a.g) || !rutas.some(r => r.id === a.rutaId)){ rutasActivas.splice(i, 1); continue; }
     moverVehiculoRuta(a, dt);
   }
-  if (caminando) moverCaminante(dt);
+  actualizarCamionesLibre(dt);
+  if (manejando) moverVehiculoManejado(dt);
+  else if (caminando) moverCaminante(dt);
   else if (modo2D) actualizarCamara2D();
   else actualizarCamara();
   renderer.render(scene, camActiva());
@@ -2915,5 +4133,8 @@ function animar(){
 /* arranque */
 mostrarPanelVacio();
 cargarLocal();
+historialPasos = [{ etiqueta: 'Obra inicial', estado: JSON.stringify(estadoActual()) }];   // línea base del historial
+historialIndice = 0;
+actualizarBotonHistorial();
 actualizarCamara();
 animar();
