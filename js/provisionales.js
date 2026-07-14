@@ -236,6 +236,106 @@ function detalleAcomAgua(g, def){
   caja(g, 0.5, 0.5, 0.4, 0x9aa0a6, 0.8, 0.4, 0);
 }
 
+/* ---- Detalle para plantillas de "Espacios" que no tenían mobiliario propio
+   (ver PRESET_DETALLE en creador.js): mismo patrón que las detalleX() de
+   arriba — geometría relativa a def.w/def.d, así se adapta a cualquier
+   tamaño que el usuario haya dejado en el formulario. ---- */
+/* Patio de hierros: bultos de varilla de distinto diámetro sobre estibas +
+   banco de corte y doblado */
+function detallePatioHierros(g, def){
+  const W = def.w, D = def.d;
+  const colores = [0x8a8f96, 0x6d7075, 0x9aa0a5];
+  const n = 5;
+  for (let i = 0; i < n; i++){
+    const x = -W / 2 + 2 + i * (W - 4) / (n - 1);
+    const z = -D / 2 + 2;
+    caja(g, 1.6, 0.15, 2.2, 0x8a6642, x, 0.1, z);   // estiba de madera
+    for (let r = 0; r < 6; r++){
+      const dx = (r % 3 - 1) * 0.4, dz = Math.floor(r / 3) * 0.5;
+      const barra = cilindro(g, 0.06, Math.min(2.4, D - 1), colores[i % 3], x + dx, 0.35 + Math.floor(r / 3) * 0.12, z + dz);
+      barra.rotation.z = Math.PI / 2;
+    }
+  }
+  caja(g, 2.4, 0.85, 1.0, 0x6d7075, 0, 0.42, D / 2 - 1.2);
+  caja(g, 0.5, 0.5, 0.5, 0x2b2f36, 0.9, 0.9, D / 2 - 1.2);
+}
+/* Zona de residuos: contenedores separados por tipo (ordinarios,
+   reciclables, peligrosos, escombro) según el plan de manejo ambiental */
+function detalleZonaResiduos(g, def){
+  const colores = [0x3f7fbf, 0x5fae4a, 0xc9302e, 0x8a6a3a];
+  const n = colores.length, W = def.w;
+  for (let i = 0; i < n; i++){
+    const x = -W / 2 + 1.3 + i * (W - 2.6) / (n - 1);
+    caja(g, 1.1, 1.2, 1.1, colores[i], x, 0.6, 0);
+    caja(g, 1.2, 0.12, 1.2, 0x2b2f36, x, 1.22, 0);
+  }
+}
+/* Zona de escombros: acopio temporal de material pétreo, sin separar por tipo */
+function detalleEscombros(g, def){
+  const W = def.w, D = def.d;
+  [[-W / 4, -D / 4, 1.4, 0x8f7d6b], [W / 5, D / 6, 1.1, 0x9a9a94], [-W / 6, D / 3, 0.9, 0x8a8478]].forEach(([x, z, h, c]) => {
+    cono(g, Math.min(1.8, Math.min(W, D) / 3), h, c, x, z);
+  });
+}
+/* Parqueadero interno: líneas demarcatorias + un par de carros de referencia */
+function detalleParqueadero(g, def){
+  const W = def.w, D = def.d;
+  const nCeldas = Math.max(2, Math.floor(W / 2.6));
+  for (let i = 0; i <= nCeldas; i++){
+    const x = -W / 2 + i * (W / nCeldas);
+    caja(g, 0.1, 0.03, D - 1, 0xe8e6da, x, 0.16, 0);
+  }
+  [[-W / 4, 0x2e6db8], [W / 6, 0xc0392b]].forEach(([x, c]) => {
+    caja(g, 1.7, 1.1, Math.min(4.0, D - 1), c, x, 0.65, -D / 5);
+    caja(g, 1.5, 0.7, Math.min(2.2, D - 2), 0x9fc4e8, x, 1.3, -D / 5, 0.6);
+  });
+}
+/* Punto de señalización SST: par de postes con panel reflectivo */
+function detalleSenalizacion(g, def){
+  [[-0.5, 0xc9302e, 3], [0.5, 0xf2d21f, 4]].forEach(([x, c, lados]) => {
+    cilindro(g, 0.06, 2.0, 0x8a8f96, x, 1.0, 0);
+    const panel = new THREE.Mesh(new THREE.CircleGeometry(0.42, lados), new THREE.MeshBasicMaterial({ color: c }));
+    panel.position.set(x, 1.9, 0.05);
+    g.add(panel);
+  });
+}
+/* Contenedor oficina 20 ft: escritorio + silla + estantería */
+function detalleContenedorOficina(g, def){
+  const W = def.w, D = def.d;
+  mesaFig(g, 0, D / 2 - 0.6, Math.min(1.6, W - 1), 0.5);
+  sillaFig(g, 0, D / 2 - 1.1);
+  estanteriaFig(g, W / 2 - 0.3, -D / 2 + 0.4, Math.min(1.2, D - 1), Math.PI / 2);
+}
+/* Batería sanitaria portátil (4 unidades) */
+function detalleBateriaSanitaria(g, def){
+  const W = def.w, D = def.d;
+  for (let i = 0; i < 4; i++){
+    const x = -W / 2 + 0.7 + i * (W - 1.4) / 3;
+    sanitarioFig(g, x, D / 2 - 0.6, Math.PI);
+  }
+}
+/* mapa plantilla → detalle: reutiliza las mismas detalleX() de los
+   provisionales de fábrica cuando el preset coincide en propósito (se
+   adaptan solas a las medidas que el usuario deje en el formulario) */
+const PRESET_DETALLE = {
+  campamento: detalleCampamento,
+  almacen: detalleAlmacen,
+  acopio: detallePaletizado,
+  maniobra: detalleManiobra,
+  lavado: detalleLavadoInforme,
+  porteria: detallePorteria,
+  comedor: detalleComedor,
+  casilleros: detalleCasilleros,
+  banos: detalleBanosVest,
+  patioHierros: detallePatioHierros,
+  zonaResiduos: detalleZonaResiduos,
+  escombros: detalleEscombros,
+  parqueadero: detalleParqueadero,
+  senalizacion: detalleSenalizacion,
+  contenedorOficina: detalleContenedorOficina,
+  bateriaSanitaria: detalleBateriaSanitaria
+};
+
 /* Catálogo — dimensiones reales del informe (m). w=x, d=z, h=altura. */
 const PROVISIONALES = [
   { aforo:'25 personas (oficinas, técnica y sala de reuniones)', nombre:'Campamento', w:19.8, d:17.2, h:2.5, color:0x3f7fbf, techo:true, pos:[-68,-8], detalle:detalleCampamento,
@@ -398,6 +498,7 @@ function finalizarRuta(){
   rutaActual.offset = Math.random();
   rutas.push(rutaActual);
   rutaActual = null;
+  reconstruirVisualRutas();
   guardarCompartido();
 }
 function borrarRutas(){
@@ -405,4 +506,35 @@ function borrarRutas(){
   rutas.length = 0;
   if (rutaActual){ scene.remove(rutaActual.grupo); rutaActual = null; }
   guardarCompartido();
+}
+/* ---- separación visual entre rutas que van por el mismo corredor ----
+   Antes, dos o más rutas que pasaban por el mismo tramo se veían "pegadas"
+   (un solo tubo, imposible distinguir cuál es cuál al mirar o seleccionar).
+   Se corre cada ruta un poco a los lados según su posición en la lista, un
+   solo vector por ruta (perpendicular a su dirección general de inicio a
+   fin) — no repinta los puntos marcados, solo el tubo/curva visual. */
+const SEPARACION_RUTAS = 1.3;   // metros entre rutas vecinas
+function offsetLateralRuta(puntos, indice, total){
+  if (total <= 1 || puntos.length < 2) return { ox: 0, oz: 0 };
+  const a = puntos[0], b = puntos[puntos.length - 1];
+  let dx = b.x - a.x, dz = b.z - a.z;
+  const len = Math.hypot(dx, dz) || 1;
+  dx /= len; dz /= len;
+  const nx = -dz, nz = dx;   // perpendicular en el plano XZ
+  const mag = (indice - (total - 1) / 2) * SEPARACION_RUTAS;
+  return { ox: nx * mag, oz: nz * mag };
+}
+function reconstruirVisualRutas(){
+  rutas.forEach((r, i) => {
+    if (r.linea){ r.grupo.remove(r.linea); r.linea.geometry.dispose(); }
+    const { ox, oz } = offsetLateralRuta(r.puntos, i, rutas.length);
+    const pts = (ox === 0 && oz === 0) ? r.puntos : r.puntos.map(p => new THREE.Vector3(p.x + ox, p.y, p.z + oz));
+    const curva = new THREE.CatmullRomCurve3(pts);
+    const geo = new THREE.TubeGeometry(curva, Math.max(20, pts.length * 10), 0.28, 6, false);
+    r.linea = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({
+      color: coloresRuta[i % coloresRuta.length], transparent: true, opacity: 0.85
+    }));
+    r.grupo.add(r.linea);
+    r.curva = curva;
+  });
 }

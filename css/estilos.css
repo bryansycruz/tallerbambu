@@ -791,6 +791,26 @@
 #zonasBody input:focus, #zonasBody select:focus { outline:none; border-color:var(--acento); }
 #zonasBody b { color:var(--acento-texto); font-size:13px; }
 
+/* ============ OPCIONES DE EXPORTAR PLANO ============ */
+#exportarOverlay {
+  position:fixed; inset:0; z-index:33; display:none;
+  align-items:center; justify-content:center; background:var(--velo);
+}
+#exportarVentana {
+  width:min(420px, 94vw); max-height:84vh; overflow-y:auto;
+  background:var(--superficie); border:1px solid var(--borde); border-radius:18px;
+  color:var(--texto); box-shadow:var(--sombra);
+}
+#exportarCabecera {
+  display:flex; justify-content:space-between; align-items:center;
+  background:var(--sup-baja); padding:12px 18px; border-radius:18px 18px 0 0;
+  border-bottom:2px solid var(--acento); position:sticky; top:0; z-index:1;
+}
+#exportarCabecera h3 { margin:0; font-size:16px; font-weight:700; color:var(--acento-texto); text-transform:uppercase; letter-spacing:1px; }
+#exportarCerrar { background:none; border:none; color:var(--texto-2); font-size:22px; cursor:pointer; line-height:1; }
+#exportarCerrar:hover { color:var(--acento-texto); }
+#exportarBody { padding:14px 18px; font-size:13px; line-height:1.5; }
+
 /* ============ HISTORIAL DE CAMBIOS ============ */
 #historialOverlay {
   position:fixed; inset:0; z-index:33; display:none;

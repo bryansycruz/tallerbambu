@@ -99,18 +99,26 @@ function seccionesZonasExtra(){
 /* ============ 20. EXPORTAR PLANO (PDF / imagen) ============ */
 /* Captura una vista en planta (cenital) de la obra. El renderer no usa
    preserveDrawingBuffer, así que hay que renderizar en el MISMO instante
-   antes de leer el canvas; después se restaura la cámara del usuario. */
-function capturarPlanta(){
+   antes de leer el canvas; después se restaura la cámara del usuario.
+   "opciones" decide qué se ve SOLO en esta foto (no cambia tu preferencia
+   en pantalla): { etiquetas, cotas, chicas } — todos boolean, default true
+   salvo "chicas" que respeta el estado actual del botón "Etiquetas chicas". */
+function capturarPlanta(opciones){
+  opciones = opciones || {};
+  const mostrarEtq = opciones.etiquetas !== false;
+  const mostrarCot = opciones.cotas !== false;
   const prev = {
     x: camCtrl.target.x, y: camCtrl.target.y, z: camCtrl.target.z,
     r: camCtrl.radius, t: camCtrl.theta, p: camCtrl.phi
   };
-  // fuerza etiquetas y cotas visibles para la captura, sin tocar la
+  // fuerza etiquetas y cotas según lo elegido en el diálogo, sin tocar la
   // preferencia del usuario (se restauran tal cual estaban después)
+  const chicasPrev = etiquetasChicas;
+  if (typeof opciones.chicas === 'boolean' && opciones.chicas !== etiquetasChicas) toggleEtiquetasChicas();
   const etiquetasPrev = etiquetasTodas.map(s => s.visible);
-  etiquetasTodas.forEach(s => { s.visible = true; });
+  etiquetasTodas.forEach(s => { s.visible = mostrarEtq; });
   const cotasPrev = gruposCotas.map(gr => gr.visible);
-  gruposCotas.forEach(gr => { gr.visible = true; });
+  gruposCotas.forEach(gr => { gr.visible = mostrarCot; });
 
   camCtrl.target.set(10, 0, -2);
   camCtrl.radius = 165;
@@ -125,6 +133,7 @@ function capturarPlanta(){
   actualizarCamara();
   etiquetasTodas.forEach((s, i) => { s.visible = etiquetasPrev[i]; });
   gruposCotas.forEach((gr, i) => { gr.visible = cotasPrev[i]; });
+  if (etiquetasChicas !== chicasPrev) toggleEtiquetasChicas();
   renderer.render(scene, camera);
   return url;
 }
@@ -142,7 +151,8 @@ function resumenRutas(){
     };
   });
 }
-/* filas del cuadro de áreas para la hoja exportada (mismos datos que Zonas) */
+/* filas del cuadro de áreas para la hoja exportada (mismos datos que Zonas,
+   + el color actual de cada zona para que el cuadro sirva de leyenda) */
 function filasCuadroAreas(){
   return draggables.map(g => {
     const inf = g.userData.info || {};
@@ -151,12 +161,30 @@ function filasCuadroAreas(){
       nombre: inf.nombre || '—',
       dimensiones: inf.dimensiones || (tieneArea ? (inf.w + ' × ' + inf.d + ' m') : '—'),
       area: tieneArea ? Math.round(inf.w * inf.d * 10) / 10 : null,
-      aforo: inf.aforo || '—'
+      aforo: inf.aforo || '—',
+      color: colorActualHex(g) || '#9aa0a5'
     };
   });
 }
+/* ---- diálogo previo: qué mostrar en la foto exportada (no toca lo que ves
+   en pantalla, solo esta exportación puntual) ---- */
 function exportarPlano(){
-  const img = capturarPlanta();
+  document.getElementById('exportarBody').innerHTML =
+    '<div class="desc">Elige qué se ve en la foto del plano exportado. No cambia tu vista en pantalla, solo esta exportación.</div>' +
+    '<label class="chk" style="display:block; margin-top:10px"><input type="checkbox" id="expEtiquetas" checked> Mostrar etiquetas (nombres)</label>' +
+    '<label class="chk" style="display:block; margin-top:6px"><input type="checkbox" id="expCotas" checked> Mostrar cotas (medidas)</label>' +
+    '<label class="chk" style="display:block; margin-top:6px"><input type="checkbox" id="expChicas"' + (etiquetasChicas ? ' checked' : '') + '> Etiquetas chicas (menos saturado)</label>' +
+    '<button class="orgAccion primario" style="margin-top:14px" onclick="generarExportacion()">Generar PDF</button>';
+  document.getElementById('exportarOverlay').style.display = 'flex';
+}
+function generarExportacion(){
+  document.getElementById('exportarOverlay').style.display = 'none';
+  const opciones = {
+    etiquetas: document.getElementById('expEtiquetas').checked,
+    cotas: document.getElementById('expCotas').checked,
+    chicas: document.getElementById('expChicas').checked
+  };
+  const img = capturarPlanta(opciones);
   const filas = filasCuadroAreas();
   const totalArea = Math.round(filas.reduce((s, f) => s + (f.area || 0), 0) * 10) / 10;
   const alertas = validarObra();
@@ -171,7 +199,8 @@ function exportarPlano(){
       '</table>'
     : '<p style="color:#6a7260; font-size:11.5px; margin:4px 0">No hay rutas dibujadas todavía.</p>');
   const filasHtml = filas.map(f =>
-    '<tr><td>' + esc(f.nombre) + '</td><td>' + esc(String(f.dimensiones)) + '</td>' +
+    '<tr><td><span style="display:inline-block;width:10px;height:10px;background:' + esc(f.color) +
+      ';border-radius:2px;margin-right:6px;vertical-align:middle;border:1px solid rgba(0,0,0,.15)"></span>' + esc(f.nombre) + '</td><td>' + esc(String(f.dimensiones)) + '</td>' +
     '<td class="num">' + (f.area !== null ? f.area : '—') + '</td><td>' + esc(String(f.aforo)) + '</td></tr>'
   ).join('');
   const alertasHtml = alertas.length
@@ -226,4 +255,8 @@ function exportarPlano(){
 (function(){
   const b = document.getElementById('btnExportar');
   if (b) b.onclick = exportarPlano;
+  document.getElementById('exportarCerrar').onclick = () => { document.getElementById('exportarOverlay').style.display = 'none'; };
+  document.getElementById('exportarOverlay').addEventListener('click', e => {
+    if (e.target.id === 'exportarOverlay') e.target.style.display = 'none';
+  });
 })();

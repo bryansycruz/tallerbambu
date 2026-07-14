@@ -161,6 +161,11 @@ function rueda(g, x, y, z, r, ancho){
   m.rotation.z = Math.PI / 2;
   m.position.set(x, y, z); m.castShadow = true; g.add(m); return m;
 }
+/* tamaño de las etiquetas flotantes (nombres, m², cotas, puntos de ruta):
+   "chicas" las reduce para que no saturen la vista cuando además están las
+   cotas encendidas — se aplica al crear cada una, así que un cambio de
+   tamaño se ve completo con solo refrescar las que ya existen. */
+let etiquetasChicas = false;
 function crearEtiqueta(texto, ancho, color){
   ancho = ancho || 12;
   const res = ES_MOVIL ? 1 : 2;
@@ -174,7 +179,8 @@ function crearEtiqueta(texto, ancho, color){
   ctx.fillText(texto, 256, 66);
   const tex = new THREE.CanvasTexture(c); tex.anisotropy = ANISO;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map:tex, depthTest:false, transparent:true }));
-  sp.scale.set(ancho, ancho/4, 1);
+  const factor = etiquetasChicas ? 0.6 : 1;
+  sp.scale.set(ancho * factor, (ancho/4) * factor, 1);
   return sp;
 }
 /* círculo punteado + disco translúcido en el suelo (radio de giro de las grúas) */
@@ -195,6 +201,287 @@ function circuloRadio(g, R, color){
    guarda en userData.giro para animarlo en el bucle. */
 const MAT_AMARILLO = 0xd9a521, MAT_NARANJA = 0xc9581e;
 
+/* ============ MOBILIARIO ACORDE POR PLANTILLA ============
+   Cuando el "Espacio" nace de una plantilla predeterminada (PRESETS_ESPACIO),
+   se agrega mobiliario real acorde a su propósito, en vez de una caja
+   vacía. Para los presets que también existen en el proyecto Bambú se
+   PORTAN (no se reinventan) tanto las figuras de mobiliario (mesa, silla,
+   sanitario, lavamanos, estantería, arrume…) como la disposición exacta de
+   detalleX(g, def) de js/provisionales.js — mismas medidas de PRESETS_ESPACIO
+   en ambos proyectos, así que las coordenadas absolutas encajan igual. */
+function sanitarioFigLibre(g, x, z, rotY){
+  const s = new THREE.Group();
+  caja(s, 0.38, 0.42, 0.55, 0xf4f6f7, 0, 0.21, 0.05);
+  caja(s, 0.42, 0.55, 0.18, 0xe9ebed, 0, 0.62, -0.22);
+  s.position.set(x, 0.12, z); s.rotation.y = rotY || 0;
+  g.add(s); return s;
+}
+function lavamanosFigLibre(g, x, z){
+  cilindro(g, 0.07, 0.5, 0xd5d8da, x, 0.37, z);
+  cilindro(g, 0.21, 0.1, 0xf4f6f7, x, 0.66, z);
+}
+function orinalFigLibre(g, x, z){ caja(g, 0.32, 0.5, 0.22, 0xf4f6f7, x, 0.85, z); }
+function divisionFigLibre(g, x, z, d){ caja(g, 0.05, 1.6, d, 0xaab2b8, x, 0.92, z); }
+function mesaFigLibre(g, x, z, w, d){
+  caja(g, w, 0.06, d, 0xc9a36a, x, 0.75, z);
+  caja(g, 0.12, 0.72, 0.12, 0x6a6d70, x, 0.36, z);
+}
+function sillaFigLibre(g, x, z){ caja(g, 0.42, 0.45, 0.42, 0x54606c, x, 0.24, z); }
+function bancaFigLibre(g, x, z, w){ caja(g, w, 0.42, 0.35, 0x8a6a3a, x, 0.22, z); }
+function estanteriaFigLibre(g, x, z, w, rotY){
+  const e = new THREE.Group();
+  for (let i=0; i<4; i++) caja(e, w, 0.05, 0.5, 0xb8935a, 0, 0.25 + i*0.55, 0);
+  caja(e, 0.05, 2, 0.5, 0x9a7a48, -w/2, 1, 0);
+  caja(e, 0.05, 2, 0.5, 0x9a7a48, w/2, 1, 0);
+  const colores = [0xc9581e, 0x4f66c9, 0x5fae4a];
+  for (let i=0; i<3; i++)
+    caja(e, 0.5, 0.35, 0.4, colores[i%3], -w/3 + i*(w/3), 0.48 + (i%2)*0.55, 0);
+  e.position.set(x, 0, z); e.rotation.y = rotY || 0;
+  g.add(e); return e;
+}
+function estibaFigLibre(g, x, z){ caja(g, 1.3, 0.14, 1.1, 0x8a6a3a, x, 0.19, z); }
+function arrumeFigLibre(g, x, z, w, d, capas, color){
+  estibaFigLibre(g, x, z);
+  for (let i=0; i<capas; i++)
+    caja(g, w - i*0.08, 0.3, d - i*0.08, color, x, 0.41 + i*0.3, z);
+}
+function baldesFigLibre(g, x, z){
+  estibaFigLibre(g, x, z);
+  [[-0.35,-0.25],[0.05,-0.25],[-0.15,0.15],[0.3,0.2]].forEach(([dx,dz]) =>
+    cilindro(g, 0.18, 0.4, 0xd9d2c0, x+dx, 0.48, z+dz));
+}
+function detallePatioHierrosLibre(g, W, D){
+  const colores = [0x8a8f96, 0x6d7075, 0x9aa0a5];
+  for (let i = 0; i < 5; i++){
+    const x = -W / 2 + 2 + i * (W - 4) / 4;
+    const z = -D / 2 + 2;
+    caja(g, 1.6, 0.15, 2.2, 0x8a6642, x, 0.1, z);
+    for (let r = 0; r < 6; r++){
+      const dx = (r % 3 - 1) * 0.4, dz = Math.floor(r / 3) * 0.5;
+      const barra = cilindro(g, 0.06, Math.min(2.4, D - 1), colores[i % 3], x + dx, 0.35 + Math.floor(r / 3) * 0.12, z + dz);
+      barra.rotation.z = Math.PI / 2;
+    }
+  }
+  caja(g, 2.4, 0.85, 1.0, 0x6d7075, 0, 0.42, D / 2 - 1.2);
+}
+function detalleZonaResiduosLibre(g, W){
+  const colores = [0x3f7fbf, 0x5fae4a, 0xc9302e, 0x8a6a3a];
+  colores.forEach((c, i) => {
+    const x = -W / 2 + 1.3 + i * (W - 2.6) / (colores.length - 1);
+    caja(g, 1.1, 1.2, 1.1, c, x, 0.6, 0);
+    caja(g, 1.2, 0.12, 1.2, 0x2b2f36, x, 1.22, 0);
+  });
+}
+function detalleEscombrosLibre(g, W, D){
+  [[-W / 4, -D / 4, 1.4, 0x8f7d6b], [W / 5, D / 6, 1.1, 0x9a9a94], [-W / 6, D / 3, 0.9, 0x8a8478]].forEach(([x, z, h, c]) => {
+    cono(g, Math.min(1.8, Math.min(W, D) / 3), 0.1, h, c, x, h / 2, z);
+  });
+}
+function detalleParqueaderoLibre(g, W, D){
+  const nCeldas = Math.max(2, Math.floor(W / 2.6));
+  for (let i = 0; i <= nCeldas; i++){
+    const x = -W / 2 + i * (W / nCeldas);
+    caja(g, 0.1, 0.03, D - 1, 0xe8e6da, x, 0.16, 0);
+  }
+  [[-W / 4, 0x2e6db8], [W / 6, 0xc0392b]].forEach(([x, c]) => {
+    caja(g, 1.7, 1.1, Math.min(4.0, D - 1), c, x, 0.65, -D / 5);
+    caja(g, 1.5, 0.7, Math.min(2.2, D - 2), 0x9fc4e8, x, 1.3, -D / 5, 0.6);
+    [-1, 1].forEach(s => rueda(g, x + s * 0.75, 0.35, -D / 5 - 1.4, 0.35));
+  });
+}
+function detalleSenalizacionLibre(g){
+  [[-0.5, 0xc9302e, 3], [0.5, 0xf2d21f, 4]].forEach(([x, c, lados]) => {
+    cilindro(g, 0.06, 2.0, 0x8a8f96, x, 1.0, 0);
+    const panel = new THREE.Mesh(new THREE.CircleGeometry(0.42, lados), new THREE.MeshBasicMaterial({ color: c }));
+    panel.position.set(x, 1.9, 0.05);
+    g.add(panel);
+  });
+}
+function detalleContenedorOficinaLibre(g, W, D){
+  mesaFigLibre(g, 0, D / 2 - 0.6, Math.min(1.6, W - 1), 0.5);
+  sillaFigLibre(g, 0, D / 2 - 1.1);
+  estanteriaFigLibre(g, W / 2 - 0.3, -D / 2 + 0.4, Math.min(1.2, D - 1), Math.PI / 2);
+}
+function detalleBateriaSanitariaLibre(g, W, D){
+  for (let i = 0; i < 4; i++){
+    const x = -W / 2 + 0.7 + i * (W - 1.4) / 3;
+    sanitarioFigLibre(g, x, D / 2 - 0.6, Math.PI);
+  }
+}
+/* ---- Comedor + cocineta trabajadores (mismo layout que Bambú) ---- */
+function detalleComedorLibre(g, W, D){
+  [[-4,-1.4],[-4,1.4],[0,-1.4],[0,1.4],[4,-1.4],[4,1.4]].forEach(([x,z]) => {
+    mesaFigLibre(g, x, z, 2.6, 0.9);
+    bancaFigLibre(g, x, z - 0.75, 2.6);
+    bancaFigLibre(g, x, z + 0.75, 2.6);
+  });
+  caja(g, 3.5, 0.9, 0.6, 0x9aa0a6, -4, 0.45, -D/2 + 0.5);
+  caja(g, 0.6, 0.08, 0.5, 0x2e3236, -4.8, 0.94, -D/2 + 0.5);
+  for (let i=0; i<3; i++) lavamanosFigLibre(g, W/2 - 0.55, -1 + i);
+}
+/* ---- Casilleros trabajadores (mismo layout que Bambú) ---- */
+function detalleCasillerosLibre(g, W, D){
+  const filaW = Math.min(8, W - 1.5);
+  [-D/2 + 1.3, 0, D/2 - 2.2].forEach(z => {
+    caja(g, filaW, 1.8, 0.5, 0x5a6a7a, 0, 1.02, z);
+    bancaFigLibre(g, 0, z + 1, Math.min(6.5, filaW - 1));
+  });
+}
+/* ---- Baños + vestidores trabajadores (mismo layout que Bambú) ---- */
+function detalleBanosLibre(g, W, D){
+  const mx = W/2 - 1.3, mz = D/2 - 1.3;
+  [-mx*0.6, -mx*0.2, mx*0.2, mx*0.6].forEach((x, i) => {
+    sanitarioFigLibre(g, x, -mz, Math.PI);
+    if (i < 3) divisionFigLibre(g, x + mx*0.2, -mz + 0.1, 1.1);
+  });
+  [-0.6, 0, 0.6].forEach(dz => orinalFigLibre(g, -mx, dz));
+  [-mx*0.6, -mx*0.2, mx*0.2, mx*0.6].forEach(x => lavamanosFigLibre(g, x, 0));
+  [-mx*0.5, 0, mx*0.5].forEach(x => {
+    caja(g, 1, 0.06, 1, 0x7fb2c9, x, 0.16, mz*0.55);
+    divisionFigLibre(g, x + 0.55, mz*0.55, 1);
+  });
+  bancaFigLibre(g, 0, mz, Math.min(6, W - 2.6));
+  caja(g, Math.min(4, W - 3), 1.6, 0.4, 0x5a6a7a, 0, 0.92, mz - 0.6);
+}
+/* ---- Almacén central de acabados (mismo layout que Bambú) ---- */
+function detalleAlmacenLibre(g, W, D){
+  const largoFondo = Math.max(2, Math.min(6, W/2 - 1.5));
+  estanteriaFigLibre(g, -W/4, -D/2 + 0.6, largoFondo, 0);
+  estanteriaFigLibre(g,  W/4, -D/2 + 0.6, largoFondo, 0);
+  estanteriaFigLibre(g, -W/2 + 0.5, 0, Math.max(2, Math.min(5, D - 2)), Math.PI/2);
+  [[-W/5, D/6, 0xc9b394], [0, D/6, 0xd5d8da], [W/5, D/6, 0xb08f5a]].forEach(([x, z, c]) =>
+    arrumeFigLibre(g, x, z, 1.6, 1.1, 2, c));
+  baldesFigLibre(g, W/2 - 1.6, D/2 - 1.6);
+  caja(g, 2.0, 0.9, 0.55, 0x9a7a48, W/2 - 1.5, 0.45, D/2 - 1);
+}
+/* ---- Acopio de materiales (mismo layout que Bambú) ---- */
+function detalleAcopioLibre(g, W, D){
+  for (let fx=0; fx<5; fx++) for (let fz=0; fz<3; fz++){
+    const x = -8.8 + fx*4.4, z = -5 + fz*5;
+    if ((fx + fz) % 3 === 0) arrumeFigLibre(g, x, z, 1.8, 1.3, 2, 0xc9b394);
+    else if ((fx + fz) % 3 === 1) arrumeFigLibre(g, x, z, 1.8, 1.3, 3, 0xd5d8da);
+    else estibaFigLibre(g, x, z);
+  }
+}
+/* ---- Patio de maniobra y descargue (mismo layout que Bambú, con camión) ---- */
+function detalleManiobraLibre(g, W, D){
+  for (let i=0; i<6; i++){
+    caja(g, 0.5, 0.05, 1.4, i%2 ? 0x2e3236 : 0xe0c040, -W/2 + 0.5, 0.16, -D/2 + 1.5 + i*2.8);
+    caja(g, 0.5, 0.05, 1.4, i%2 ? 0x2e3236 : 0xe0c040,  W/2 - 0.5, 0.16, -D/2 + 1.5 + i*2.8);
+  }
+  for (let i=0; i<28; i += 2){
+    const a = (i/28) * Math.PI * 2;
+    const seg = caja(g, 1.0, 0.04, 0.2, 0xeceadf, Math.cos(a)*5.7, 0.17, Math.sin(a)*4.9);
+    seg.rotation.y = Math.atan2(-4.9*Math.cos(a), -5.7*Math.sin(a));
+    seg.castShadow = false;
+  }
+  const geoFlecha = new THREE.CircleGeometry(0.6, 3);
+  geoFlecha.rotateX(-Math.PI/2);
+  [[0, D/2 - 1.4, Math.PI/2], [-4.6, 3.2, Math.PI*0.8], [-4.6, -3.2, -Math.PI*0.8], [0, -D/2 + 1.6, -Math.PI/2]]
+    .forEach(([x, z, rot]) => {
+      const f = new THREE.Mesh(geoFlecha.clone(), new THREE.MeshBasicMaterial({ color:0xf2d21f }));
+      f.rotation.y = rot;
+      f.position.set(x, 0.18, z);
+      g.add(f);
+    });
+  for (let i=0; i<5; i++){
+    const c = caja(g, 0.2, 0.04, 3.2, 0xe8e6da, 3.2 + (i - 2)*1.3, 0.165, -D/2 + 2.6);
+    c.rotation.y = 0.5;
+    c.castShadow = false;
+  }
+  [[-5,-6],[5,-6],[-5,6],[5,6],[-6.3,0],[6.3,0],[0,7.2],[0,-7.2]].forEach(([x,z]) => cono(g, 0.28, 0, 0.65, 0xe06a1e, x, 0.325, z));
+  cilindro(g, 0.06, 2.2, 0x8a8f96, W/2 - 1, 1.1, D/2 - 1);
+  const pare = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.06, 8),
+    new THREE.MeshLambertMaterial({ color:0xc9302e }));
+  pare.rotation.x = Math.PI/2;
+  pare.position.set(W/2 - 1, 2.3, D/2 - 1);
+  g.add(pare);
+  const cam = new THREE.Group();
+  caja(cam, 2.3, 0.5, 8.4, 0x2b2f36, 0, 0.72, 0);
+  caja(cam, 2.35, 2.1, 2.1, 0x2e6db8, 0, 1.95, 2.85);
+  caja(cam, 2.2, 0.9, 0.06, 0x9fc4e8, 0, 2.5, 3.93);
+  caja(cam, 0.4, 0.18, 0.1, 0xf2d21f, -0.8, 1.05, 3.92);
+  caja(cam, 0.4, 0.18, 0.1, 0xf2d21f, 0.8, 1.05, 3.92);
+  caja(cam, 2.45, 2.3, 5.2, 0xe6e2d8, 0, 2.1, -1.35);
+  caja(cam, 2.47, 0.34, 5.22, 0xc9581e, 0, 1.2, -1.35);
+  [[-1.05,2.85],[1.05,2.85],[-1.05,-0.6],[1.05,-0.6],[-1.05,-3.0],[1.05,-3.0]].forEach(([x,z]) => {
+    cilindro(cam, 0.5, 0.34, 0x15181c, x, 0.5, z).rotation.z = Math.PI/2;
+    cilindro(cam, 0.2, 0.36, 0x9aa0a6, x, 0.5, z).rotation.z = Math.PI/2;
+  });
+  cam.rotation.y = 0.5;
+  cam.position.set(0.6, 0.1, 0.4);
+  g.add(cam);
+}
+/* ---- Lavado de llantas (mismo layout que Bambú) ---- */
+function detalleLavadoLibre(g, W){
+  for (let i=0; i<3; i++) caja(g, 8, 0.18, 0.6, 0x8a8f96, 0, 0.2, 6 - i*1.1);
+  caja(g, 8, 0.1, 6, 0x77808a, 0, 0.14, 0.5);
+  for (let i=0; i<9; i++) caja(g, 0.18, 0.06, 5.6, 0xaab2b8, -3.5 + i*0.9, 0.21, 0.5);
+  const cep1 = cilindro(g, 0.35, 6, 0x3f7fbf, -1.5, 0.5, 0.5); cep1.rotation.x = Math.PI/2;
+  const cep2 = cilindro(g, 0.35, 6, 0x3f7fbf, 1.5, 0.5, 0.5);  cep2.rotation.x = Math.PI/2;
+  caja(g, 5, 0.4, 2.4, 0x2f5d8a, -1, 0.25, -4);
+  caja(g, 8, 0.06, 2, 0xc9ccd0, 0, 0.15, -6.8);
+}
+/* ---- Portería / control de acceso (mismo layout que Bambú) ---- */
+function detallePorteriaLibre(g, W, D){
+  caja(g, 2.6, 2.1, D, 0x9a7a48, -W/2 + 1.4, 1.05, 0, 1);
+  caja(g, 2.9, 0.12, D + 0.3, 0x6d7075, -W/2 + 1.4, 2.2, 0, 1);
+  sillaFigLibre(g, -W/2 + 1.4, 0.4);
+  cilindro(g, 0.13, 2.4, 0xd8d8d0, -W/2 + 3, 1.2, 0);
+  cilindro(g, 0.13, 2.4, 0xd8d8d0, W/2 - 0.5, 1.2, 0);
+  caja(g, W - 3.5, 0.16, 0.16, 0xc9302e, ((-W/2 + 3) + (W/2 - 0.5)) / 2, 1.7, 0);
+}
+/* ---- Campamento de oficinas (mismo layout que Bambú, mismas medidas 19.8×17.6) ---- */
+function detalleCampamentoLibre(g, W, D, cm){
+  const h = 2.3;
+  caja(g, W, h, 0.12, cm, 0, h/2, -D/2, 0.92);
+  caja(g, 0.12, h, D, cm, -W/2, h/2, 0, 0.92);
+  caja(g, 0.12, h, D, cm, W/2, h/2, 0, 0.92);
+  caja(g, 7.4 + W/2, h, 0.12, cm, (7.4 - W/2)/2, h/2, D/2, 0.92);
+  caja(g, W/2 - 8.6, h, 0.12, cm, (8.6 + W/2)/2, h/2, D/2, 0.92);
+  caja(g, W, 2.2, 0.1, cm, 0, 1.1, -3, 0.95);
+  caja(g, W, 2.2, 0.1, cm, 0, 1.1, 4, 0.95);
+  caja(g, 0.1, 2.2, 6, cm, -5, 1.1, -6, 0.95);
+  caja(g, 0.1, 2.2, 6, cm, 0, 1.1, -6, 0.95);
+  caja(g, 0.1, 2.2, 6, cm, 6, 1.1, -6, 0.95);
+  caja(g, 0.1, 2.2, 7, cm, 4, 1.1, 0.5, 0.95);
+  caja(g, 0.1, 2.2, 7, cm, 7, 1.1, 0.5, 0.95);
+  caja(g, 0.1, 2.2, D/2 - 4, cm, 0, 1.1, (4 + D/2)/2, 0.95);
+  caja(g, 0.1, 2.2, D/2 - 4, cm, 6, 1.1, (4 + D/2)/2, 0.95);
+  mesaFigLibre(g, -7.5, -7, 1.6, 0.8); sillaFigLibre(g, -7.5, -6.2);
+  mesaFigLibre(g, -2.5, -7, 1.6, 0.8); sillaFigLibre(g, -2.5, -6.2);
+  mesaFigLibre(g, 3, -7, 2, 0.8); sillaFigLibre(g, 2.4, -6.2); sillaFigLibre(g, 3.6, -6.2);
+  caja(g, 2.4, 0.9, 0.6, 0x9aa0a6, 8, 0.45, -8.5);
+  caja(g, 0.6, 1.6, 0.6, 0xe8eaec, 9.4, 0.8, -8.4);
+  for (let i=0; i<5; i++){
+    mesaFigLibre(g, -8.5 + i*2.3, -1.2, 1.5, 0.7); sillaFigLibre(g, -8.5 + i*2.3, -0.4);
+    mesaFigLibre(g, -8.5 + i*2.3, 2.4, 1.5, 0.7);  sillaFigLibre(g, -8.5 + i*2.3, 1.6);
+  }
+  sanitarioFigLibre(g, 5, -2.2, Math.PI); lavamanosFigLibre(g, 6.2, 3);
+  sanitarioFigLibre(g, 8, -2.2, Math.PI); lavamanosFigLibre(g, 9.2, 3);
+  caja(g, 4, 0.08, 1.4, 0xc9a36a, -5, 0.76, 6.5);
+  [-6.6,-5.4,-4.2,-3.4].forEach(x => { sillaFigLibre(g, x, 5.6); sillaFigLibre(g, x, 7.4); });
+  estanteriaFigLibre(g, 2, 8.2, 3, 0);
+  estanteriaFigLibre(g, 4.5, 5.2, 3, Math.PI/2);
+}
+const PRESET_DETALLE_LIBRE = {
+  campamento: (g, W, D, cm) => detalleCampamentoLibre(g, W, D, cm),
+  almacen: (g, W, D) => detalleAlmacenLibre(g, W, D),
+  acopio: (g, W, D) => detalleAcopioLibre(g, W, D),
+  maniobra: (g, W, D) => detalleManiobraLibre(g, W, D),
+  lavado: (g, W, D) => detalleLavadoLibre(g, W),
+  porteria: (g, W, D) => detallePorteriaLibre(g, W, D),
+  comedor: (g, W, D) => detalleComedorLibre(g, W, D),
+  casilleros: (g, W, D) => detalleCasillerosLibre(g, W, D),
+  banos: (g, W, D) => detalleBanosLibre(g, W, D),
+  patioHierros: (g, W, D) => detallePatioHierrosLibre(g, W, D),
+  zonaResiduos: (g, W, D) => detalleZonaResiduosLibre(g, W),
+  escombros: (g, W, D) => detalleEscombrosLibre(g, W, D),
+  parqueadero: (g, W, D) => detalleParqueaderoLibre(g, W, D),
+  senalizacion: (g, W, D) => detalleSenalizacionLibre(g),
+  contenedorOficina: (g, W, D) => detalleContenedorOficinaLibre(g, W, D),
+  bateriaSanitaria: (g, W, D) => detalleBateriaSanitariaLibre(g, W, D)
+};
 function construirEspacio(def){
   const g = new THREE.Group();
   const W = def.w, D = def.d, H = def.h, cm = def.color;
@@ -209,6 +496,7 @@ function construirEspacio(def){
     caja(g, seg, H, t, cm,  (puerta+seg)/2, H/2, D/2 - t/2, 0.92);
   }
   if (def.techo) caja(g, W + 0.5, 0.1, D + 0.5, 0x8a8f96, 0, H + 0.1, 0, 0.35);
+  if (def.presetId && PRESET_DETALLE_LIBRE[def.presetId]) PRESET_DETALLE_LIBRE[def.presetId](g, W, D, cm);
   (def.muebles || []).forEach((m, i) => agregarMuebleInteriorAGrupo(g, m, i));
   const area = Math.round(W*D);
   g.userData.info = {
@@ -739,6 +1027,36 @@ const CATALOGO_MAQUINAS = [
       [[-0.22, 0.35], [0.22, 0.35]].forEach(([x, z]) => { const p = caja(g, 0.05, 0.5, 0.05, 0x23262b, x, 0.22, -z); p.rotation.x = -0.4; });
       [-0.26, 0.26].forEach(x => { const asa = caja(g, 0.05, 0.95, 0.05, 0x23262b, x, 0.42, -0.52); asa.rotation.x = -0.55; });
     } },
+  { id:'montacargasElectrico', nombre:'Montacargas eléctrico', grupo:'Transporte horizontal', w:2.5, d:1.0, h:1.5, color:'#f0b429', movil:true,
+    desc:'Montacargas eléctrico a batería — contrapeso trasero, techo de protección tipo jaula y mástil de dos rieles con horquillas.',
+    dibujar(g, c){
+      caja(g, 0.5, 0.5, 0.7, 0x23262b, 0.55, 0.32, 0.15);
+      caja(g, 1.15, 0.42, 0.75, c, 0.05, 0.28, 0.15);
+      caja(g, 0.32, 0.28, 0.3, 0x23262b, 0.2, 0.63, 0.15);
+      caja(g, 0.3, 0.34, 0.06, 0x23262b, 0.2, 0.87, 0.0);
+      [[-0.15, -0.1], [0.45, -0.1], [-0.15, 0.4], [0.45, 0.4]].forEach(([x, z]) => {
+        caja(g, 0.045, 1.2, 0.045, 0x6d7075, x, 0.82, z);
+      });
+      caja(g, 0.75, 0.05, 0.65, 0x6d7075, 0.15, 1.44, 0.15);
+      rueda(g, -0.4, 0.24, -0.15, 0.24); rueda(g, -0.4, 0.24, 0.45, 0.24);
+      rueda(g, 0.5, 0.15, -0.05, 0.15); rueda(g, 0.5, 0.15, 0.35, 0.15);
+      [-0.13, 0.43].forEach(z => caja(g, 0.09, 2.0, 0.09, 0x6d7075, -0.62, 1.05, z));
+      for (let y = 0.2; y < 1.95; y += 0.55) caja(g, 0.09, 0.06, 0.68, 0x6d7075, -0.62, y, 0.15);
+      caja(g, 0.5, 0.32, 0.68, 0x6d7075, -0.85, 0.17, 0.15);
+      [-0.15, 0.42].forEach(z => caja(g, 0.85, 0.06, 0.1, 0x23262b, -1.3, 0.06, z));
+    } },
+  { id:'montacargasManual', nombre:'Montacargas manual', grupo:'Transporte horizontal', w:1.5, d:0.5, h:1.2, color:'#c0392b', movil:true,
+    desc:'Transpaleta manual de gato hidráulico — horquillas bajas y timón en T; para mover tarimas sobre piso firme.',
+    dibujar(g, c){
+      [-0.22, 0.22].forEach(z => caja(g, 1.05, 0.05, 0.13, c, 0.15, 0.08, z));
+      [-0.22, 0.22].forEach(z => rueda(g, 0.65, 0.05, z, 0.05));
+      cilindro(g, 0.1, 0.3, 0x23262b, -0.4, 0.2, 0);
+      caja(g, 0.4, 0.34, 0.34, c, -0.48, 0.24, 0);
+      rueda(g, -0.48, 0.13, -0.22, 0.13); rueda(g, -0.48, 0.13, 0.22, 0.13);
+      const barra = caja(g, 0.055, 1.1, 0.055, 0x23262b, -0.85, 0.66, 0); barra.rotation.z = -0.6;
+      caja(g, 0.06, 0.4, 0.06, 0x23262b, -1.25, 1.05, 0);
+      caja(g, 0.06, 0.06, 0.42, 0x23262b, -1.25, 1.2, 0);
+    } },
   { id:'camionPlanchon', nombre:'Camión planchón', grupo:'Transporte horizontal', w:2.6, d:12, h:3, color:'#2e6db8', movil:true,
     desc:'Camión de plataforma plana (planchón) para acero, formaleta y maquinaria menor.',
     dibujar(g, c){
@@ -972,6 +1290,9 @@ function normalizarDef(raw){
     d.muros = raw.muros !== false; d.techo = raw.techo !== false;
     d.sistema = SISTEMAS[raw.sistema] ? raw.sistema : 'muros';
     d.muebles = normalizarMueblesInterior(raw.muebles, d.w, d.d);
+    // plantilla elegida (si la hay): el espacio nace con el mobiliario
+    // acorde a su propósito (ver PRESET_DETALLE_LIBRE)
+    d.presetId = (typeof PRESETS_ESPACIO !== 'undefined' && PRESETS_ESPACIO[raw.presetId]) ? raw.presetId : null;
   } else if (tipo === 'edificio'){
     d.w = numLim(raw.w, 20, 3, 90); d.d = numLim(raw.d, 12, 3, 70);
     d.pisos = Math.round(numLim(raw.pisos, 5, 1, 40)); d.hPiso = numLim(raw.hPiso, 2.65, 2, 5);
@@ -1384,7 +1705,9 @@ const AFORO_MAQ = {
   pilaArena: 'No aplica (acopio)',
   bultosCemento: 'No aplica (acopio)',
   pilaAgregado: 'No aplica (acopio)',
-  tanqueAgua: 'No aplica (almacenamiento)'
+  tanqueAgua: 'No aplica (almacenamiento)',
+  montacargasElectrico: 'Operario: 1 persona · carga hasta 1.000 kg',
+  montacargasManual: 'Operario: 1 persona · carga hasta 2.000 kg'
 };
 function renderFichaTecnicaLibre(g){
   const d = g.userData.def, info = g.userData.info;
@@ -1699,6 +2022,7 @@ function agregarElemento(){
   if (tipo === 'espacio'){
     raw.w = valNum('libAncho'); raw.d = valNum('libFondo'); raw.h = valNum('libAlto');
     raw.color = valNum('libColor'); raw.muros = document.getElementById('libMuros').checked; raw.techo = document.getElementById('libTecho').checked;
+    raw.presetId = (document.getElementById('libPreset') || {}).value || null;
   } else if (tipo === 'edificio'){
     raw.w = valNum('libAncho'); raw.d = valNum('libFondo'); raw.pisos = valNum('libPisos'); raw.hPiso = valNum('libHPiso');
     raw.sistema = (document.getElementById('libSistema') || {}).value;
@@ -2766,28 +3090,50 @@ function nombreRutaLibre(){
   while (rutas.some(r => r.nombre === nombre)) nombre = 'Ruta ' + (++n);
   return nombre;
 }
-/* tramo entre dos puntos: por las vías si se puede; recto solo si no cruza nada */
-function tramoRutaLibre(a, b){
-  const porVia = rutaPorViasLibre(a, b);
-  if (porVia) return porVia;
+/* tramo entre dos puntos: por las vías si se puede Y la ruta lo permite
+   (usarVias !== false); recto solo si no cruza nada — el camino directo
+   SIEMPRE respeta el bloqueo de obstáculos, solo deja de preferir la vía */
+function tramoRutaLibre(a, b, usarVias){
+  if (usarVias !== false){
+    const porVia = rutaPorViasLibre(a, b);
+    if (porVia) return porVia;
+  }
   return segmentoCruzaObstaculo(a[0], a[1], b[0], b[1]) ? null : [a, b];
 }
 function trazadoRuta(r){
   if (!r.puntos.length) return [];
   let out = [r.puntos[0]];
   for (let i = 0; i < r.puntos.length - 1; i++){
-    const t = tramoRutaLibre(r.puntos[i], r.puntos[i + 1]) || [r.puntos[i], r.puntos[i + 1]];
+    const t = tramoRutaLibre(r.puntos[i], r.puntos[i + 1], r.usarVias) || [r.puntos[i], r.puntos[i + 1]];
     out = out.concat(t.slice(1));
   }
   return out;
 }
+/* separación visual entre rutas que van por el mismo corredor: antes, dos o
+   más rutas por el mismo tramo se veían "pegadas" en una sola línea
+   (imposible distinguirlas o seleccionar la correcta). Se corre cada ruta
+   un poco a los lados según su posición en la lista, con un solo vector
+   por ruta (perpendicular a su dirección general de inicio a fin) —
+   aplicado tanto a la línea como a sus marcas, para que sigan alineadas. */
+const SEPARACION_RUTAS_LIBRE = 1.3;
+function offsetLateralRutaLibre(puntos, indice, total){
+  if (total <= 1 || puntos.length < 2) return [0, 0];
+  const a = puntos[0], b = puntos[puntos.length - 1];
+  let dx = b[0] - a[0], dz = b[1] - a[1];
+  const len = Math.hypot(dx, dz) || 1;
+  dx /= len; dz /= len;
+  const nx = -dz, nz = dx;
+  const mag = (indice - (total - 1) / 2) * SEPARACION_RUTAS_LIBRE;
+  return [nx * mag, nz * mag];
+}
 function redibujarRutas(){
   vaciarGrupo(rutasGrupo);
-  rutas.forEach(r => {
+  rutas.forEach((r, idx) => {
     const sel = r.id === selRuta;
     const tz = trazadoRuta(r);
+    const [ox, oz] = offsetLateralRutaLibre(r.puntos, idx, rutas.length);
     if (tz.length >= 2){
-      const pts = tz.map(p => new THREE.Vector3(p[0], 0.18, p[1]));
+      const pts = tz.map(p => new THREE.Vector3(p[0] + ox, 0.18, p[1] + oz));
       const mat = sel
         ? new THREE.LineBasicMaterial({ color: new THREE.Color(r.color) })
         : new THREE.LineDashedMaterial({ color: new THREE.Color(r.color), dashSize: 2.2, gapSize: 1.4 });
@@ -2798,11 +3144,11 @@ function redibujarRutas(){
     r.puntos.forEach((p, i) => {
       const marca = new THREE.Mesh(new THREE.CylinderGeometry(sel ? 0.85 : 0.55, sel ? 0.85 : 0.55, 0.1, 14),
         new THREE.MeshBasicMaterial({ color: new THREE.Color(r.color) }));
-      marca.position.set(p[0], 0.13, p[1]);
+      marca.position.set(p[0] + ox, 0.13, p[1] + oz);
       rutasGrupo.add(marca);
       if (sel){
         const et = crearEtiqueta(String(i + 1), 3.2, 'rgba(20,25,35,0.85)');
-        et.position.set(p[0], 2.2, p[1]);
+        et.position.set(p[0] + ox, 2.2, p[1] + oz);
         rutasGrupo.add(et);
       }
     });
@@ -2812,7 +3158,7 @@ function redibujarRutas(){
 function clicRuta(pRaw){
   const p = [red2(pRaw.x), red2(pRaw.z)];
   if (!trazoRuta){
-    trazoRuta = { id: idSec++, nombre: nombreRutaLibre(), color: PALETA_RUTAS[rutas.length % PALETA_RUTAS.length], vehiculo: '', vel: 3, sentido: 'vaiven', puntos: [p] };
+    trazoRuta = { id: idSec++, nombre: nombreRutaLibre(), color: PALETA_RUTAS[rutas.length % PALETA_RUTAS.length], vehiculo: '', vel: 3, sentido: 'vaiven', usarVias: true, puntos: [p] };
     rutas.push(trazoRuta);
     redibujarRutas(); guardar(); panelHerramientaRuta();
     avisar('"' + trazoRuta.nombre + '" creada — sigue marcando por dónde pasa el vehículo');
@@ -2820,9 +3166,9 @@ function clicRuta(pRaw){
   }
   const ult = trazoRuta.puntos[trazoRuta.puntos.length - 1];
   if (Math.hypot(p[0] - ult[0], p[1] - ult[1]) < 1){ avisar('Marca el siguiente punto un poco más lejos'); return; }
-  const tramo = tramoRutaLibre(ult, p);
+  const tramo = tramoRutaLibre(ult, p, trazoRuta.usarVias);
   if (!tramo){
-    avisar('Ese tramo cruzaría una zona o edificio y no hay vía que lo conecte — dibuja primero la vía o rodea la zona');
+    avisar('Ese tramo cruzaría una zona o edificio' + (trazoRuta.usarVias ? ' y no hay vía que lo conecte' : '') + ' — rodea la zona o marca un punto intermedio');
     return;
   }
   trazoRuta.puntos.push(p);
@@ -2846,9 +3192,11 @@ function panelHerramientaRuta(){
     '</span></div>').join('');
   panelSel('Marcar ruta de vehículo',
     '<div class="desc">Haz <b class="txtAcento">clic sobre el terreno</b> para marcar por dónde pasa el vehículo. ' +
-    'Entre punto y punto el recorrido <b>sigue las vías</b>; si un tramo cruzaría un edificio o zona, no se acepta. ' +
     'El primer clic crea una ruta nueva.</div>' +
-    (trazoRuta ? '<div class="desc"><b class="txtAcento">Editando:</b> ' + esc(trazoRuta.nombre) + ' · ' + trazoRuta.puntos.length + ' punto(s).</div>' : '') +
+    (trazoRuta
+      ? '<div class="desc"><b class="txtAcento">Editando:</b> ' + esc(trazoRuta.nombre) + ' · ' + trazoRuta.puntos.length + ' punto(s).</div>' +
+        '<label class="chk"><input type="checkbox"' + (trazoRuta.usarVias ? ' checked' : '') + ' onchange="cambiarRuta(' + trazoRuta.id + ', \'usarVias\', this.checked)"> Seguir las vías dibujadas (si no, camino directo entre los puntos)</label>'
+      : '') +
     '<button onclick="deshacerPuntoHerramienta()">' + ic('girarIzq') + 'Deshacer último punto</button>' +
     '<button onclick="terminarTrazo()">' + ic('check') + 'Terminar esta ruta (empezar otra)</button>' +
     (rutas.length ? '<b style="display:block; margin-top:10px">Rutas creadas</b>' + lista : ''));
@@ -2873,9 +3221,10 @@ function renderPanelRuta(){
   panelSel('Ruta: ' + r.nombre,
     '<label>Nombre<input maxlength="30" value="' + esc(r.nombre) + '" onchange="cambiarRuta(' + r.id + ', \'nombre\', this.value)"></label>' +
     '<table style="margin-top:8px">' +
-      '<tr><td>Recorrido</td><td>' + largo + ' m (siguiendo las vías)</td></tr>' +
+      '<tr><td>Recorrido</td><td>' + largo + ' m' + (r.usarVias ? ' (siguiendo las vías)' : ' (camino directo)') + '</td></tr>' +
       '<tr><td>Puntos marcados</td><td>' + r.puntos.length + '</td></tr>' +
     '</table>' +
+    '<label class="chk"><input type="checkbox"' + (r.usarVias ? ' checked' : '') + ' onchange="cambiarRuta(' + r.id + ', \'usarVias\', this.checked)"> Seguir las vías dibujadas (si no, camino directo entre los puntos)</label>' +
     '<label>Vehículo que la recorre<select onchange="cambiarRuta(' + r.id + ', \'vehiculo\', this.value)">' + opcionesVehiculos(r.vehiculo) + '</select></label>' +
     '<label>Dirección del recorrido<select onchange="cambiarRuta(' + r.id + ', \'sentido\', this.value)">' +
       '<option value="vaiven"' + (r.sentido === 'vaiven' ? ' selected' : '') + '>Vaivén (ida y vuelta)</option>' +
@@ -2890,7 +3239,7 @@ function renderPanelRuta(){
     '<button onclick="continuarRuta(' + r.id + ')">' + ic('mas') + 'Seguir agregando puntos</button>' +
     '<b style="display:block; margin-top:10px">Puntos de la ruta</b>' + listaPts +
     '<button class="btnEliminar" onclick="eliminarRuta(' + r.id + ')">' + ic('basura') + 'Eliminar SOLO esta ruta</button>' +
-    '<div class="desc">El recorrido sigue las vías dibujadas y nunca atraviesa zonas ni edificios. ' +
+    '<div class="desc">' + (r.usarVias ? 'El recorrido sigue las vías dibujadas' : 'El recorrido va directo entre los puntos') + ' y nunca atraviesa zonas ni edificios. ' +
     'Con ✕ quitas un punto que te quedó mal — las demás rutas no se tocan.</div>');
 }
 function cambiarRuta(id, campo, val){
@@ -2903,6 +3252,8 @@ function cambiarRuta(id, campo, val){
   else if (campo === 'sentido' && ['vaiven', 'ida', 'vuelta'].includes(val)){
     r.sentido = val;
     detenerRecorrido(id);   // el cambio de sentido aplica desde el próximo "Recorrer"
+  } else if (campo === 'usarVias'){
+    r.usarVias = !!val;
   }
   guardar(); redibujarRutas();
   if (selRuta === id) renderPanelRuta();
@@ -2947,7 +3298,10 @@ function iniciarRecorrido(id){
   if (!g){ avisar('Elige primero el vehículo que recorre esta ruta'); return; }
   const tz = trazadoRuta(r);
   if (tz.length < 2){ avisar('Agrega al menos 2 puntos a la ruta'); return; }
-  const pts = tz.map(p => ({ x: p[0], z: p[1] }));
+  // mismo desfase lateral que ve el usuario en redibujarRutas(): el vehículo
+  // recorre exactamente la línea dibujada, no el centro sin separar
+  const [ox, oz] = offsetLateralRutaLibre(r.puntos, rutas.indexOf(r), rutas.length);
+  const pts = tz.map(p => ({ x: p[0] + ox, z: p[1] + oz }));
   const acum = [0];
   for (let i = 1; i < pts.length; i++) acum.push(acum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z));
   const len = acum[acum.length - 1];
@@ -3203,6 +3557,7 @@ function renderCamionesLibre(){
     ? lista.map(c => {
         const i = camionesLibre.indexOf(c);
         return '<div class="planoFila"><span class="planoNom">' + ic('camion') + ' <b class="txtFuerte">' + esc(c.fecha || fechaObraLibre) + ' ' + esc(c.hora) + '</b> · ' +
+            esc((TIPOS_CAMION_LIBRE[c.vehiculo] || TIPOS_CAMION_LIBRE.volqueta).nombre) + ' · ' +
             esc(c.material) + ' <small>→ ' + esc(c.zona || '(sin zona)') + '</small></span>' +
           '<span style="white-space:nowrap">' +
             '<button class="planoBtn" style="width:auto; margin:0" title="Enviar el camión ya" onclick="lanzarCamionLibre(camionesLibre[' + i + '])">' + ic('ruta') + '</button> ' +
@@ -3233,7 +3588,9 @@ function renderCamionesLibre(){
         '<input type="time" id="camHoraLibre" value="08:00">' +
         '<input id="camMaterialLibre" maxlength="60" placeholder="Material (ej: Cemento)" style="flex:1; min-width:140px">' +
       '</div>' +
-      '<div style="display:flex; gap:6px; align-items:center">' +
+      '<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap">' +
+        '<span class="txtSuave">Vehículo:</span>' +
+        '<select id="camVehiculoLibre">' + opcionesTipoCamionLibre('volqueta') + '</select>' +
         '<span class="txtSuave">Destino:</span>' +
         '<select id="camZonaLibre" style="flex:1">' + opcionesZonasCamionLibre(zonaCamionSelLibre) + '</select>' +
         '<button class="orgAccion primario" style="margin:0" onclick="agregarCamionLibre()">' + ic('mas') + 'Agregar</button>' +
@@ -3245,14 +3602,16 @@ function agregarCamionLibre(){
   const fecha = document.getElementById('camFechaLibre').value || fechaObraLibre;
   const hora = document.getElementById('camHoraLibre').value;
   const material = (document.getElementById('camMaterialLibre').value || '').trim().slice(0, 60) || 'Materiales';
+  const vehiculoEl = document.getElementById('camVehiculoLibre');
+  const vehiculo = (vehiculoEl && TIPOS_CAMION_LIBRE[vehiculoEl.value]) ? vehiculoEl.value : 'volqueta';
   const zona = document.getElementById('camZonaLibre').value || '';
   if (!hora){ avisar('Elige la hora del camión'); return; }
   if (!zona){ avisar('Crea al menos una zona primero (Espacios o Equipos)'); return; }
-  camionesLibre.push({ fecha, hora, material, zona });
+  camionesLibre.push({ fecha, hora, material, zona, vehiculo });
   zonaCamionSelLibre = zona;
   guardar('Camión programado: ' + material + ' → ' + zona);
   renderCamionesLibre();
-  avisar('Camión programado: ' + material + ' el ' + fecha + ' ' + hora + ' → ' + zona);
+  avisar(TIPOS_CAMION_LIBRE[vehiculo].nombre + ' programado: ' + material + ' el ' + fecha + ' ' + hora + ' → ' + zona);
 }
 function quitarCamionLibre(i){ const c = camionesLibre[i]; camionesLibre.splice(i, 1); guardar('Camión quitado de la programación' + (c ? ': ' + c.material : '')); renderCamionesLibre(); }
 function toggleRelojLibre(){ relojCorriendoLibre = !relojCorriendoLibre; renderCamionesLibre(); }
@@ -3842,7 +4201,7 @@ let manejando = null;
 let velManejarActual = 0;
 const RADIO_SUBIR = 7;   // metros de cercanía para poder subirse con E
 function esVehiculoManejable(d){
-  return (d.tipo === 'maquina' && d.movil) || d.tipo === 'malacate' || d.tipo === 'gruaTorre';
+  return (d.tipo === 'maquina' && d.movil) || d.tipo === 'malacate' || d.tipo === 'gruaTorre' || d.tipo === 'gruaPluma';
 }
 function elementoCercanoParaSubir(){
   const px = caminando ? camWalk.x : camCtrl.target.x;
@@ -3859,7 +4218,7 @@ function toggleManejar(){
   if (manejando){ bajarDeVehiculo(); return; }
   if (modo2D || amueblando || herramienta) return;
   const g = elementoCercanoParaSubir();
-  if (!g){ avisar('Acércate a un vehículo móvil, un malacate o una torre grúa y presiona E'); return; }
+  if (!g){ avisar('Acércate a un vehículo móvil, un malacate, una torre grúa o una grúa pluma y presiona E'); return; }
   if (g.userData.def.bloqueado){ avisar('"' + g.userData.def.nombre + '" está bloqueado — desbloquéalo para manejarlo'); return; }
   manejando = g;
   velManejarActual = 0;
@@ -3869,7 +4228,7 @@ function toggleManejar(){
     document.getElementById('btnCaminar').classList.add('activo');
     try { renderer.domElement.requestPointerLock(); } catch (e) {}
   }
-  const esFijo = g.userData.def.tipo === 'malacate' || g.userData.def.tipo === 'gruaTorre';
+  const esFijo = g.userData.def.tipo === 'malacate' || g.userData.def.tipo === 'gruaTorre' || g.userData.def.tipo === 'gruaPluma';
   avisar('Subido a "' + g.userData.def.nombre + '"' + (esFijo
     ? ' (mirador fijo) — E o Esc para bajarte'
     : ': W A S D / flechas para manejar, mantén para acelerar — E o Esc para bajarte'));
@@ -3970,14 +4329,22 @@ function toggleVista2D(){
    disponible del lote) en una hoja con estilo de impresión, y llama a
    window.print() — el usuario elige "Guardar como PDF" en el diálogo del
    navegador. Igual de confiable que una librería, sin pesar la página. */
-function capturarPlantaLibre(){
+/* "opciones" decide qué se ve SOLO en esta foto (no cambia tu vista en
+   pantalla): { etiquetas, cotas, chicas } — todos boolean, default true
+   salvo "chicas" que respeta el estado actual del botón "Etiquetas chicas". */
+function capturarPlantaLibre(opciones){
+  opciones = opciones || {};
+  const mostrarEtq = opciones.etiquetas !== false;
+  const mostrarCot = opciones.cotas !== false;
   const eraModo2D = modo2D, eraCotas = mostrarCotas, eraEtiquetas = etiquetasVisibles;
+  const eraChicas = etiquetasChicas;
   const eraTarget = camCtrl.target.clone(), eraZoom = zoom2D;
   const centro = loteCentro();
+  if (typeof opciones.chicas === 'boolean' && opciones.chicas !== etiquetasChicas) toggleEtiquetasChicas();
   if (!modo2D){ modo2D = true; camCtrl.target.set(centro[0], 0, centro[1]); }
   zoom2D = zoomAjustadoLote();
-  if (!mostrarCotas) setCotas(true);
-  if (!etiquetasVisibles) toggleEtiquetasLibre();
+  setCotas(mostrarCot);
+  if (etiquetasVisibles !== mostrarEtq) toggleEtiquetasLibre();
   animCam = null;
   actualizarCamara2D();
   redibujarCotas2D();
@@ -3986,6 +4353,7 @@ function capturarPlantaLibre(){
   modo2D = eraModo2D; camCtrl.target.copy(eraTarget); zoom2D = eraZoom;
   if (mostrarCotas !== eraCotas) setCotas(eraCotas);
   if (etiquetasVisibles !== eraEtiquetas) toggleEtiquetasLibre();
+  if (etiquetasChicas !== eraChicas) toggleEtiquetasChicas();
   const btn2d = document.getElementById('btn2D');
   btn2d.classList.toggle('activo', modo2D);
   btn2d.innerHTML = modo2D ? ic('caja') + 'Vista 3D' : ic('plano') + 'Plano 2D';
@@ -3993,20 +4361,49 @@ function capturarPlantaLibre(){
   redibujarCotas2D();
   return url;
 }
+/* color actual de un elemento (para la leyenda del cuadro de áreas):
+   la mayoría guarda def.color directo; edificio no, así que se recurre al
+   primer material que se encuentre en su geometría */
+function colorActualHexLibre(g){
+  const d = g.userData.def;
+  if (typeof d.color === 'string' && /^#[0-9a-f]{6}$/i.test(d.color)) return d.color;
+  let hex = null;
+  g.traverse(n => { if (!hex && n.isMesh && n.material && n.material.color) hex = '#' + n.material.color.getHexString(); });
+  return hex || '#9aa0a5';
+}
+/* ---- diálogo previo: qué mostrar en la foto exportada (reutiliza el
+   overlay genérico de Libre, igual que cualquier otra ventana) ---- */
 function exportarPlanoLibre(){
-  const img = capturarPlantaLibre();
+  document.getElementById('libreVentTitulo').textContent = 'Exportar plano';
+  document.getElementById('libreBody').innerHTML =
+    '<div class="desc">Elige qué se ve en la foto del plano exportado. No cambia tu vista en pantalla, solo esta exportación.</div>' +
+    '<label class="chk" style="display:block; margin-top:10px"><input type="checkbox" id="expEtiquetasLibre" checked> Mostrar etiquetas (nombres)</label>' +
+    '<label class="chk" style="display:block; margin-top:6px"><input type="checkbox" id="expCotasLibre" checked> Mostrar cotas (medidas)</label>' +
+    '<label class="chk" style="display:block; margin-top:6px"><input type="checkbox" id="expChicasLibre"' + (etiquetasChicas ? ' checked' : '') + '> Etiquetas chicas (menos saturado)</label>' +
+    '<button class="orgAccion primario" style="margin-top:14px" onclick="generarExportacionLibre()">Generar PDF</button>';
+  document.getElementById('libreOverlay').style.display = 'flex';
+}
+function generarExportacionLibre(){
+  document.getElementById('libreOverlay').style.display = 'none';
+  const opciones = {
+    etiquetas: document.getElementById('expEtiquetasLibre').checked,
+    cotas: document.getElementById('expCotasLibre').checked,
+    chicas: document.getElementById('expChicasLibre').checked
+  };
+  const img = capturarPlantaLibre(opciones);
   const loteM2 = loteAreaM2();
   const descLote = loteEsLibre() ? 'Perímetro libre' : ('Terreno total (' + ficha.loteLargo + ' × ' + ficha.loteAncho + ' m)');
   const filas = elementos.map(g => {
     const d = g.userData.def;
     const area = tieneMedidasCota(d) ? Math.round(d.w * d.d * 10) / 10 : null;
-    return { nombre: d.nombre, tipo: NOMBRE_TIPO[d.tipo] || d.tipo, area };
+    return { nombre: d.nombre, tipo: NOMBRE_TIPO[d.tipo] || d.tipo, area, color: colorActualHexLibre(g) };
   });
   const totalArea = Math.round(filas.reduce((s, f) => s + (f.area || 0), 0) * 10) / 10;
   const disponible = Math.max(0, Math.round((loteM2 - totalArea) * 10) / 10);
   const ocupacion = loteM2 > 0 ? Math.round(totalArea / loteM2 * 1000) / 10 : 0;
   const filasHtml = filas.map(f =>
-    '<tr><td>' + esc(f.nombre) + '</td><td>' + esc(f.tipo) + '</td><td class="num">' + (f.area !== null ? f.area : '—') + '</td></tr>').join('');
+    '<tr><td><span style="display:inline-block;width:10px;height:10px;background:' + esc(f.color) +
+      ';border-radius:2px;margin-right:6px;vertical-align:middle;border:1px solid rgba(0,0,0,.15)"></span>' + esc(f.nombre) + '</td><td>' + esc(f.tipo) + '</td><td class="num">' + (f.area !== null ? f.area : '—') + '</td></tr>').join('');
   const fecha = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
   const equipoHtml = (ficha.equipo && ficha.equipo.length) ? esc(ficha.equipo.join(' · ')) : '—';
   const html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">' +
@@ -4253,6 +4650,18 @@ function toggleEtiquetasLibre(){
   // resaltado solo cuando están OCULTOS (estado no predeterminado)
   document.getElementById('btnEtiquetas').classList.toggle('activo', !etiquetasVisibles);
   avisar(etiquetasVisibles ? 'Nombres y medidas visibles' : 'Nombres y medidas ocultos');
+}
+/* etiquetas más chicas: útil cuando además tienes las Cotas encendidas y el
+   texto satura la vista — encoge nombres, m², cotas y números de ruta */
+function toggleEtiquetasChicas(){
+  etiquetasChicas = !etiquetasChicas;
+  refrescarEtiquetas();
+  redibujarCotas2D();
+  redibujarRutas();
+  redibujarVias();
+  const btn = document.getElementById('btnEtiquetasChicas');
+  if (btn) btn.classList.toggle('activo', etiquetasChicas);
+  avisar(etiquetasChicas ? 'Etiquetas chicas — menos saturada la vista' : 'Etiquetas de tamaño normal');
 }
 
 /* ============ ZONAS Y AFORO (mismo panel del proyecto Bambú) ============ */
@@ -4603,6 +5012,7 @@ function aplicarEstado(o){
       vehiculo: String(r.vehiculo || ''),
       vel: numLim(r.vel, 3, 0.5, 20),
       sentido: ['vaiven', 'ida', 'vuelta'].includes(r.sentido) ? r.sentido : 'vaiven',
+      usarVias: r.usarVias !== false,
       puntos: r.puntos.filter(p => Array.isArray(p) && isFinite(p[0]) && isFinite(p[1])).map(p => [red2(p[0]), red2(p[1])])
     }));
   organigrama = (Array.isArray(o.organigrama) && o.organigrama.length)
@@ -4680,6 +5090,7 @@ document.getElementById('btnFondoPlano').onclick = abrirFondoPlano;
 document.getElementById('btnEditarEquipo').onclick = () => { setHerramienta(null); abrirFicha(); };
 document.getElementById('btnZonas').onclick = abrirZonasLibre;
 document.getElementById('btnEtiquetas').onclick = toggleEtiquetasLibre;
+document.getElementById('btnEtiquetasChicas').onclick = toggleEtiquetasChicas;
 document.getElementById('btnCaminar').onclick = toggleCaminar;
 document.getElementById('btnNoche').onclick = toggleNoche;
 document.getElementById('btnEspacios').onclick = abrirVentanaEspacios;
@@ -4922,6 +5333,88 @@ document.getElementById('libreComenzar').onclick = () => {
   if (!fichaCompleta) setTimeout(abrirDisenoTerrenoInicial, 450);
 };
 
+/* ============ TRABAJADORES CAMINANDO POR LA OBRA ============
+   Mismo sistema que el proyecto Bambú (ver provisionales.js §9): 30
+   trabajadores instanciados (4 draw calls en total, no 4 por trabajador)
+   recorriendo todo el lote hacia destinos aleatorios, sin agruparse en
+   focos. Adaptado a que el lote de Libre puede ser un rectángulo o un
+   polígono dibujado a mano. */
+function puntoDentroLoteLibre(x, z){
+  if (!loteEsLibre()) return true;
+  const pts = ficha.lotePoligono;
+  let dentro = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++){
+    const xi = pts[i][0], zi = pts[i][1], xj = pts[j][0], zj = pts[j][1];
+    const interseca = ((zi > z) !== (zj > z)) && (x < (xj - xi) * (z - zi) / (zj - zi) + xi);
+    if (interseca) dentro = !dentro;
+  }
+  return dentro;
+}
+function nuevoObjetivoLibre(){
+  const c = loteCentro(), b = loteBoundingSize();
+  for (let intento = 0; intento < 20; intento++){
+    const x = c[0] + (Math.random() - 0.5) * Math.max(4, b.largo - 8);
+    const z = c[1] + (Math.random() - 0.5) * Math.max(4, b.ancho - 8);
+    if (puntoDentroLoteLibre(x, z)) return new THREE.Vector3(x, 0, z);
+  }
+  return new THREE.Vector3(c[0], 0, c[1]);
+}
+const CASCOS_LIBRE = [0xf2d21f, 0xffffff, 0x3f7fbf, 0xe06a1e];
+const N_TRABAJADORES_LIBRE = 30;
+const partesTrabajadorLibre = [
+  // [geometría, color, altura local] — mismas medidas que el personaje de Bambú
+  [new THREE.BoxGeometry(0.26, 0.3, 0.18), 0x3a4150, 0.15],
+  [new THREE.BoxGeometry(0.3, 0.55, 0.2), 0xe06a1e, 0.57],
+  [new THREE.SphereGeometry(0.13, 10, 10), 0xd9a06a, 0.97],
+  [new THREE.SphereGeometry(0.15, 10, 8, 0, Math.PI*2, 0, Math.PI/2), 0xffffff, 0.99]
+].map(([geo, color, dy]) => {
+  const m = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color }), N_TRABAJADORES_LIBRE);
+  m.userData.dy = dy;
+  m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  m.castShadow = false;
+  m.frustumCulled = false;   // las instancias cubren todo el lote, no solo el origen
+  scene.add(m);
+  return m;
+});
+{
+  const colTmp = new THREE.Color();
+  const casco = partesTrabajadorLibre[3];
+  for (let i = 0; i < N_TRABAJADORES_LIBRE; i++) casco.setColorAt(i, colTmp.setHex(CASCOS_LIBRE[i % CASCOS_LIBRE.length]));
+  casco.instanceColor.needsUpdate = true;
+}
+const personasLibre = [];
+for (let i = 0; i < N_TRABAJADORES_LIBRE; i++){
+  const o = nuevoObjetivoLibre();
+  personasLibre.push({ x: o.x, y: 0.1, z: o.z, rot: 0, obj: nuevoObjetivoLibre(), vel: 0.9 + Math.random()*0.9 });
+}
+const dirTmpTrab = new THREE.Vector3();
+const posTmpTrab = new THREE.Vector3();
+const quatTmpTrab = new THREE.Quaternion();
+const sclTmpTrab = new THREE.Vector3(1, 1, 1);
+const mtxTmpTrab = new THREE.Matrix4();
+const ejeYTmpTrab = new THREE.Vector3(0, 1, 0);
+function moverPersonasLibre(dt){
+  for (let i = 0; i < personasLibre.length; i++){
+    const p = personasLibre[i];
+    dirTmpTrab.set(p.obj.x - p.x, 0, p.obj.z - p.z);
+    if (dirTmpTrab.length() < 1.2){ p.obj = nuevoObjetivoLibre(); }
+    else {
+      dirTmpTrab.normalize();
+      p.x += dirTmpTrab.x * p.vel * dt;
+      p.z += dirTmpTrab.z * p.vel * dt;
+      p.rot = Math.atan2(dirTmpTrab.x, dirTmpTrab.z);
+      p.y = 0.1 + Math.abs(Math.sin(tiempo*8 + p.vel*10)) * 0.04;
+    }
+    quatTmpTrab.setFromAxisAngle(ejeYTmpTrab, p.rot);
+    for (let k = 0; k < partesTrabajadorLibre.length; k++){
+      posTmpTrab.set(p.x, p.y + partesTrabajadorLibre[k].userData.dy, p.z);
+      mtxTmpTrab.compose(posTmpTrab, quatTmpTrab, sclTmpTrab);
+      partesTrabajadorLibre[k].setMatrixAt(i, mtxTmpTrab);
+    }
+  }
+  for (let k = 0; k < partesTrabajadorLibre.length; k++) partesTrabajadorLibre[k].instanceMatrix.needsUpdate = true;
+}
+
 /* ============ BUCLE DE ANIMACIÓN ============ */
 addEventListener('resize', () => {
   camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
@@ -4954,6 +5447,7 @@ function animar(){
     moverVehiculoRuta(a, dt);
   }
   actualizarCamionesLibre(dt);
+  moverPersonasLibre(dt);
   if (manejando) moverVehiculoManejado(dt);
   else if (caminando) moverCaminante(dt);
   else if (modo2D) actualizarCamara2D();

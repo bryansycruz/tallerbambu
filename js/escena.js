@@ -163,6 +163,10 @@ lineaTerreno([[-78,18],[-28,18.5],[16,19],[54,18.5]], 0xc9302e, 0.7, false, fals
    un piso (55%) para que un texto muy corto no encoja demasiado y siga
    siendo legible de lejos; "ancho" pasa a ser un techo máximo, no un tamaño fijo. ---- */
 const etiquetasTodas = [];
+/* etiquetas más chicas: útil cuando además tienes las Cotas encendidas y el
+   texto satura la vista — se aplica al crear cada una (guardando su escala
+   "base" sin el factor, para poder recalcular sin tener que recrearla). */
+let etiquetasChicas = false;
 function crearEtiqueta(texto, ancho, colorFondo){
   ancho = ancho || 14;
   // en escritorio el lienzo va al doble de resolución: letra nítida sin costo
@@ -190,9 +194,27 @@ function crearEtiqueta(texto, ancho, colorFondo){
   tex.anisotropy = ANISO;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map:tex, depthTest:false, transparent:true }));
   const factor = Math.max(0.55, Math.min(1, cajaW / 512));
-  sp.scale.set(ancho * factor, (ancho / 4) * factor, 1);
+  const escalaBase = [ancho * factor, (ancho / 4) * factor];
+  sp.userData.escalaBase = escalaBase;
+  const factorChicas = etiquetasChicas ? 0.6 : 1;
+  sp.scale.set(escalaBase[0] * factorChicas, escalaBase[1] * factorChicas, 1);
   etiquetasTodas.push(sp);
   return sp;
+}
+/* recalcula el tamaño de TODAS las etiquetas ya existentes (nombres + cotas)
+   sin recrearlas — usa la escala "base" guardada en cada una */
+function toggleEtiquetasChicas(){
+  etiquetasChicas = !etiquetasChicas;
+  const factorChicas = etiquetasChicas ? 0.6 : 1;
+  const aplicar = sp => {
+    const base = sp.userData.escalaBase || [sp.scale.x, sp.scale.y];
+    sp.scale.set(base[0] * factorChicas, base[1] * factorChicas, 1);
+  };
+  etiquetasTodas.forEach(aplicar);
+  gruposCotas.forEach(grp => grp.traverse(n => { if (n.isSprite) aplicar(n); }));
+  const btn = document.getElementById('btnEtiquetasChicas');
+  if (btn) btn.classList.toggle('activo', etiquetasChicas);
+  avisoGuardado(etiquetasChicas ? 'Etiquetas chicas — menos saturada la vista' : 'Etiquetas de tamaño normal');
 }
 /* ---- Cotas (líneas de dimensión con la medida) sobre zonas/edificios:
    apagadas por defecto, se activan con el botón "Cotas" (main.js); también

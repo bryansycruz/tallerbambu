@@ -124,7 +124,10 @@ function construirEspacio(def){
     descripcion: (def.descripcion ? esc(def.descripcion).replace(/\n/g, '<br>') + '<br><br>' : '') +
       'Espacio creado desde el botón "Espacios". Arrástralo para ubicarlo, gíralo de a 45°, ' +
       'bloquéalo en su lugar o elimínalo cuando ya no se necesite en la obra. ' +
-      'También aparece como destino en la programación de camiones.'
+      'También aparece como destino en la programación de camiones.',
+    // mobiliario acorde con la plantilla elegida (si la hay): la misma
+    // detalleX() de los provisionales de fábrica, adaptada a estas medidas
+    detalle: (typeof PRESET_DETALLE !== 'undefined') ? PRESET_DETALLE[def.presetId] : undefined
   });
   g.userData.personalizado = true;
   g.userData.idEstable = 'c:' + def.id;
@@ -414,6 +417,7 @@ function aplicarPersonalizados(lista){
       d2.color = def.color || '#3f7fbf';
       d2.muros = !!def.muros;
       d2.techo = !!def.techo;
+      d2.presetId = (typeof PRESET_DETALLE !== 'undefined' && PRESET_DETALLE[def.presetId]) ? def.presetId : null;
     }
     personalizados.push(d2);
     const g = construirPersonalizado(d2);
@@ -590,6 +594,10 @@ function agregarPersonalizado(){
     def.color = document.getElementById('espColor').value || '#3f7fbf';
     def.muros = document.getElementById('espMuros').checked;
     def.techo = document.getElementById('espTecho').checked;
+    // plantilla elegida (si la hay): así el espacio nace con el mobiliario
+    // acorde (ver PRESET_DETALLE en provisionales.js)
+    const presetEl = document.getElementById('espPreset');
+    def.presetId = (presetEl && PRESETS_ESPACIO[presetEl.value]) ? presetEl.value : null;
   }
   personalizados.push(def);
   const g = construirPersonalizado(def);

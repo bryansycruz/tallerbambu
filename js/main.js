@@ -226,6 +226,7 @@ function setEtiquetas(on){
   document.getElementById('padEtiquetas').classList.toggle('activo', !etiquetasOn);
 }
 document.getElementById('btnEtiquetas').onclick = () => setEtiquetas(!etiquetasOn);
+document.getElementById('btnEtiquetasChicas').onclick = toggleEtiquetasChicas;
 document.getElementById('padEtiquetas').onclick = () => {
   setEtiquetas(!etiquetasOn);
   avisoGuardado(etiquetasOn ? 'Etiquetas visibles' : 'Etiquetas ocultas');
