@@ -167,8 +167,8 @@ function rueda(g, x, y, z, r, ancho){
    mostrar/ocultar por grupo) y el tamaño es un factor numérico — nombres
    y cotas por separado — válido tanto en 3D como en el Plano 2D, que
    reutiliza esta misma escena. */
-const CATEGORIAS_ETIQUETA_LIBRE = { zona:'Zonas, edificios y muebles', equipo:'Equipos y maquinaria', sitio:'Vías y accesos' };
-let categoriasEtiquetaVisibles = { zona:true, equipo:true, sitio:true };
+const CATEGORIAS_ETIQUETA_LIBRE = { zona:'Zonas y edificios', mueble:'Muebles', equipo:'Equipos y maquinaria', sitio:'Vías y accesos' };
+let categoriasEtiquetaVisibles = { zona:true, mueble:true, equipo:true, sitio:true };
 let factorEtiquetas = 1;
 let factorCotas = 1;
 function crearEtiqueta(texto, ancho, color, categoria){
@@ -1364,7 +1364,8 @@ function crearElemento(raw){
   g.userData.tipo = def.tipo;
   g.userData.info.nombre = def.nombre;
   if (def.colorPersonalizado) aplicarColorLibre(g, def.colorPersonalizado);
-  const catElem = (def.tipo === 'malacate' || def.tipo === 'gruaTorre' || def.tipo === 'gruaPluma' || def.tipo === 'maquina') ? 'equipo' : 'zona';
+  const catElem = (def.tipo === 'malacate' || def.tipo === 'gruaTorre' || def.tipo === 'gruaPluma' || def.tipo === 'maquina') ? 'equipo'
+    : (def.tipo === 'mueble') ? 'mueble' : 'zona';
   const et = crearEtiqueta(textoEtiqueta(def), anchoEtiquetaLibre(), undefined, catElem);
   et.visible = etiquetasVisibles && categoriasEtiquetaVisibles[catElem] !== false;
   et.position.y = (def.tipo === 'gruaTorre' ? def.mastil : def.tipo === 'edificio' ? def.pisos*def.hPiso :
@@ -2726,9 +2727,9 @@ function abrirFicha(){
   const m2 = Math.round(loteAreaM2());
   const esLibreAhora = ficha.loteModo === 'libre';
   document.getElementById('libreBody').innerHTML =
-    '<div class="desc">Estos datos son los mismos del <b>Panel de obra</b> del proyecto Bambú, pero de <b class="txtAcento">tu propia obra</b>. ' +
+    '<div class="desc">Estos datos son los mismos del <b>Panel de obra</b> del Proyecto Prueba, pero de <b class="txtAcento">tu propia obra</b>. ' +
     'El lote se dibuja en el terreno con las medidas que escribas y el cerramiento perimetral lo envuelve.</div>' +
-    campo('fxNombre', 'Nombre del proyecto', ficha.nombre === 'Mi obra' ? '' : ficha.nombre, 'ej: Proyecto Bambú') +
+    campo('fxNombre', 'Nombre del proyecto', ficha.nombre === 'Mi obra' ? '' : ficha.nombre, 'ej: Proyecto Prueba') +
     campo('fxUbicacion', 'Ubicación', ficha.ubicacion, 'ej: Marinilla, Antioquia') +
     '<div style="margin-top:14px; border-top:1px solid var(--linea); padding-top:10px">' +
       '<b>Taller y equipo</b>' +
@@ -4701,7 +4702,7 @@ function aplicarTamanoCotasLibre(factor){
    panel para elegir QUÉ etiquetas se ven (por categoría) y el TAMAÑO de
    letra — para etiquetas y cotas por separado, en 3D y en el Plano 2D. ---- */
 function opcionesTamanoLibre(factorActual){
-  return [[0.6,'Pequeña'],[1,'Normal'],[1.4,'Grande']].map(([f, nombre]) =>
+  return [[0.4,'Muy pequeña'],[0.6,'Pequeña'],[1,'Normal'],[1.4,'Grande']].map(([f, nombre]) =>
     '<option value="' + f + '"' + (factorActual === f ? ' selected' : '') + '>' + nombre + '</option>').join('');
 }
 function renderPanelEtiquetasLibre(){
@@ -4750,7 +4751,7 @@ function abrirZonasLibre(){
   const stVias = statsVias();
   const areaVias = Math.round(vias.reduce((s, v) => s + Math.hypot(v.x2 - v.x1, v.z2 - v.z1) * v.ancho, 0));
   document.getElementById('libreBody').innerHTML =
-    '<div class="desc">Todo lo creado en la obra con su área (m²) y la ocupación del lote — igual que "Zonas y aforo" del proyecto Bambú. ' +
+    '<div class="desc">Todo lo creado en la obra con su área (m²) y la ocupación del lote — igual que "Zonas y aforo" del Proyecto Prueba. ' +
     'Los elementos marcados con ⚠ quedaron por fuera del lote.</div>' +
     (filas.length
       ? filas.map(f =>

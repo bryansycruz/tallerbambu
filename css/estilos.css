@@ -245,7 +245,7 @@
     font-size:9.5px; font-weight:600; letter-spacing:1.4px; text-transform:uppercase;
     color:var(--acento-texto); margin-bottom:3px;
   }
-  #uiPie .pieNom { font-size:12.5px; color:var(--texto); font-weight:500; }
+  #uiPie .pieNom { display:block; font-size:12.5px; color:var(--texto); font-weight:500; }
   #uiPie .pieUni { font-size:10px; color:var(--texto-2); margin-top:5px; }
   #ui button, #ui select {
     background:var(--sup-alta); color:var(--texto); border:1px solid var(--borde);
@@ -380,9 +380,9 @@
   .bimCard span {
     font-family:var(--fuente-display);
     font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
-    color:var(--acento-texto);
+    color:var(--acento-texto); overflow-wrap:break-word;
   }
-  .bimCard b { font-size:13px; color:var(--texto); font-weight:600; line-height:1.25; }
+  .bimCard b { font-size:13px; color:var(--texto); font-weight:600; line-height:1.25; overflow-wrap:break-word; }
 
   /* ---- Equipo: lista de integrantes + acceso al organigrama ---- */
   .equipoLista { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }

@@ -246,7 +246,7 @@ function setCotas(on){
    se ven (por categoría) y el TAMAÑO de letra — para etiquetas y cotas por
    separado. Aplica en vivo a la vista 3D (y también al corte de Piso 4). */
 function opcionesTamano(factorActual){
-  return [[0.6,'Pequeña'],[1,'Normal'],[1.4,'Grande']].map(([f, nombre]) =>
+  return [[0.4,'Muy pequeña'],[0.6,'Pequeña'],[1,'Normal'],[1.4,'Grande']].map(([f, nombre]) =>
     '<option value="' + f + '"' + (factorActual === f ? ' selected' : '') + '>' + nombre + '</option>').join('');
 }
 function renderPanelEtiquetas(){

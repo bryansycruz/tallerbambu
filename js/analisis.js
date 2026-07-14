@@ -176,11 +176,7 @@ function exportarPlano(){
     '<label class="chk" style="display:block; margin-top:10px"><input type="checkbox" id="expEtiquetas" checked> Mostrar etiquetas (nombres)</label>' +
     '<label class="chk" style="display:block; margin-top:6px"><input type="checkbox" id="expCotas" checked> Mostrar cotas (medidas)</label>' +
     '<label style="display:block; margin-top:10px; font-size:12.5px">Tamaño de letra (etiquetas)<br>' +
-      '<select id="expTamEtiquetas" style="width:100%; margin-top:3px">' +
-        '<option value="0.6"' + (factorEtiquetas === 0.6 ? ' selected' : '') + '>Pequeña</option>' +
-        '<option value="1"' + (factorEtiquetas !== 0.6 && factorEtiquetas !== 1.4 ? ' selected' : '') + '>Normal</option>' +
-        '<option value="1.4"' + (factorEtiquetas === 1.4 ? ' selected' : '') + '>Grande</option>' +
-      '</select></label>' +
+      '<select id="expTamEtiquetas" style="width:100%; margin-top:3px">' + opcionesTamano(factorEtiquetas) + '</select></label>' +
     '<button class="orgAccion primario" style="margin-top:14px" onclick="generarExportacion()">Generar PDF</button>';
   document.getElementById('exportarOverlay').style.display = 'flex';
 }
