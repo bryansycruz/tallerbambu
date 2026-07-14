@@ -126,7 +126,11 @@ function construirEspacio(def){
       'bloquéalo en su lugar o elimínalo cuando ya no se necesite en la obra. ' +
       'También aparece como destino en la programación de camiones.',
     // mobiliario acorde con la plantilla elegida (si la hay): la misma
-    // detalleX() de los provisionales de fábrica, adaptada a estas medidas
+    // detalleX() de los provisionales de fábrica, adaptada a estas medidas.
+    // presetId viaja también para que crearProvisional() sepa el tamaño POR
+    // DEFECTO de la plantilla y pueda escalar el mobiliario si el usuario
+    // terminó con un w×d distinto (más chico o más grande).
+    presetId: def.presetId,
     detalle: (typeof PRESET_DETALLE !== 'undefined') ? PRESET_DETALLE[def.presetId] : undefined
   });
   g.userData.personalizado = true;

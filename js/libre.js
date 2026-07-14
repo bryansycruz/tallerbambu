@@ -516,7 +516,23 @@ function construirEspacio(def){
     caja(g, seg, H, t, cm,  (puerta+seg)/2, H/2, D/2 - t/2, 0.92);
   }
   if (def.techo) caja(g, W + 0.5, 0.1, D + 0.5, 0x8a8f96, 0, H + 0.1, 0, 0.35);
-  if (def.presetId && PRESET_DETALLE_LIBRE[def.presetId]) PRESET_DETALLE_LIBRE[def.presetId](g, W, D, cm);
+  // el mobiliario se dibujó pensando en las medidas POR DEFECTO de la
+  // plantilla (PRESETS_ESPACIO) — si el ancho/fondo actual quedó distinto
+  // (el usuario lo cambió al crear el espacio o lo redimensionó después),
+  // se dibuja con esas medidas originales en un grupo aparte y se ESCALA al
+  // tamaño actual, para que el mobiliario nunca quede por fuera de un
+  // espacio que terminó más chico
+  if (def.presetId && PRESET_DETALLE_LIBRE[def.presetId]){
+    const base = PRESETS_ESPACIO[def.presetId];
+    if (base && (Math.abs(W - base.w) > 0.01 || Math.abs(D - base.d) > 0.01)){
+      const decor = new THREE.Group();
+      PRESET_DETALLE_LIBRE[def.presetId](decor, base.w, base.d, cm);
+      decor.scale.set(W / base.w, 1, D / base.d);
+      g.add(decor);
+    } else {
+      PRESET_DETALLE_LIBRE[def.presetId](g, W, D, cm);
+    }
+  }
   (def.muebles || []).forEach((m, i) => agregarMuebleInteriorAGrupo(g, m, i));
   const area = Math.round(W*D);
   g.userData.info = {
@@ -730,7 +746,11 @@ function construirMalacate(def){
    El radio de giro se dibuja como círculo punteado en el suelo. */
 function construirGruaTorre(def){
   const g = new THREE.Group();
-  const H = def.mastil, L = def.brazo, R = def.radio;
+  const enTecho = def.ubicacion === 'techo';
+  // sobre la cubierta de un edificio el mástil visible es solo un tramo
+  // corto (la torre real ya la sostiene el edificio) — mismo criterio que
+  // la pluma grúa "encima de la torre" del proyecto Bambú
+  const H = enTecho ? 3.5 : def.mastil, L = def.brazo, R = def.radio;
   torreCelosia(g, H, 0, 0, 2.4, MAT_AMARILLO);
   circuloRadio(g, R, 0xffd23e);
 
@@ -772,8 +792,10 @@ function construirGruaTorre(def){
 
   g.userData.info = {
     dimensiones: 'Mástil ' + H + ' m · brazo ' + L + ' m',
-    altura: 'Radio de giro ' + R + ' m',
-    detalle: 'Torre grúa fija — el brazo gira sobre el mástil'
+    altura: 'Radio de giro ' + R + ' m' + (enTecho ? ' · sobre un edificio de ' + def.alturaTecho + ' m' : ''),
+    detalle: enTecho
+      ? ('Torre grúa montada sobre la cubierta de un edificio (+' + def.alturaTecho + ' m)')
+      : 'Torre grúa fija — el brazo gira sobre el mástil'
   };
   return g;
 }
@@ -1336,6 +1358,11 @@ function normalizarDef(raw){
     d.mastil = numLim(raw.mastil, 30, 6, 80);
   } else if (tipo === 'gruaTorre'){
     d.mastil = numLim(raw.mastil, 30, 8, 90); d.brazo = numLim(raw.brazo, 40, 8, 90); d.radio = numLim(raw.radio, 35, 4, 90);
+    // se puede montar sobre la cubierta de un edificio (mismo criterio que
+    // la pluma grúa del proyecto Bambú) — como aquí no hay una sola torre
+    // fija, se pide la altura del edificio en vez de asumirla
+    d.ubicacion = raw.ubicacion === 'techo' ? 'techo' : 'suelo';
+    d.alturaTecho = numLim(raw.alturaTecho, 20, 3, 200);
   } else if (tipo === 'gruaPluma'){
     d.brazo = numLim(raw.brazo, 30, 6, 80); d.angulo = numLim(raw.angulo, 45, 10, 80); d.radio = numLim(raw.radio, 25, 4, 80);
   } else if (tipo === 'mueble'){
@@ -1357,6 +1384,13 @@ function normalizarDef(raw){
   }
   return d;
 }
+/* elevación del ORIGEN del grupo: 0 para todo, salvo una torre grúa montada
+   "encima de un edificio" (def.ubicacion === 'techo'), que se apoya a la
+   altura que el usuario indicó — el resto de la geometría de la grúa ya
+   está pensada en relativo a su propio origen (0 = donde se apoya) */
+function alturaElemento(def){
+  return (def.tipo === 'gruaTorre' && def.ubicacion === 'techo') ? (def.alturaTecho || 20) : 0;
+}
 function crearElemento(raw){
   const def = normalizarDef(raw);
   const g = FABRICAS[def.tipo](def);
@@ -1373,7 +1407,7 @@ function crearElemento(raw){
                    def.tipo === 'mueble' ? def.h + 0.6 :
                    def.tipo === 'maquina' ? def.h + 1 : def.tipo === 'muro' ? def.h + 0.6 : (def.h + 2)) + 3;
   g.add(et); g.userData.etiqueta = et;
-  g.position.set(def.x, 0, def.z);
+  g.position.set(def.x, alturaElemento(def), def.z);
   g.rotation.y = def.rot;
   scene.add(g);
   elementos.push(g);
@@ -1548,7 +1582,7 @@ renderer.domElement.addEventListener('pointermove', e => {
     rayo(e);
     const p = puntoSuelo();
     if (p){
-      arrastrando.position.set(p.x, 0, p.z);
+      arrastrando.position.set(p.x, alturaElemento(arrastrando.userData.def), p.z);
       arrastrando.userData.def.x = Math.round(p.x*100)/100;
       arrastrando.userData.def.z = Math.round(p.z*100)/100;
       if (seleccionado === arrastrando) refrescarUbic();
@@ -1692,6 +1726,12 @@ function renderModificarLibre(g){
       '<button style="flex:1; margin:0" onclick="girarSel(-1)">' + ic('girarIzq') + 'Girar 45°</button>' +
       '<button style="flex:1; margin:0" onclick="girarSel(1)">' + ic('girarDer') + 'Girar 45°</button>' +
     '</div>' +
+    '<label style="margin-top:8px">Rotación exacta (grados) — libre, no solo de a 45°' +
+      '<div style="display:flex; gap:6px; margin-top:3px">' +
+        '<input type="number" id="modRotLibre" step="1" value="' + Math.round(((d.rot * 180 / Math.PI) % 360 + 360) % 360) + '" style="flex:1; margin:0" onkeydown="if(event.key===\'Enter\') girarExactoLibre()">' +
+        '<button style="width:auto; margin:0" title="Aplicar rotación" onclick="girarExactoLibre()">' + ic('check') + '</button>' +
+      '</div>' +
+    '</label>' +
     '<div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--borde)">' +
       '<label style="margin-top:0">Nombre' +
         '<div style="display:flex; gap:6px; margin-top:3px">' +
@@ -1903,6 +1943,20 @@ function girarSel(dir){
   if (mostrarCotas) redibujarCotas2D();
   avisar(seleccionado.userData.def.nombre + ' girado');
 }
+/* rotación libre a cualquier ángulo (no solo múltiplos de 45°) — campo
+   numérico en grados junto a los botones de giro rápido */
+function girarExactoLibre(){
+  if (!seleccionado) return;
+  if (seleccionado.userData.def.bloqueado){ avisar('Elemento bloqueado: desbloquéalo para girarlo'); return; }
+  const campo = document.getElementById('modRotLibre');
+  const grados = parseFloat(campo && campo.value);
+  if (!isFinite(grados)) return;
+  seleccionado.rotation.y = grados * Math.PI / 180;
+  seleccionado.userData.def.rot = seleccionado.rotation.y;
+  guardar('Girado: ' + seleccionado.userData.def.nombre);
+  if (mostrarCotas) redibujarCotas2D();
+  avisar(seleccionado.userData.def.nombre + ' girado a ' + grados + '°');
+}
 function eliminarSel(){ if (seleccionado) eliminarElemento(seleccionado); }
 
 /* ============ VENTANA DE CREACIÓN + LISTA ============
@@ -1989,8 +2043,9 @@ function cambiarTipo(){
   } else if (t === 'malacate'){
     html = num('libMastil','Altura (m)',30,6,80,0.5);
   } else if (t === 'gruaTorre'){
-    html = num('libMastil','Altura mástil (m)',30,8,90,0.5) + num('libBrazo','Largo del brazo (m)',40,8,90,0.5) +
-      num('libRadio','Radio de giro (m)',35,4,90,0.5);
+    html = '<label style="width:100%">Ubicación <select id="libUbicacionGrua" style="flex:1"><option value="suelo">En el suelo</option><option value="techo">Encima de un edificio</option></select></label>' +
+      num('libMastil','Altura mástil (m)',30,8,90,0.5) + num('libBrazo','Largo del brazo (m)',40,8,90,0.5) +
+      num('libRadio','Radio de giro (m)',35,4,90,0.5) + num('libAlturaTecho','Altura del edificio, si va en el techo (m)',20,3,200,0.5);
   } else if (t === 'gruaPluma'){
     html = num('libBrazo','Largo de la pluma (m)',30,6,80,0.5) + num('libAngulo','Inclinación (°)',45,10,80,1) +
       num('libRadio','Radio de giro (m)',25,4,80,0.5);
@@ -2068,6 +2123,7 @@ function agregarElemento(){
     raw.mastil = valNum('libMastil');
   } else if (tipo === 'gruaTorre'){
     raw.mastil = valNum('libMastil'); raw.brazo = valNum('libBrazo'); raw.radio = valNum('libRadio');
+    raw.ubicacion = valNum('libUbicacionGrua'); raw.alturaTecho = valNum('libAlturaTecho');
   } else if (tipo === 'gruaPluma'){
     raw.brazo = valNum('libBrazo'); raw.angulo = valNum('libAngulo'); raw.radio = valNum('libRadio');
   } else if (tipo === 'mueble'){
@@ -2123,8 +2179,12 @@ function renderEditorLibre(d){
   } else if (d.tipo === 'malacate'){
     campos = num('edMastil','Altura (m)',d.mastil,6,80,0.5);
   } else if (d.tipo === 'gruaTorre'){
-    campos = num('edMastil','Altura mástil (m)',d.mastil,8,90,0.5) + num('edBrazo','Largo del brazo (m)',d.brazo,8,90,0.5) +
-      num('edRadio','Radio de giro (m)',d.radio,4,90,0.5);
+    campos = '<label style="width:100%">Ubicación <select id="edUbicacionGrua" style="flex:1">' +
+        '<option value="suelo"' + (d.ubicacion !== 'techo' ? ' selected' : '') + '>En el suelo</option>' +
+        '<option value="techo"' + (d.ubicacion === 'techo' ? ' selected' : '') + '>Encima de un edificio</option>' +
+      '</select></label>' +
+      num('edMastil','Altura mástil (m)',d.mastil,8,90,0.5) + num('edBrazo','Largo del brazo (m)',d.brazo,8,90,0.5) +
+      num('edRadio','Radio de giro (m)',d.radio,4,90,0.5) + num('edAlturaTecho','Altura del edificio, si va en el techo (m)',d.alturaTecho || 20,3,200,0.5);
   } else if (d.tipo === 'gruaPluma'){
     campos = num('edBrazo','Largo de la pluma (m)',d.brazo,6,80,0.5) + num('edAngulo','Inclinación (°)',d.angulo,10,80,1) +
       num('edRadio','Radio de giro (m)',d.radio,4,80,0.5);
@@ -2172,6 +2232,7 @@ function guardarEdicionLibre(){
     raw.mastil = valNum('edMastil');
   } else if (d.tipo === 'gruaTorre'){
     raw.mastil = valNum('edMastil'); raw.brazo = valNum('edBrazo'); raw.radio = valNum('edRadio');
+    raw.ubicacion = valNum('edUbicacionGrua'); raw.alturaTecho = valNum('edAlturaTecho');
   } else if (d.tipo === 'gruaPluma'){
     raw.brazo = valNum('edBrazo'); raw.angulo = valNum('edAngulo'); raw.radio = valNum('edRadio');
   } else if (d.tipo === 'mueble'){
@@ -3196,7 +3257,7 @@ function redibujarRutas(){
 function clicRuta(pRaw){
   const p = [red2(pRaw.x), red2(pRaw.z)];
   if (!trazoRuta){
-    trazoRuta = { id: idSec++, nombre: nombreRutaLibre(), color: PALETA_RUTAS[rutas.length % PALETA_RUTAS.length], vehiculo: '', vel: 3, sentido: 'vaiven', usarVias: true, puntos: [p] };
+    trazoRuta = { id: idSec++, nombre: nombreRutaLibre(), color: PALETA_RUTAS[rutas.length % PALETA_RUTAS.length], vehiculo: '', vel: 3, sentido: 'vaiven', usarVias: false, puntos: [p] };
     rutas.push(trazoRuta);
     redibujarRutas(); guardar(); panelHerramientaRuta();
     avisar('"' + trazoRuta.nombre + '" creada — sigue marcando por dónde pasa el vehículo');

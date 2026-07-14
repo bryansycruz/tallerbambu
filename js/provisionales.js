@@ -29,7 +29,22 @@ function crearProvisional(def){
   if (def.techo){
     caja(g, def.w + 0.6, 0.1, def.d + 0.6, 0x8a8f96, 0, def.h + 0.12, 0, 0.35);
   }
-  if (def.detalle) def.detalle(g, def);
+  // el mobiliario (detalle) se dibujó pensando en las medidas POR DEFECTO de
+  // la plantilla (PRESETS_ESPACIO) — si el usuario cambió el ancho/fondo al
+  // crear el espacio (o lo redimensionó después), se dibuja con esas medidas
+  // originales en un grupo aparte y se ESCALA al tamaño actual: así el
+  // mobiliario nunca queda por fuera de un espacio que quedó más chico
+  if (def.detalle){
+    const base = (def.presetId && typeof PRESETS_ESPACIO !== 'undefined') ? PRESETS_ESPACIO[def.presetId] : null;
+    if (base && (Math.abs(def.w - base.w) > 0.01 || Math.abs(def.d - base.d) > 0.01)){
+      const decor = new THREE.Group();
+      def.detalle(decor, Object.assign({}, def, { w: base.w, d: base.d }));
+      decor.scale.set(def.w / base.w, 1, def.d / base.d);
+      g.add(decor);
+    } else {
+      def.detalle(g, def);
+    }
+  }
   // etiqueta de tamaño normal: crece un poco con el ancho del espacio pero
   // con tope, para que un espacio grande (p. ej. el Almacén de 37.5 m) no
   // muestre un rótulo desproporcionado sobre la escena
