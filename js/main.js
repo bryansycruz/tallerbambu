@@ -108,7 +108,7 @@ function togglePiso4(){
   piso4.visible = vistaPiso4;
   document.getElementById('btnPiso4').innerHTML = '<span class="ic">' + icono('edificio') + '</span>' + (vistaPiso4 ? 'Ver torre completa' : 'Ver Piso 4');
   document.getElementById('btnPiso4').classList.toggle('activo', vistaPiso4);
-  etiquetasTodas.forEach(s => { s.visible = vistaPiso4 ? false : etiquetasOn; });
+  aplicarFiltroEtiquetas();
   if (vistaPiso4){
     irA(2.3, y4 + 1, -1, 52, 0.3, 0.72);
     rangoMalacate.value = 3;
@@ -221,19 +221,16 @@ document.getElementById('btnBorrarVias').onclick = borrarVias;
 let etiquetasOn = true;
 function setEtiquetas(on){
   etiquetasOn = on;
-  etiquetasTodas.forEach(s => { s.visible = etiquetasOn && !vistaPiso4; });
-  document.getElementById('btnEtiquetas').classList.toggle('activo', !etiquetasOn);
+  aplicarFiltroEtiquetas();
   document.getElementById('padEtiquetas').classList.toggle('activo', !etiquetasOn);
 }
-document.getElementById('btnEtiquetas').onclick = () => setEtiquetas(!etiquetasOn);
-document.getElementById('btnEtiquetasChicas').onclick = toggleEtiquetasChicas;
 document.getElementById('padEtiquetas').onclick = () => {
   setEtiquetas(!etiquetasOn);
   avisoGuardado(etiquetasOn ? 'Etiquetas visibles' : 'Etiquetas ocultas');
 };
 
 // en el celular las etiquetas arrancan ocultas para despejar la vista
-// (se activan con el botón del ojo en el pad o con "Etiquetas" en el menú)
+// (se activan con el botón del ojo en el pad o desde "Etiquetas y cotas")
 if (innerWidth <= 820) setEtiquetas(false);
 
 /* ---- Cotas (medidas) de zonas y edificios: apagadas por defecto, el
@@ -242,12 +239,46 @@ if (innerWidth <= 820) setEtiquetas(false);
 function setCotas(on){
   mostrarCotas = on;
   gruposCotas.forEach(gr => { gr.visible = mostrarCotas; });
-  document.getElementById('btnCotas').classList.toggle('activo', mostrarCotas);
 }
-document.getElementById('btnCotas').onclick = () => {
-  setCotas(!mostrarCotas);
-  avisoGuardado(mostrarCotas ? 'Cotas visibles' : 'Cotas ocultas');
-};
+
+/* ---- Panel "Etiquetas y cotas": en vez de varios botones sueltos
+   (Etiquetas/Etiquetas chicas/Cotas), un panel donde se elige QUÉ etiquetas
+   se ven (por categoría) y el TAMAÑO de letra — para etiquetas y cotas por
+   separado. Aplica en vivo a la vista 3D (y también al corte de Piso 4). */
+function opcionesTamano(factorActual){
+  return [[0.6,'Pequeña'],[1,'Normal'],[1.4,'Grande']].map(([f, nombre]) =>
+    '<option value="' + f + '"' + (factorActual === f ? ' selected' : '') + '>' + nombre + '</option>').join('');
+}
+function renderPanelEtiquetas(){
+  document.getElementById('etqBody').innerHTML =
+    '<label class="chk" style="display:block"><input type="checkbox" id="etqMaestro"' + (etiquetasOn ? ' checked' : '') +
+      ' onchange="setEtiquetas(this.checked); renderPanelEtiquetas();"> Mostrar etiquetas</label>' +
+    '<div style="margin:8px 0 12px 24px; opacity:' + (etiquetasOn ? '1' : '.45') + '">' +
+      Object.keys(CATEGORIAS_ETIQUETA).map(cat =>
+        '<label class="chk" style="display:block; margin-top:4px"><input type="checkbox"' +
+        (categoriasEtiquetaVisibles[cat] !== false ? ' checked' : '') + (etiquetasOn ? '' : ' disabled') +
+        ' onchange="categoriasEtiquetaVisibles[\'' + cat + '\'] = this.checked; aplicarFiltroEtiquetas();"> ' +
+        CATEGORIAS_ETIQUETA[cat] + '</label>').join('') +
+      '<label style="display:block; margin-top:10px; font-size:12.5px">Tamaño de letra<br>' +
+        '<select style="width:100%; margin-top:3px"' + (etiquetasOn ? '' : ' disabled') +
+        ' onchange="aplicarTamanoEtiquetas(parseFloat(this.value))">' + opcionesTamano(factorEtiquetas) + '</select></label>' +
+    '</div>' +
+    '<label class="chk" style="display:block; margin-top:6px"><input type="checkbox" id="etqCotasOn"' + (mostrarCotas ? ' checked' : '') +
+      ' onchange="setCotas(this.checked); renderPanelEtiquetas();"> Mostrar cotas (medidas)</label>' +
+    '<div style="margin:8px 0 0 24px; opacity:' + (mostrarCotas ? '1' : '.45') + '">' +
+      '<label style="display:block; font-size:12.5px">Tamaño de letra<br>' +
+        '<select style="width:100%; margin-top:3px"' + (mostrarCotas ? '' : ' disabled') +
+        ' onchange="aplicarTamanoCotas(parseFloat(this.value))">' + opcionesTamano(factorCotas) + '</select></label>' +
+    '</div>';
+}
+(function(){
+  const b = document.getElementById('btnEtiquetasCotas');
+  if (b) b.onclick = () => { renderPanelEtiquetas(); document.getElementById('etqOverlay').style.display = 'flex'; };
+  document.getElementById('etqCerrar').onclick = () => { document.getElementById('etqOverlay').style.display = 'none'; };
+  document.getElementById('etqOverlay').addEventListener('click', e => {
+    if (e.target.id === 'etqOverlay') e.target.style.display = 'none';
+  });
+})();
 
 /* ---- Pad de navegación táctil: flechas = desplazarse, +/− = zoom ----
    Mantener presionado repite el movimiento (como un joystick). */
@@ -302,8 +333,9 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
 });
 
-// restaurar la distribución compartida del equipo (Supabase); si no hay
-// conexión, usa la copia local o dibuja la ruta de ejemplo del informe.
+// restaurar SOLO la copia local de este navegador (ver estado.js): si nunca
+// se ha usado la app aquí, la obra queda en cero — ya no se hereda nada de
+// la nube ni de otra persona al abrir la página por primera vez.
 // La línea base del historial se siembra DESPUÉS de que esto termine, para
 // que "Paso 1" sea la obra recién cargada, no una escena vacía.
 cargarCompartido().then(() => {

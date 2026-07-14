@@ -417,7 +417,11 @@ function aplicarPersonalizados(lista){
       d2.color = def.color || '#3f7fbf';
       d2.muros = !!def.muros;
       d2.techo = !!def.techo;
-      d2.presetId = (typeof PRESET_DETALLE !== 'undefined' && PRESET_DETALLE[def.presetId]) ? def.presetId : null;
+      // si el archivo cargado es de ANTES de existir el mobiliario por
+      // plantilla (o el espacio se creó sin elegir una) no trae presetId —
+      // se reconoce por el NOMBRE (coincide con el de alguna plantilla) para
+      // que el mobiliario acorde también aparezca en espacios ya creados
+      d2.presetId = (typeof PRESET_DETALLE !== 'undefined') ? presetIdValidoOPorNombre(def.presetId, d2.nombre) : null;
     }
     personalizados.push(d2);
     const g = construirPersonalizado(d2);
@@ -534,6 +538,15 @@ const PRESETS_ESPACIO = {
 };
 function opcionesPresetEspacio(){
   return Object.keys(PRESETS_ESPACIO).map(k => '<option value="' + k + '">' + esc(PRESETS_ESPACIO[k].nombre) + '</option>').join('');
+}
+/* si presetId ya es válido lo respeta; si no, intenta reconocer la plantilla
+   por el NOMBRE del espacio (mismo criterio con que el usuario lo creó) */
+function presetIdValidoOPorNombre(presetId, nombre){
+  if (PRESETS_ESPACIO[presetId]) return presetId;
+  const buscado = String(nombre || '').trim().toLowerCase();
+  if (!buscado) return null;
+  const k = Object.keys(PRESETS_ESPACIO).find(k => PRESETS_ESPACIO[k].nombre.trim().toLowerCase() === buscado);
+  return k || null;
 }
 function aplicarPresetEspacio(){
   const k = document.getElementById('espPreset').value;

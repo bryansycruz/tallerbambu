@@ -190,11 +190,20 @@ function aplicarEstado(d){
   }
 }
 
-/* ---- Estado compartido (Supabase): guardar/cargar visible para todo el equipo ---- */
+/* ---- Estado compartido (Supabase): SOLO se publica a la nube cuando el
+   usuario da clic en "Guardar" (publicarNube(), más abajo) — ya NO hay
+   sincronización automática en cada acción ni al abrir la página. Así:
+   - En TU navegador (con avance guardado en localStorage) refrescar
+     mantiene tu modelo tal cual — cargarLocalOEjemplo() lee de local.
+   - En un navegador NUEVO ("otra persona", sin nada en localStorage) la
+     obra arranca en cero (sin vías/rutas/edificios/organigrama propios):
+     ya no se hereda automáticamente el avance de nadie más al abrir.
+   guardarCompartido() (llamada desde creador.js/equipos.js/vias.js/etc. en
+   cada acción) sigue existiendo tal cual la espera historial.js para tomar
+   su foto de cada paso, pero ahora SOLO guarda localmente. */
 const supabaseClient = (window.supabase && CFG_SUPABASE.url && CFG_SUPABASE.anonKey)
   ? window.supabase.createClient(CFG_SUPABASE.url, CFG_SUPABASE.anonKey)
   : null;
-let sincronizandoDesdeFuera = false;
 
 function obtenerAutor(){
   let autor = null;
@@ -211,8 +220,8 @@ function actualizarEstadoSync(estado, detalle){
   if (!dot || !txt) return;
   const textos = {
     local: 'Local',
-    cargando: 'Cargando…',
-    ok: 'Sincronizado' + (detalle ? ' · ' + detalle : ''),
+    cargando: 'Publicando…',
+    ok: 'Publicado' + (detalle ? ' · ' + detalle : ''),
     error: 'Sin conexión'
   };
   dot.className = 'sDot' + (estado === 'ok' ? ' ok' : estado === 'error' ? ' error' : estado === 'cargando' ? ' cargando' : '');
@@ -220,8 +229,15 @@ function actualizarEstadoSync(estado, detalle){
 }
 async function guardarCompartido(){
   guardarLocal();
+  actualizarEstadoSync('local');
+}
+/* publica el estado actual en Supabase — SOLO se llama desde el botón
+   "Guardar" (ver más abajo): es la única vía para que el avance salga de
+   tu navegador hacia la nube/el equipo. */
+async function publicarNube(){
+  guardarLocal();
   if (!supabaseClient) { actualizarEstadoSync('local'); return; }
-  if (sincronizandoDesdeFuera) return;
+  actualizarEstadoSync('cargando');
   try {
     const payload = estadoActual();
     const autor = obtenerAutor();
@@ -229,7 +245,7 @@ async function guardarCompartido(){
       id: 1, data: payload, autor, actualizado_en: new Date().toISOString()
     });
     if (error) throw error;
-    actualizarEstadoSync('ok', 'guardado por ' + autor);
+    actualizarEstadoSync('ok', 'publicado por ' + autor);
   } catch (e) {
     actualizarEstadoSync('error');
   }
@@ -239,44 +255,13 @@ function cargarLocalOEjemplo(){
   try { hayEstado = localStorage.getItem('planoObra3D_v3'); } catch (e) {}
   if (hayEstado){
     try { aplicarEstado(JSON.parse(hayEstado)); } catch (e) {}
-  } else {
-    iniciarRuta();
-    [[-74,-13],[-35,-13],[5,-12.5],[45,-13],[78,8],[104,28]].forEach(p => agregarPunto({ x:p[0], z:p[1] }));
-    finalizarRuta();
   }
+  // sin estado local (navegador nuevo): la obra queda en cero a propósito
+  // — ya no se dibuja ninguna ruta de ejemplo ni se hereda nada de nadie más
 }
 async function cargarCompartido(){
-  if (!supabaseClient){ actualizarEstadoSync('local'); cargarLocalOEjemplo(); return; }
-  actualizarEstadoSync('cargando');
-  try {
-    const { data, error } = await supabaseClient.from('estado_obra').select('data, autor').eq('id', 1).maybeSingle();
-    if (error) throw error;
-    if (data && data.data){
-      aplicarEstado(data.data);
-      guardarLocal();
-      actualizarEstadoSync('ok', 'último cambio: ' + (data.autor || '—'));
-    } else {
-      cargarLocalOEjemplo();
-      actualizarEstadoSync('ok', 'primera vez');
-    }
-  } catch (e) {
-    cargarLocalOEjemplo();
-    actualizarEstadoSync('error');
-  }
-  if (supabaseClient){
-    supabaseClient
-      .channel('estado_obra_cambios')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'estado_obra', filter: 'id=eq.1' }, payload => {
-        if (!payload.new || !payload.new.data) return;
-        sincronizandoDesdeFuera = true;
-        aplicarEstado(payload.new.data);
-        guardarLocal();
-        sincronizandoDesdeFuera = false;
-        actualizarEstadoSync('ok', 'actualizado por ' + (payload.new.autor || 'un compañero'));
-        avisoGuardado('Actualizado por ' + (payload.new.autor || 'un compañero'));
-      })
-      .subscribe();
-  }
+  cargarLocalOEjemplo();
+  actualizarEstadoSync('local');
 }
 function avisoGuardado(msj){
   const a = document.getElementById('avisoGuardado');
@@ -287,6 +272,7 @@ function avisoGuardado(msj){
 }
 document.getElementById('btnGuardar').onclick = () => {
   guardarCompartido();
+  publicarNube();
   const blob = new Blob([JSON.stringify(estadoActual(), null, 2)], { type:'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);

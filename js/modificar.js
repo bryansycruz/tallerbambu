@@ -17,16 +17,16 @@ function regenerarEtiqueta(g, nuevoTexto){
   g.traverse(n => { if (n.isSprite && !vieja) vieja = n; });
   const ancho = vieja ? vieja.scale.x : 12;
   const y = vieja ? vieja.position.y : 2.2;
-  const visible = vieja ? vieja.visible : true;
+  const categoria = vieja ? vieja.userData.categoria : (g.userData.esEquipo ? 'equipo' : 'zona');
   if (vieja){
     g.remove(vieja);
     const idx = etiquetasTodas.indexOf(vieja);
     if (idx >= 0) etiquetasTodas.splice(idx, 1);
   }
   const colorFondo = g.userData.esEquipo ? 'rgba(70,120,45,0.9)' : undefined;
-  const nueva = crearEtiqueta(nuevoTexto, ancho, colorFondo);
+  const nueva = crearEtiqueta(nuevoTexto, ancho, colorFondo, categoria);
   nueva.position.y = y;
-  nueva.visible = visible;
+  if (typeof aplicarFiltroEtiquetas === 'function') aplicarFiltroEtiquetas();
   g.add(nueva);
 }
 /* repinta TODOS los materiales del grupo con un único color (recoloreado

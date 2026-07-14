@@ -113,8 +113,9 @@ function capturarPlanta(opciones){
   };
   // fuerza etiquetas y cotas según lo elegido en el diálogo, sin tocar la
   // preferencia del usuario (se restauran tal cual estaban después)
-  const chicasPrev = etiquetasChicas;
-  if (typeof opciones.chicas === 'boolean' && opciones.chicas !== etiquetasChicas) toggleEtiquetasChicas();
+  const factorEtqPrev = factorEtiquetas, factorCotPrev = factorCotas;
+  if (typeof opciones.factorEtiquetas === 'number' && opciones.factorEtiquetas !== factorEtiquetas) aplicarTamanoEtiquetas(opciones.factorEtiquetas);
+  if (typeof opciones.factorCotas === 'number' && opciones.factorCotas !== factorCotas) aplicarTamanoCotas(opciones.factorCotas);
   const etiquetasPrev = etiquetasTodas.map(s => s.visible);
   etiquetasTodas.forEach(s => { s.visible = mostrarEtq; });
   const cotasPrev = gruposCotas.map(gr => gr.visible);
@@ -133,7 +134,8 @@ function capturarPlanta(opciones){
   actualizarCamara();
   etiquetasTodas.forEach((s, i) => { s.visible = etiquetasPrev[i]; });
   gruposCotas.forEach((gr, i) => { gr.visible = cotasPrev[i]; });
-  if (etiquetasChicas !== chicasPrev) toggleEtiquetasChicas();
+  if (factorEtiquetas !== factorEtqPrev) aplicarTamanoEtiquetas(factorEtqPrev);
+  if (factorCotas !== factorCotPrev) aplicarTamanoCotas(factorCotPrev);
   renderer.render(scene, camera);
   return url;
 }
@@ -173,7 +175,12 @@ function exportarPlano(){
     '<div class="desc">Elige qué se ve en la foto del plano exportado. No cambia tu vista en pantalla, solo esta exportación.</div>' +
     '<label class="chk" style="display:block; margin-top:10px"><input type="checkbox" id="expEtiquetas" checked> Mostrar etiquetas (nombres)</label>' +
     '<label class="chk" style="display:block; margin-top:6px"><input type="checkbox" id="expCotas" checked> Mostrar cotas (medidas)</label>' +
-    '<label class="chk" style="display:block; margin-top:6px"><input type="checkbox" id="expChicas"' + (etiquetasChicas ? ' checked' : '') + '> Etiquetas chicas (menos saturado)</label>' +
+    '<label style="display:block; margin-top:10px; font-size:12.5px">Tamaño de letra (etiquetas)<br>' +
+      '<select id="expTamEtiquetas" style="width:100%; margin-top:3px">' +
+        '<option value="0.6"' + (factorEtiquetas === 0.6 ? ' selected' : '') + '>Pequeña</option>' +
+        '<option value="1"' + (factorEtiquetas !== 0.6 && factorEtiquetas !== 1.4 ? ' selected' : '') + '>Normal</option>' +
+        '<option value="1.4"' + (factorEtiquetas === 1.4 ? ' selected' : '') + '>Grande</option>' +
+      '</select></label>' +
     '<button class="orgAccion primario" style="margin-top:14px" onclick="generarExportacion()">Generar PDF</button>';
   document.getElementById('exportarOverlay').style.display = 'flex';
 }
@@ -182,7 +189,7 @@ function generarExportacion(){
   const opciones = {
     etiquetas: document.getElementById('expEtiquetas').checked,
     cotas: document.getElementById('expCotas').checked,
-    chicas: document.getElementById('expChicas').checked
+    factorEtiquetas: parseFloat(document.getElementById('expTamEtiquetas').value) || 1
   };
   const img = capturarPlanta(opciones);
   const filas = filasCuadroAreas();

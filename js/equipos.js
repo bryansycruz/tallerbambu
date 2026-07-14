@@ -257,14 +257,14 @@ function construirPlumaGrua(def){
   g.userData.brazo = L;
   const anillo = new THREE.Mesh(
     new THREE.RingGeometry(Math.max(0.5, R - 0.35), R, 48),
-    new THREE.MeshBasicMaterial({ color: 0xf0b429, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false })
+    new THREE.MeshBasicMaterial({ color: 0xc9302e, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false })
   );
   anillo.rotation.x = -Math.PI / 2;
   anillo.position.y = 0.06;
   g.add(anillo);
   // medida del radio de giro, siempre visible sobre el anillo (se apaga y
   // enciende junto con el botón "Etiquetas", igual que el nombre)
-  const etR = crearEtiqueta('Radio ' + R + ' m', 9, 'rgba(120,85,10,0.88)');
+  const etR = crearEtiqueta('Radio ' + R + ' m', 9, 'rgba(150,25,25,0.88)', 'equipo');
   etR.position.set(R * 0.7, 0.75, R * 0.7);
   g.add(etR);
   [[-0.9, -0.9], [0.9, -0.9], [-0.9, 0.9], [0.9, 0.9]].forEach(([x, z]) => {
@@ -469,7 +469,7 @@ function construirEquipo(def){
   if (def.tipo === 'plumaGrua' && def.ubicacion === 'techo') g.userData.yFija = CFG.alto;
   const anchoEtq = def.tipo === 'andamioColgante' ? Math.max(9, Math.min(16, (def.ancho || 2) * 4))
     : def.tipo === 'plumaGrua' ? 16 : 10;
-  const et = crearEtiqueta(def.nombre, anchoEtq, 'rgba(70,120,45,0.9)');
+  const et = crearEtiqueta(def.nombre, anchoEtq, 'rgba(70,120,45,0.9)', 'equipo');
   et.position.y = (g.userData.etiquetaY !== undefined) ? g.userData.etiquetaY : 2.2;
   g.add(et);
   const y0 = (g.userData.yFija !== undefined) ? g.userData.yFija : 0;

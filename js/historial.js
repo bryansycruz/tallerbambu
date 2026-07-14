@@ -3,9 +3,10 @@
    tener que tocar cada uno de sus puntos de llamada repartidos por toda la
    app (creador.js, equipos.js, modificar.js, vias.js, provisionales.js…).
 
-   OJO: esta obra se sincroniza en tiempo real con el equipo (Supabase) —
-   "Volver aquí" / deshacer SÍ actualiza el estado compartido para todos,
-   no es un deshacer privado de un solo usuario. */
+   OJO: guardarCompartido() ahora SOLO guarda localmente (ver estado.js) —
+   "Volver aquí" / deshacer es privado de este navegador. Para que un cambio
+   (incluido un deshacer) llegue a la nube/al equipo hay que dar clic en
+   "Guardar", que además llama a publicarNube(). */
 
 let historialPasos = [];
 let historialIndice = -1;

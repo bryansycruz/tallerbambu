@@ -161,12 +161,17 @@ function rueda(g, x, y, z, r, ancho){
   m.rotation.z = Math.PI / 2;
   m.position.set(x, y, z); m.castShadow = true; g.add(m); return m;
 }
-/* tamaño de las etiquetas flotantes (nombres, m², cotas, puntos de ruta):
-   "chicas" las reduce para que no saturen la vista cuando además están las
-   cotas encendidas — se aplica al crear cada una, así que un cambio de
-   tamaño se ve completo con solo refrescar las que ya existen. */
-let etiquetasChicas = false;
-function crearEtiqueta(texto, ancho, color){
+/* ---- Filtro por categoría + tamaño de etiquetas (panel "Etiquetas y
+   cotas", ver más abajo): antes solo había un botón de todo/nada y un
+   botón binario "chicas". Cada etiqueta nace con una categoría (para
+   mostrar/ocultar por grupo) y el tamaño es un factor numérico — nombres
+   y cotas por separado — válido tanto en 3D como en el Plano 2D, que
+   reutiliza esta misma escena. */
+const CATEGORIAS_ETIQUETA_LIBRE = { zona:'Zonas, edificios y muebles', equipo:'Equipos y maquinaria', sitio:'Vías y accesos' };
+let categoriasEtiquetaVisibles = { zona:true, equipo:true, sitio:true };
+let factorEtiquetas = 1;
+let factorCotas = 1;
+function crearEtiqueta(texto, ancho, color, categoria){
   ancho = ancho || 12;
   const res = ES_MOVIL ? 1 : 2;
   const c = document.createElement('canvas'); c.width = 512*res; c.height = 128*res;
@@ -179,9 +184,24 @@ function crearEtiqueta(texto, ancho, color){
   ctx.fillText(texto, 256, 66);
   const tex = new THREE.CanvasTexture(c); tex.anisotropy = ANISO;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map:tex, depthTest:false, transparent:true }));
-  const factor = etiquetasChicas ? 0.6 : 1;
+  const factor = (categoria === 'cota') ? factorCotas : factorEtiquetas;
   sp.scale.set(ancho * factor, (ancho/4) * factor, 1);
+  sp.userData.categoria = categoria || 'zona';
   return sp;
+}
+/* filtra por categoría (además del maestro etiquetasVisibles) — se llama
+   tras crear/cargar y desde el panel de opciones */
+function aplicarFiltroEtiquetasLibre(){
+  elementos.forEach(g => {
+    if (!g.userData.etiqueta) return;
+    const cat = g.userData.etiqueta.userData.categoria || 'zona';
+    g.userData.etiqueta.visible = etiquetasVisibles && categoriasEtiquetaVisibles[cat] !== false;
+  });
+  [loteGrupo, cerrGrupo, viasGrupo, rutasGrupo].forEach(gr => gr.traverse(n => {
+    if (!n.isSprite) return;
+    const cat = n.userData.categoria || 'sitio';
+    n.visible = etiquetasVisibles && categoriasEtiquetaVisibles[cat] !== false;
+  }));
 }
 /* círculo punteado + disco translúcido en el suelo (radio de giro de las grúas) */
 function circuloRadio(g, R, color){
@@ -549,6 +569,17 @@ const PRESETS_ESPACIO = {
 };
 function opcionesPresetEspacio(){
   return Object.keys(PRESETS_ESPACIO).map(k => '<option value="' + k + '">' + esc(PRESETS_ESPACIO[k].nombre) + '</option>').join('');
+}
+/* si presetId ya es válido lo respeta; si no, intenta reconocer la plantilla
+   por el NOMBRE del espacio (mismo criterio con que el usuario lo creó) —
+   así un espacio guardado antes de existir el mobiliario por plantilla (o
+   creado sin elegir una) lo recupera al volver a cargar el archivo */
+function presetIdValidoOPorNombre(presetId, nombre){
+  if (PRESETS_ESPACIO[presetId]) return presetId;
+  const buscado = String(nombre || '').trim().toLowerCase();
+  if (!buscado) return null;
+  const k = Object.keys(PRESETS_ESPACIO).find(k => PRESETS_ESPACIO[k].nombre.trim().toLowerCase() === buscado);
+  return k || null;
 }
 /* muro suelto, independiente del cerramiento perimetral: se puede colocar
    en cualquier parte de la obra (ej. divisiones internas, muros de
@@ -1291,8 +1322,12 @@ function normalizarDef(raw){
     d.sistema = SISTEMAS[raw.sistema] ? raw.sistema : 'muros';
     d.muebles = normalizarMueblesInterior(raw.muebles, d.w, d.d);
     // plantilla elegida (si la hay): el espacio nace con el mobiliario
-    // acorde a su propósito (ver PRESET_DETALLE_LIBRE)
-    d.presetId = (typeof PRESETS_ESPACIO !== 'undefined' && PRESETS_ESPACIO[raw.presetId]) ? raw.presetId : null;
+    // acorde a su propósito (ver PRESET_DETALLE_LIBRE). Si el archivo cargado
+    // es de ANTES de existir esta función (o el espacio se creó sin elegir
+    // plantilla) no trae presetId — se intenta reconocerlo por el NOMBRE
+    // (coincide con el de alguna plantilla) para que el mobiliario acorde
+    // también aparezca en espacios ya creados al volver a cargar el archivo.
+    d.presetId = presetIdValidoOPorNombre(raw.presetId, d.nombre);
   } else if (tipo === 'edificio'){
     d.w = numLim(raw.w, 20, 3, 90); d.d = numLim(raw.d, 12, 3, 70);
     d.pisos = Math.round(numLim(raw.pisos, 5, 1, 40)); d.hPiso = numLim(raw.hPiso, 2.65, 2, 5);
@@ -1329,8 +1364,9 @@ function crearElemento(raw){
   g.userData.tipo = def.tipo;
   g.userData.info.nombre = def.nombre;
   if (def.colorPersonalizado) aplicarColorLibre(g, def.colorPersonalizado);
-  const et = crearEtiqueta(textoEtiqueta(def), anchoEtiquetaLibre());
-  et.visible = etiquetasVisibles;
+  const catElem = (def.tipo === 'malacate' || def.tipo === 'gruaTorre' || def.tipo === 'gruaPluma' || def.tipo === 'maquina') ? 'equipo' : 'zona';
+  const et = crearEtiqueta(textoEtiqueta(def), anchoEtiquetaLibre(), undefined, catElem);
+  et.visible = etiquetasVisibles && categoriasEtiquetaVisibles[catElem] !== false;
   et.position.y = (def.tipo === 'gruaTorre' ? def.mastil : def.tipo === 'edificio' ? def.pisos*def.hPiso :
                    def.tipo === 'malacate' ? def.mastil : def.tipo === 'gruaPluma' ? 6 :
                    def.tipo === 'mueble' ? def.h + 0.6 :
@@ -1843,7 +1879,8 @@ function cambiarMetaM3Libre(){
 function anchoEtiquetaLibre(){ return modo2D ? 18 : 12; }
 function regenerarEtiquetaLibre(g){
   const vieja = g.userData.etiqueta;
-  const nueva = crearEtiqueta(textoEtiqueta(g.userData.def), anchoEtiquetaLibre());
+  const categoria = vieja ? vieja.userData.categoria : 'zona';
+  const nueva = crearEtiqueta(textoEtiqueta(g.userData.def), anchoEtiquetaLibre(), undefined, categoria);
   if (vieja){
     nueva.position.copy(vieja.position);
     nueva.visible = vieja.visible;
@@ -2323,7 +2360,7 @@ function construirLote(){
     });
   }
   const et = crearEtiqueta((loteEsLibre() ? 'Lote (perímetro libre) ' : 'Lote ' + ficha.loteLargo + ' × ' + ficha.loteAncho + ' m ') +
-    '≈ ' + m2.toLocaleString('es-CO') + ' m²', 26, 'rgba(60,80,30,0.85)');
+    '≈ ' + m2.toLocaleString('es-CO') + ' m²', 26, 'rgba(60,80,30,0.85)', 'sitio');
   et.position.set(centro[0], 3, centro[1] - (loteEsLibre() ? loteBoundingSize().ancho / 2 + 2 : ficha.loteAncho / 2 + 2));
   loteGrupo.add(et);
   aplicarVisibilidadEtiquetas(loteGrupo);
@@ -2402,14 +2439,14 @@ function construirCerramiento(){
       porton.position.set(px(fPorton) + nx * 0.35, hP / 2, pz(fPorton) + nz * 0.35);
       porton.rotation.y = -Math.atan2(dz, dx);
       cerrGrupo.add(porton);
-      const et = crearEtiqueta(gates.length > 1 ? 'PORTÓN ' + (puertas.length + 1) : 'PORTÓN DE ACCESO', 13, 'rgba(120,60,15,0.88)');
+      const et = crearEtiqueta(gates.length > 1 ? 'PORTÓN ' + (puertas.length + 1) : 'PORTÓN DE ACCESO', 13, 'rgba(120,60,15,0.88)', 'sitio');
       et.position.set(mx, H + 2, mz);
       cerrGrupo.add(et);
       puertas.push([mx + nx * 8, mz + nz * 8]);
     } else if (abiertos.includes(i)){
       // abertura: a propósito NO se construye muro en este lado — queda el
       // espacio abierto (solo una etiqueta discreta para verlo en el plano)
-      const et = crearEtiqueta('ABIERTO (sin cerramiento)', 11, 'rgba(90,90,90,0.75)');
+      const et = crearEtiqueta('ABIERTO (sin cerramiento)', 11, 'rgba(90,90,90,0.75)', 'sitio');
       et.position.set((a[0] + b[0]) / 2, 1.6, (a[1] + b[1]) / 2);
       cerrGrupo.add(et);
     } else {
@@ -2875,7 +2912,7 @@ function redibujarVias(){
       viasGrupo.add(linea);
     }
     if (verMedidasVias){
-      const et = crearEtiqueta(Math.round(len * 10) / 10 + ' m · ancho ' + v.ancho + ' m', 13, 'rgba(45,50,58,0.85)');
+      const et = crearEtiqueta(Math.round(len * 10) / 10 + ' m · ancho ' + v.ancho + ' m', 13, 'rgba(45,50,58,0.85)', 'sitio');
       et.position.set((v.x1 + v.x2) / 2, 1.6, (v.z1 + v.z2) / 2);
       viasGrupo.add(et);
     }
@@ -3147,7 +3184,7 @@ function redibujarRutas(){
       marca.position.set(p[0] + ox, 0.13, p[1] + oz);
       rutasGrupo.add(marca);
       if (sel){
-        const et = crearEtiqueta(String(i + 1), 3.2, 'rgba(20,25,35,0.85)');
+        const et = crearEtiqueta(String(i + 1), 3.2, 'rgba(20,25,35,0.85)', 'sitio');
         et.position.set(p[0] + ox, 2.2, p[1] + oz);
         rutasGrupo.add(et);
       }
@@ -3810,7 +3847,7 @@ function redibujarMediciones(){
     linea.rotation.y = -Math.atan2(dz, dx);
     reglaGrupo.add(linea);
     disco(me.x1, me.z1); disco(me.x2, me.z2);
-    const et = crearEtiqueta(Math.round(len * 100) / 100 + ' m', modo2D ? 13 : 9, 'rgba(120,85,10,0.88)');
+    const et = crearEtiqueta(Math.round(len * 100) / 100 + ' m', modo2D ? 13 : 9, 'rgba(120,85,10,0.88)', 'cota');
     et.position.set((me.x1 + me.x2) / 2, modo2D ? 2.2 : 1.8, (me.z1 + me.z2) / 2);
     reglaGrupo.add(et);
   });
@@ -3912,7 +3949,7 @@ function redibujarTrazoLote(){
   trazoLote.forEach((pt, i) => disco(pt.x, pt.z, i === 0 ? 0.5 : 0.32));
   if (trazoLote.length >= 3){
     const areaViva = Math.round(areaPoligono(trazoLote.map(pt => [pt.x, pt.z])));
-    const et = crearEtiqueta('≈ ' + areaViva.toLocaleString('es-CO') + ' m² si cierras aquí', modo2D ? 14 : 10, 'rgba(150,25,30,0.88)');
+    const et = crearEtiqueta('≈ ' + areaViva.toLocaleString('es-CO') + ' m² si cierras aquí', modo2D ? 14 : 10, 'rgba(150,25,30,0.88)', 'sitio');
     const cx = trazoLote.reduce((s, pt) => s + pt.x, 0) / trazoLote.length;
     const cz = trazoLote.reduce((s, pt) => s + pt.z, 0) / trazoLote.length;
     et.position.set(cx, modo2D ? 2.4 : 2, cz);
@@ -4337,10 +4374,10 @@ function capturarPlantaLibre(opciones){
   const mostrarEtq = opciones.etiquetas !== false;
   const mostrarCot = opciones.cotas !== false;
   const eraModo2D = modo2D, eraCotas = mostrarCotas, eraEtiquetas = etiquetasVisibles;
-  const eraChicas = etiquetasChicas;
+  const eraFactorEtq = factorEtiquetas;
   const eraTarget = camCtrl.target.clone(), eraZoom = zoom2D;
   const centro = loteCentro();
-  if (typeof opciones.chicas === 'boolean' && opciones.chicas !== etiquetasChicas) toggleEtiquetasChicas();
+  if (typeof opciones.factorEtiquetas === 'number' && opciones.factorEtiquetas !== factorEtiquetas) aplicarTamanoEtiquetasLibre(opciones.factorEtiquetas);
   if (!modo2D){ modo2D = true; camCtrl.target.set(centro[0], 0, centro[1]); }
   zoom2D = zoomAjustadoLote();
   setCotas(mostrarCot);
@@ -4353,7 +4390,7 @@ function capturarPlantaLibre(opciones){
   modo2D = eraModo2D; camCtrl.target.copy(eraTarget); zoom2D = eraZoom;
   if (mostrarCotas !== eraCotas) setCotas(eraCotas);
   if (etiquetasVisibles !== eraEtiquetas) toggleEtiquetasLibre();
-  if (etiquetasChicas !== eraChicas) toggleEtiquetasChicas();
+  if (factorEtiquetas !== eraFactorEtq) aplicarTamanoEtiquetasLibre(eraFactorEtq);
   const btn2d = document.getElementById('btn2D');
   btn2d.classList.toggle('activo', modo2D);
   btn2d.innerHTML = modo2D ? ic('caja') + 'Vista 3D' : ic('plano') + 'Plano 2D';
@@ -4379,7 +4416,8 @@ function exportarPlanoLibre(){
     '<div class="desc">Elige qué se ve en la foto del plano exportado. No cambia tu vista en pantalla, solo esta exportación.</div>' +
     '<label class="chk" style="display:block; margin-top:10px"><input type="checkbox" id="expEtiquetasLibre" checked> Mostrar etiquetas (nombres)</label>' +
     '<label class="chk" style="display:block; margin-top:6px"><input type="checkbox" id="expCotasLibre" checked> Mostrar cotas (medidas)</label>' +
-    '<label class="chk" style="display:block; margin-top:6px"><input type="checkbox" id="expChicasLibre"' + (etiquetasChicas ? ' checked' : '') + '> Etiquetas chicas (menos saturado)</label>' +
+    '<label style="display:block; margin-top:10px; font-size:12.5px">Tamaño de letra (etiquetas)<br>' +
+      '<select id="expTamEtiquetasLibre" style="width:100%; margin-top:3px">' + opcionesTamanoLibre(factorEtiquetas) + '</select></label>' +
     '<button class="orgAccion primario" style="margin-top:14px" onclick="generarExportacionLibre()">Generar PDF</button>';
   document.getElementById('libreOverlay').style.display = 'flex';
 }
@@ -4388,7 +4426,7 @@ function generarExportacionLibre(){
   const opciones = {
     etiquetas: document.getElementById('expEtiquetasLibre').checked,
     cotas: document.getElementById('expCotasLibre').checked,
-    chicas: document.getElementById('expChicasLibre').checked
+    factorEtiquetas: parseFloat(document.getElementById('expTamEtiquetasLibre').value) || 1
   };
   const img = capturarPlantaLibre(opciones);
   const loteM2 = loteAreaM2();
@@ -4469,13 +4507,7 @@ let mostrarCotas = false;
 let ultimaActualizacionCotas = 0;
 function setCotas(on){
   mostrarCotas = on;
-  const btn = document.getElementById('btnCotas');
-  if (btn) btn.classList.toggle('activo', mostrarCotas);
   redibujarCotas2D();
-}
-function toggleCotas(){
-  setCotas(!mostrarCotas);
-  avisar(mostrarCotas ? 'Cotas visibles' : 'Cotas ocultas');
 }
 function tieneMedidasCota(d){ return typeof d.w === 'number' && typeof d.d === 'number'; }
 function anguloRaro(rot){
@@ -4493,7 +4525,7 @@ function dibujarCota(p1, p2, medida){
   linea.position.set((p1.x + p2.x) / 2, modo2D ? 0.3 : 0.22, (p1.z + p2.z) / 2);
   linea.rotation.y = -Math.atan2(dz, dx);
   cotasGrupo.add(linea);
-  const et = crearEtiqueta(Math.round(medida * 100) / 100 + ' m', modo2D ? 11 : 7, modo2D ? 'rgba(20,23,28,0.92)' : 'rgba(40,45,55,0.85)');
+  const et = crearEtiqueta(Math.round(medida * 100) / 100 + ' m', modo2D ? 11 : 7, modo2D ? 'rgba(20,23,28,0.92)' : 'rgba(40,45,55,0.85)', 'cota');
   et.position.set((p1.x + p2.x) / 2, modo2D ? 1.8 : 1.4, (p1.z + p2.z) / 2);
   cotasGrupo.add(et);
 }
@@ -4512,7 +4544,7 @@ function redibujarCotas2D(){
     dibujarCota(aMundo(hw + off, -hd), aMundo(hw + off, hd), d.d);
     const angulo = anguloRaro(d.rot);
     if (angulo !== null){
-      const et = crearEtiqueta('∠ ' + angulo + '°', modo2D ? 12 : 8, 'rgba(150,40,20,0.9)');
+      const et = crearEtiqueta('∠ ' + angulo + '°', modo2D ? 12 : 8, 'rgba(150,40,20,0.9)', 'cota');
       et.position.set(d.x, modo2D ? 3.2 : 2.6, d.z);
       cotasGrupo.add(et);
     }
@@ -4641,27 +4673,63 @@ let etiquetasVisibles = true;
 /* los grupos que se RECONSTRUYEN (lote, cerramiento, vías, rutas) llaman esto
    al final para que sus etiquetas respeten el estado del botón "Etiquetas" */
 function aplicarVisibilidadEtiquetas(grupo){
-  if (!etiquetasVisibles) grupo.traverse(n => { if (n.isSprite) n.visible = false; });
+  grupo.traverse(n => {
+    if (!n.isSprite) return;
+    const cat = n.userData.categoria || 'sitio';
+    n.visible = etiquetasVisibles && categoriasEtiquetaVisibles[cat] !== false;
+  });
 }
 function toggleEtiquetasLibre(){
   etiquetasVisibles = !etiquetasVisibles;
-  elementos.forEach(g => { if (g.userData.etiqueta) g.userData.etiqueta.visible = etiquetasVisibles; });
-  [loteGrupo, cerrGrupo, viasGrupo, rutasGrupo].forEach(gr => gr.traverse(n => { if (n.isSprite) n.visible = etiquetasVisibles; }));
-  // resaltado solo cuando están OCULTOS (estado no predeterminado)
-  document.getElementById('btnEtiquetas').classList.toggle('activo', !etiquetasVisibles);
+  aplicarFiltroEtiquetasLibre();
   avisar(etiquetasVisibles ? 'Nombres y medidas visibles' : 'Nombres y medidas ocultos');
 }
-/* etiquetas más chicas: útil cuando además tienes las Cotas encendidas y el
-   texto satura la vista — encoge nombres, m², cotas y números de ruta */
-function toggleEtiquetasChicas(){
-  etiquetasChicas = !etiquetasChicas;
+/* tamaño de las etiquetas de NOMBRE (no las cotas, que tienen su propio
+   factor) — regenera las que ya existen para que se vea completo */
+function aplicarTamanoEtiquetasLibre(factor){
+  factorEtiquetas = factor;
   refrescarEtiquetas();
-  redibujarCotas2D();
   redibujarRutas();
   redibujarVias();
-  const btn = document.getElementById('btnEtiquetasChicas');
-  if (btn) btn.classList.toggle('activo', etiquetasChicas);
-  avisar(etiquetasChicas ? 'Etiquetas chicas — menos saturada la vista' : 'Etiquetas de tamaño normal');
+}
+function aplicarTamanoCotasLibre(factor){
+  factorCotas = factor;
+  redibujarCotas2D();
+}
+/* ---- Panel "Etiquetas y cotas" (reutiliza la ventana genérica #libreOverlay,
+   igual que Exportar/Zonas/Organigrama…): en vez de 3 botones sueltos, un
+   panel para elegir QUÉ etiquetas se ven (por categoría) y el TAMAÑO de
+   letra — para etiquetas y cotas por separado, en 3D y en el Plano 2D. ---- */
+function opcionesTamanoLibre(factorActual){
+  return [[0.6,'Pequeña'],[1,'Normal'],[1.4,'Grande']].map(([f, nombre]) =>
+    '<option value="' + f + '"' + (factorActual === f ? ' selected' : '') + '>' + nombre + '</option>').join('');
+}
+function renderPanelEtiquetasLibre(){
+  document.getElementById('libreBody').innerHTML =
+    '<label class="chk" style="display:block"><input type="checkbox"' + (etiquetasVisibles ? ' checked' : '') +
+      ' onchange="toggleEtiquetasLibre(); renderPanelEtiquetasLibre();"> Mostrar etiquetas</label>' +
+    '<div style="margin:8px 0 12px 24px; opacity:' + (etiquetasVisibles ? '1' : '.45') + '">' +
+      Object.keys(CATEGORIAS_ETIQUETA_LIBRE).map(cat =>
+        '<label class="chk" style="display:block; margin-top:4px"><input type="checkbox"' +
+        (categoriasEtiquetaVisibles[cat] !== false ? ' checked' : '') + (etiquetasVisibles ? '' : ' disabled') +
+        ' onchange="categoriasEtiquetaVisibles[\'' + cat + '\'] = this.checked; aplicarFiltroEtiquetasLibre();"> ' +
+        CATEGORIAS_ETIQUETA_LIBRE[cat] + '</label>').join('') +
+      '<label style="display:block; margin-top:10px">Tamaño de letra<br>' +
+        '<select style="width:100%; margin-top:3px"' + (etiquetasVisibles ? '' : ' disabled') +
+        ' onchange="aplicarTamanoEtiquetasLibre(parseFloat(this.value))">' + opcionesTamanoLibre(factorEtiquetas) + '</select></label>' +
+    '</div>' +
+    '<label class="chk" style="display:block; margin-top:6px"><input type="checkbox"' + (mostrarCotas ? ' checked' : '') +
+      ' onchange="setCotas(this.checked); renderPanelEtiquetasLibre();"> Mostrar cotas (medidas)</label>' +
+    '<div style="margin:8px 0 0 24px; opacity:' + (mostrarCotas ? '1' : '.45') + '">' +
+      '<label style="display:block">Tamaño de letra<br>' +
+        '<select style="width:100%; margin-top:3px"' + (mostrarCotas ? '' : ' disabled') +
+        ' onchange="aplicarTamanoCotasLibre(parseFloat(this.value))">' + opcionesTamanoLibre(factorCotas) + '</select></label>' +
+    '</div>';
+}
+function abrirPanelEtiquetasLibre(){
+  document.getElementById('libreVentTitulo').textContent = 'Etiquetas y cotas';
+  renderPanelEtiquetasLibre();
+  document.getElementById('libreOverlay').style.display = 'flex';
 }
 
 /* ============ ZONAS Y AFORO (mismo panel del proyecto Bambú) ============ */
@@ -5082,15 +5150,13 @@ document.getElementById('btnRegla').onclick = () => setHerramienta('regla');
 document.getElementById('btnLote').onclick = () => setHerramienta('lote');
 document.getElementById('btnPorton').onclick = () => setHerramienta('porton');
 document.getElementById('btnAbertura').onclick = () => setHerramienta('abertura');
-document.getElementById('btnCotas').onclick = toggleCotas;
 document.getElementById('btn2D').onclick = toggleVista2D;
 document.getElementById('btnAreas').onclick = abrirCuadroAreas;
 document.getElementById('btnHistorial').onclick = abrirHistorialLibre;
 document.getElementById('btnFondoPlano').onclick = abrirFondoPlano;
 document.getElementById('btnEditarEquipo').onclick = () => { setHerramienta(null); abrirFicha(); };
 document.getElementById('btnZonas').onclick = abrirZonasLibre;
-document.getElementById('btnEtiquetas').onclick = toggleEtiquetasLibre;
-document.getElementById('btnEtiquetasChicas').onclick = toggleEtiquetasChicas;
+document.getElementById('btnEtiquetasCotas').onclick = abrirPanelEtiquetasLibre;
 document.getElementById('btnCaminar').onclick = toggleCaminar;
 document.getElementById('btnNoche').onclick = toggleNoche;
 document.getElementById('btnEspacios').onclick = abrirVentanaEspacios;

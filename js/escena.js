@@ -163,11 +163,17 @@ lineaTerreno([[-78,18],[-28,18.5],[16,19],[54,18.5]], 0xc9302e, 0.7, false, fals
    un piso (55%) para que un texto muy corto no encoja demasiado y siga
    siendo legible de lejos; "ancho" pasa a ser un techo máximo, no un tamaño fijo. ---- */
 const etiquetasTodas = [];
-/* etiquetas más chicas: útil cuando además tienes las Cotas encendidas y el
-   texto satura la vista — se aplica al crear cada una (guardando su escala
-   "base" sin el factor, para poder recalcular sin tener que recrearla). */
-let etiquetasChicas = false;
-function crearEtiqueta(texto, ancho, colorFondo){
+/* ---- Filtro por categoría + tamaño de etiquetas (panel "Etiquetas y
+   cotas", ver main.js): antes solo había un botón de todo/nada y un botón
+   binario "chicas" — ahora cada etiqueta nace con una categoría (a qué
+   tipo de elemento pertenece) para poder mostrar/ocultar por grupo, y el
+   tamaño es un factor numérico (no binario) para 3D y el Plano 2D por igual
+   (el Plano 2D reutiliza esta misma escena, ver toggleVistaPiso4/2D). ---- */
+const CATEGORIAS_ETIQUETA = { zona:'Nombres de zonas y edificios', equipo:'Equipos y maquinaria', sitio:'Vías y accesos' };
+let categoriasEtiquetaVisibles = { zona:true, equipo:true, sitio:true };
+let factorEtiquetas = 1;     // 0.5–1.6 (ver panel)
+let factorCotas = 1;
+function crearEtiqueta(texto, ancho, colorFondo, categoria){
   ancho = ancho || 14;
   // en escritorio el lienzo va al doble de resolución: letra nítida sin costo
   // por cuadro (solo algo más de memoria de textura, se genera una vez)
@@ -196,25 +202,31 @@ function crearEtiqueta(texto, ancho, colorFondo){
   const factor = Math.max(0.55, Math.min(1, cajaW / 512));
   const escalaBase = [ancho * factor, (ancho / 4) * factor];
   sp.userData.escalaBase = escalaBase;
-  const factorChicas = etiquetasChicas ? 0.6 : 1;
-  sp.scale.set(escalaBase[0] * factorChicas, escalaBase[1] * factorChicas, 1);
+  sp.userData.categoria = categoria || 'zona';
+  sp.scale.set(escalaBase[0] * factorEtiquetas, escalaBase[1] * factorEtiquetas, 1);
   etiquetasTodas.push(sp);
   return sp;
 }
-/* recalcula el tamaño de TODAS las etiquetas ya existentes (nombres + cotas)
-   sin recrearlas — usa la escala "base" guardada en cada una */
-function toggleEtiquetasChicas(){
-  etiquetasChicas = !etiquetasChicas;
-  const factorChicas = etiquetasChicas ? 0.6 : 1;
-  const aplicar = sp => {
-    const base = sp.userData.escalaBase || [sp.scale.x, sp.scale.y];
-    sp.scale.set(base[0] * factorChicas, base[1] * factorChicas, 1);
-  };
-  etiquetasTodas.forEach(aplicar);
-  gruposCotas.forEach(grp => grp.traverse(n => { if (n.isSprite) aplicar(n); }));
-  const btn = document.getElementById('btnEtiquetasChicas');
-  if (btn) btn.classList.toggle('activo', etiquetasChicas);
-  avisoGuardado(etiquetasChicas ? 'Etiquetas chicas — menos saturada la vista' : 'Etiquetas de tamaño normal');
+/* filtra por categoría (además del maestro etiquetasOn y vistaPiso4, ver
+   main.js) — se llama tras crear/cargar y desde el panel de opciones */
+function aplicarFiltroEtiquetas(){
+  const base = (typeof etiquetasOn === 'undefined' || etiquetasOn) && !(typeof vistaPiso4 !== 'undefined' && vistaPiso4);
+  etiquetasTodas.forEach(sp => { sp.visible = base && categoriasEtiquetaVisibles[sp.userData.categoria || 'zona'] !== false; });
+}
+/* recalcula el tamaño de TODAS las etiquetas de nombre (no las cotas, que
+   tienen su propio factor) sin recrearlas — usa la escala "base" guardada */
+function aplicarTamanoEtiquetas(factor){
+  factorEtiquetas = factor;
+  etiquetasTodas.forEach(sp => {
+    const b = sp.userData.escalaBase || [sp.scale.x, sp.scale.y];
+    sp.scale.set(b[0] * factor, b[1] * factor, 1);
+  });
+}
+function aplicarTamanoCotas(factor){
+  factorCotas = factor;
+  gruposCotas.forEach(grp => grp.traverse(n => {
+    if (n.isSprite){ const b = n.userData.escalaBase || [n.scale.x, n.scale.y]; n.scale.set(b[0] * factor, b[1] * factor, 1); }
+  }));
 }
 /* ---- Cotas (líneas de dimensión con la medida) sobre zonas/edificios:
    apagadas por defecto, se activan con el botón "Cotas" (main.js); también
@@ -240,9 +252,12 @@ function lineaCota(pts){
   return m;
 }
 function etiquetaCota(texto, ancho){
-  const et = crearEtiqueta(texto, ancho, 'rgba(15,15,15,0.9)');
-  // visibilidad propia (mostrarCotas), independiente del botón "Etiquetas"
+  const et = crearEtiqueta(texto, ancho, 'rgba(15,15,15,0.9)', 'cota');
+  // visibilidad propia (mostrarCotas), independiente del botón "Etiquetas";
+  // tamaño propio (factorCotas), independiente del tamaño de las etiquetas
   etiquetasTodas.splice(etiquetasTodas.indexOf(et), 1);
+  const b = et.userData.escalaBase;
+  et.scale.set(b[0] * factorCotas, b[1] * factorCotas, 1);
   return et;
 }
 function agregarCotas(g, w, d, h){
@@ -275,7 +290,7 @@ function agregarCotas(g, w, d, h){
   return grp;
 }
 function etiquetaSuelo(texto, x, z, ancho, colorFondo){
-  const e = crearEtiqueta(texto, ancho, colorFondo);
+  const e = crearEtiqueta(texto, ancho, colorFondo, 'sitio');
   e.position.set(x, alturaTerreno(x, z) + 3.2, z);
   scene.add(e);
 }
@@ -398,7 +413,7 @@ let entradaObra = null;
   porton.position.set(gate.x, 1.1, gate.z);
   porton.rotation.y = gate.rot;
   cerramiento.add(porton);
-  const etCer = crearEtiqueta('PORTÓN + PUERTA PEATONAL', 15, 'rgba(70,120,45,0.9)');
+  const etCer = crearEtiqueta('PORTÓN + PUERTA PEATONAL', 15, 'rgba(70,120,45,0.9)', 'sitio');
   etCer.position.set(gate.x, 5, gate.z);
   cerramiento.add(etCer);
 }
@@ -539,7 +554,7 @@ cEsc2.position.set(T2.cx, CFG.alto + 0.95, T2.dz); cEsc2.castShadow = true;
 techoG.add(cEsc2);
 edificio.add(techoG);
 
-const etT1 = crearEtiqueta('TORRES 01+02', 12, 'rgba(10,110,40,0.85)');
+const etT1 = crearEtiqueta('TORRES 01+02', 12, 'rgba(10,110,40,0.85)', 'zona');
 etT1.position.set(6, CFG.alto + 4.5, 0);
 edificio.add(etT1);
 
@@ -586,7 +601,7 @@ edificio.add(sotanosG);
         sotanosG.add(raya);
       });
     }
-    const etS = crearEtiqueta('SÓTANO ' + (i+1) + ' · ' + yN.toFixed(2) + ' m', 15, 'rgba(90,70,35,0.92)');
+    const etS = crearEtiqueta('SÓTANO ' + (i+1) + ' · ' + yN.toFixed(2) + ' m', 15, 'rgba(90,70,35,0.92)', 'zona');
     etS.position.set(cxS - wS/2 - 9, yN + 1.7, czS);
     etiquetasTodas.splice(etiquetasTodas.indexOf(etS), 1);   // siempre visible en la vista de sótanos
     sotanosG.add(etS);
@@ -664,7 +679,7 @@ function crearMalacate(nombre, x, z){
   // arranca a la altura actual de los demás malacates (si se agrega uno a mitad de faena)
   cabina.position.y = 0.2 + ((typeof nivelMalacate === 'number' ? nivelMalacate : 0) * CFG.hPiso);
   grupo.add(cabina);
-  const etMal = crearEtiqueta(nombre === 'Malacate de obra tipo cremallera' ? 'Malacate 1.000 kg' : nombre, 12, 'rgba(70,120,45,0.9)');
+  const etMal = crearEtiqueta(nombre === 'Malacate de obra tipo cremallera' ? 'Malacate 1.000 kg' : nombre, 12, 'rgba(70,120,45,0.9)', 'equipo');
   etMal.position.set(0, hTorre + 2, 0);
   grupo.add(etMal);
 
@@ -882,7 +897,7 @@ const zDesc = new THREE.Mesh(
 zDesc.position.set(CFG.malacateX, y4 + 0.14, -CFG.fondo/2 + 2);
 piso4.add(zDesc);
 
-const et4a = crearEtiqueta('PISO 4', 9, 'rgba(70,120,45,0.9)');
+const et4a = crearEtiqueta('PISO 4', 9, 'rgba(70,120,45,0.9)', 'zona');
 et4a.position.set(0, y4 + 7, 0);
 piso4.add(et4a);
 textoPiso('CIRCULACIÓN · 105,55 m²', 8.5, 2.3, 0, '#7a5210');
