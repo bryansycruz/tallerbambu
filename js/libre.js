@@ -1674,7 +1674,7 @@ function panelSel(titulo, selHtml, modHtml, ficHtml){
 }
 function mostrarPanelVacio(){
   const habiaSel = selVia !== null || selRuta !== null;
-  selVia = null; selRuta = null;
+  selVia = null; selRuta = null; selPorton = null;
   if (habiaSel){ redibujarVias(); redibujarRutas(); }
   const card = (k, v) => v ? '<div class="bimCard"><span>' + k + '</span><b>' + esc(v) + '</b></div>' : '';
   let selHtml;
@@ -1826,7 +1826,7 @@ function renderFichaTecnicaLibre(g){
 function seleccionar(g){
   if (!g) return;
   const habiaSel = selVia !== null || selRuta !== null;
-  selVia = null; selRuta = null;
+  selVia = null; selRuta = null; selPorton = null;
   if (habiaSel){ redibujarVias(); redibujarRutas(); }
   const anterior = seleccionado;
   seleccionado = g;
@@ -2465,14 +2465,19 @@ function construirCerramiento(){
   }
   const H = cerrCfg.altura;
   const mat = MATERIALES_CERR[cerrCfg.material] || MATERIALES_CERR.lona;
-  // lados con portón: si el usuario ya eligió alguno a mano (herramienta
-  // "Portones") se respetan esos; si no, se cae al comportamiento de siempre
-  // (un solo portón automático: rectángulo → costado sur; libre → el lado
-  // más al sur que alcance)
-  const gates = portonesActivos();
+  // portones ya en formato {id,t} (posición de arco libre sobre TODO el
+  // perímetro — ver PORTONES más abajo); se agrupan por el lado donde caen
+  // ahora mismo solo para saber dónde cortar el muro, no para limitarlos a él
+  const gatesResueltos = portonesResueltos();
+  const porLado = {};
+  gatesResueltos.forEach(p => {
+    const pt = puntoEnPerimetro(p.t);
+    (porLado[pt.lado] = porLado[pt.lado] || []).push(Object.assign({ id: p.id }, pt));
+  });
   const abiertos = aberturasActivas();
   const postes = [];
   const puertas = [];
+  let numPorton = 0;
   function tramoCerrLibre(x1, z1, x2, z2){
     const dx = x2 - x1, dz = z2 - z1, len = Math.hypot(dx, dz);
     if (len < 0.3) return;
@@ -2487,31 +2492,36 @@ function construirCerramiento(){
   }
   for (let i = 0; i < n; i++){
     const a = esquinas[i], b = esquinas[(i + 1) % n];
-    if (gates.includes(i)){
-      // acceso con portón vehicular de 7 m centrado en este lado
-      const len = Math.max(8, Math.hypot(b[0] - a[0], b[1] - a[1]));
-      const f1 = Math.max(0.05, (len / 2 - 3.5) / len), f2 = Math.min(0.95, (len / 2 + 3.5) / len);
+    const ventanas = (porLado[i] || []).sort((x, y) => x.f - y.f);
+    if (ventanas.length){
+      // corta un hueco de 6.4 m (portón vehicular) alrededor de cada portón
+      // de este lado, construyendo muro sólido en lo que quede entre ellos
+      const len = Math.max(0.01, Math.hypot(b[0] - a[0], b[1] - a[1]));
+      const medioAncho = 3.2;
       const px = f => a[0] + (b[0] - a[0]) * f, pz = f => a[1] + (b[1] - a[1]) * f;
-      tramoCerrLibre(a[0], a[1], px(f1), pz(f1));
-      tramoCerrLibre(px(f2), pz(f2), b[0], b[1]);
       const hP = Math.min(H, 2.2);
-      // normal exterior del lado (perpendicular, apuntando lejos del centro
-      // del lote) — así el portón y la puerta de entrada quedan bien
-      // orientados sin importar hacia dónde mire este tramo del perímetro
-      const dx = b[0] - a[0], dz = b[1] - a[1];
-      let nx = -dz, nz = dx; const nlen = Math.hypot(nx, nz) || 1; nx /= nlen; nz /= nlen;
-      const mx = px(0.5), mz = pz(0.5);
-      if ((centro[0] - mx) * nx + (centro[1] - mz) * nz > 0){ nx = -nx; nz = -nz; }
-      const porton = new THREE.Mesh(new THREE.BoxGeometry(6.4, hP, 0.1),
-        new THREE.MeshLambertMaterial({ color: 0xc9581e }));
-      const fPorton = Math.max(0.05, 0.5 - 3.2 / len);   // corrido: se ve semiabierto
-      porton.position.set(px(fPorton) + nx * 0.35, hP / 2, pz(fPorton) + nz * 0.35);
-      porton.rotation.y = -Math.atan2(dz, dx);
-      cerrGrupo.add(porton);
-      const et = crearEtiqueta(gates.length > 1 ? 'PORTÓN ' + (puertas.length + 1) : 'PORTÓN DE ACCESO', 13, 'rgba(120,60,15,0.88)', 'sitio');
-      et.position.set(mx, H + 2, mz);
-      cerrGrupo.add(et);
-      puertas.push([mx + nx * 8, mz + nz * 8]);
+      let cursor = 0;
+      ventanas.forEach(v => {
+        const f1 = Math.max(cursor, Math.max(0.02, v.f - medioAncho / len));
+        const f2 = Math.min(0.98, Math.max(f1, v.f + medioAncho / len));
+        if (f1 > cursor) tramoCerrLibre(px(cursor), pz(cursor), px(f1), pz(f1));
+        cursor = f2;
+        const seleccionado = v.id === selPorton;
+        const porton = new THREE.Mesh(new THREE.BoxGeometry(6.4, hP, 0.1),
+          new THREE.MeshLambertMaterial({ color: seleccionado ? 0xffd23e : 0xc9581e }));
+        porton.position.set(v.x + v.nx * 0.35, hP / 2, v.z + v.nz * 0.35);
+        porton.rotation.y = -Math.atan2(b[1] - a[1], b[0] - a[0]);
+        porton.userData.esPorton = true;
+        porton.userData.portonId = v.id;
+        cerrGrupo.add(porton);
+        numPorton++;
+        const et = crearEtiqueta(gatesResueltos.length > 1 ? 'PORTÓN ' + numPorton : 'PORTÓN DE ACCESO', 13,
+          seleccionado ? 'rgba(180,140,10,0.92)' : 'rgba(120,60,15,0.88)', 'sitio');
+        et.position.set(v.x, H + 2, v.z);
+        cerrGrupo.add(et);
+        puertas.push([v.x + v.nx * 8, v.z + v.nz * 8]);
+      });
+      if (cursor < 1) tramoCerrLibre(px(cursor), pz(cursor), b[0], b[1]);
     } else if (abiertos.includes(i)){
       // abertura: a propósito NO se construye muro en este lado — queda el
       // espacio abierto (solo una etiqueta discreta para verlo en el plano)
@@ -2531,89 +2541,141 @@ function construirCerramiento(){
   cerrGrupo.add(im);
   aplicarVisibilidadEtiquetas(cerrGrupo);
 }
-/* ============ AGREGAR / QUITAR PORTONES (herramienta "Portones") ============
-   Por defecto hay un solo portón automático en el costado sur del lote;
-   esta herramienta deja hacer clic sobre cualquier lado del cerramiento
-   (mejor visto en el Plano 2D) para agregar uno ahí — o, si ese lado ya
-   tiene portón, quitarlo. Siempre debe quedar al menos uno. */
-/* lados del cerramiento donde realmente hay portón en este momento: los que
-   el usuario eligió a mano, o — si no ha elegido ninguno — el único
-   automático de siempre (para que el clic sepa si "agrega" o "quita") */
-function portonesActivos(){
-  const esquinas = loteEsquinas();
-  const n = esquinas.length;
-  const ladoValido = i => {
-    const a = esquinas[i], b = esquinas[(i + 1) % n];
-    return Math.hypot(b[0] - a[0], b[1] - a[1]) >= 7;
-  };
-  if (Array.isArray(ficha.portones) && ficha.portones.length){
-    return ficha.portones.filter(i => Number.isInteger(i) && i >= 0 && i < n && ladoValido(i));
-  }
-  let idxGate = 2 % n;
-  if (loteEsLibre()){
-    let mejorZ = -Infinity;
-    for (let i = 0; i < n; i++){
-      if (!ladoValido(i)) continue;
-      const a = esquinas[i], b = esquinas[(i + 1) % n];
-      const zProm = (a[1] + b[1]) / 2;
-      if (zProm > mejorZ){ mejorZ = zProm; idxGate = i; }
+/* ============ PORTONES: ubicación libre en TODO el cerramiento ============
+   Cada portón es {id, t} — t es su posición de arco sobre el perímetro
+   completo (ver perimetroInfo/puntoEnPerimetro más arriba), así que no está
+   atado a "un lado": se puede seleccionar y mover a cualquier punto de la
+   cerca, cruzando esquinas. La herramienta "Portones":
+   - clic cerca de un portón existente → lo selecciona
+   - con uno seleccionado, clic en otro punto de la cerca → lo mueve ahí
+   - botón "Agregar portón" → crea uno nuevo (en el hueco más grande del
+     perímetro) en vez de tener que "adivinar" un lado vacío con el mouse. */
+let idPortonSeq = 1;
+/* normaliza ficha.portones a [{id,t}] — migra de paso el formato viejo
+   (índice de lado, un solo portón centrado) para que un archivo guardado
+   antes de este cambio siga abriendo con su portón en el mismo lugar */
+function portonesResueltos(){
+  const { n, segLens, total } = perimetroInfo();
+  if (total <= 0) return [];
+  const ladoValido = i => segLens[i] >= 7;
+  const raw = Array.isArray(ficha.portones) ? ficha.portones : [];
+  const lista = [];
+  raw.forEach(p => {
+    if (p && typeof p === 'object' && isFinite(p.t)){
+      lista.push({ id: p.id || ('pt' + idPortonSeq++), t: ((p.t % total) + total) % total });
+    } else if (Number.isInteger(p) && p >= 0 && p < n && ladoValido(p)){
+      let acc = 0; for (let i = 0; i < p; i++) acc += segLens[i];
+      lista.push({ id: 'pt' + idPortonSeq++, t: acc + segLens[p] * 0.5 });
     }
+  });
+  if (lista.length) return lista;
+  // automático: el punto más al sur del perímetro (mismo comportamiento de siempre)
+  const esquinas = loteEsquinas();
+  let mejorT = 0, mejorZ = -Infinity, acc = 0;
+  for (let i = 0; i < n; i++){
+    if (ladoValido(i)){
+      const a = esquinas[i], b = esquinas[(i + 1) % n];
+      if ((a[1] + b[1]) / 2 > mejorZ){ mejorZ = (a[1] + b[1]) / 2; mejorT = acc + segLens[i] * 0.5; }
+    }
+    acc += segLens[i];
   }
-  return [idxGate];
+  return [{ id: 'auto', t: mejorT }];
+}
+/* índices de lado que tienen al menos un portón encima ahora mismo — usado
+   por "Aberturas" para no dejar abrir un lado que ya tiene portón */
+function ladosConPorton(){
+  return portonesResueltos().map(p => puntoEnPerimetro(p.t).lado);
+}
+/* asegura que ficha.portones ya esté en el formato {id,t} ANTES de mutarlo
+   (seleccionar/mover/agregar/quitar por id) — así los ids quedan estables
+   de aquí en adelante, sin regenerarse en cada render */
+function asegurarPortonesResueltos(){
+  const necesitaMigrar = !Array.isArray(ficha.portones) || !ficha.portones.length ||
+    ficha.portones.some(p => !p || typeof p !== 'object');
+  if (necesitaMigrar) ficha.portones = portonesResueltos();
+  return ficha.portones;
 }
 function clicPorton(pRaw){
   if (!cerrCfg.activo){
-    avisar('Activa el cerramiento en la Ficha técnica para poder agregar portones');
+    avisar('Activa el cerramiento en la Ficha técnica para poder ubicar portones');
     setHerramienta(null);
     return;
   }
-  const esquinas = loteEsquinas();
-  const n = esquinas.length;
-  const mejorI = ladoMasCercano(pRaw);
-  if (mejorI < 0) return;
-  const a = esquinas[mejorI], b = esquinas[(mejorI + 1) % n];
-  if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 7){
-    avisar('Ese lado es muy corto para un portón (mínimo ~7 m) — elige otro lado');
+  const lista = asegurarPortonesResueltos();
+  if (!lista.length){ avisar('Usa "Agregar portón" para crear el primero'); return; }
+  let cercaId = null, cercaD = Infinity;
+  lista.forEach(p => {
+    const pt = puntoEnPerimetro(p.t);
+    const d = Math.hypot(pRaw.x - pt.x, pRaw.z - pt.z);
+    if (d < cercaD){ cercaD = d; cercaId = p.id; }
+  });
+  if (cercaD < 4){
+    selPorton = cercaId;
+    panelHerramientaPorton();
+    avisar('Portón seleccionado — haz clic en otro punto del cerramiento para moverlo ahí, o "Quitar" para eliminarlo');
     return;
   }
-  const activos = portonesActivos();
-  if (activos.includes(mejorI)){
-    if (activos.length <= 1){
-      avisar('Debe quedar al menos un portón de acceso');
-      return;
-    }
-    ficha.portones = activos.filter(i => i !== mejorI);
+  if (selPorton && lista.some(p => p.id === selPorton)){
+    lista.find(p => p.id === selPorton).t = tMasCercanoPerimetro(pRaw);
     construirCerramiento();
-    guardar('Portón quitado');
-    avisar('Portón quitado — quedan ' + (activos.length - 1));
-  } else {
-    ficha.portones = activos.concat([mejorI]);
-    construirCerramiento();
-    guardar('Portón agregado');
-    avisar('Portón agregado — ' + (activos.length + 1) + ' en total');
+    guardar('Portón movido');
+    panelHerramientaPorton();
+    avisar('Portón movido');
+    return;
   }
+  avisar('Selecciona un portón (clic cerca de uno) o usa "Agregar portón" para crear uno nuevo');
+}
+function agregarPortonLibre(){
+  if (!cerrCfg.activo){ avisar('Activa el cerramiento en la Ficha técnica primero'); return; }
+  const lista = asegurarPortonesResueltos();
+  const { total } = perimetroInfo();
+  if (total <= 0){ avisar('El lote no tiene perímetro válido'); return; }
+  // se ubica en el hueco más grande del perímetro, lejos de los demás
+  let mejorT = 0;
+  if (lista.length){
+    const ts = lista.map(p => p.t).sort((a, b) => a - b);
+    let mejorHueco = -1;
+    for (let i = 0; i < ts.length; i++){
+      const t0 = ts[i], t1 = (i + 1 < ts.length) ? ts[i + 1] : ts[0] + total;
+      const hueco = t1 - t0;
+      if (hueco > mejorHueco){ mejorHueco = hueco; mejorT = ((t0 + hueco / 2) % total + total) % total; }
+    }
+  }
+  const id = 'pt' + idPortonSeq++;
+  lista.push({ id, t: mejorT });
+  ficha.portones = lista;
+  selPorton = id;
+  construirCerramiento();
+  guardar('Portón agregado');
   panelHerramientaPorton();
+  avisar('Portón agregado — haz clic en el cerramiento para ubicarlo donde quieras');
 }
-function panelHerramientaPorton(){
-  const activos = cerrCfg.activo ? portonesActivos() : [];
-  const filas = activos.map((idx, i) =>
-    '<div class="planoFila"><span class="planoNom">Portón ' + (i + 1) + '</span>' +
-    '<button class="planoBtn peligro" style="width:auto; margin:0" title="Quitar este portón" onclick="quitarPortonLibre(' + idx + ')">✕</button></div>').join('');
-  panelSel('Agregar / quitar portones',
-    '<div class="desc">Haz <b class="txtAcento">clic sobre un lado del cerramiento</b> (se ve mejor en el Plano 2D) para ' +
-    '<b class="txtAcento">agregar</b> un portón ahí; si ese lado ya tiene uno, el mismo clic lo <b class="txtAcento">quita</b>. ' +
-    'El lado debe tener al menos 7 m y siempre debe quedar al menos un portón.</div>' +
-    (cerrCfg.activo ? (activos.length ? filas : '<div class="desc">Aún no hay portones.</div>') :
-      '<div class="desc" style="color:var(--rojo-texto)">Activa el cerramiento en la Ficha técnica primero.</div>'));
-}
-function quitarPortonLibre(idx){
-  const activos = portonesActivos();
-  if (activos.length <= 1){ avisar('Debe quedar al menos un portón de acceso'); return; }
-  ficha.portones = activos.filter(i => i !== idx);
+function quitarPortonLibre(id){
+  const lista = asegurarPortonesResueltos();
+  if (lista.length <= 1){ avisar('Debe quedar al menos un portón de acceso'); return; }
+  ficha.portones = lista.filter(p => p.id !== id);
+  if (selPorton === id) selPorton = null;
   construirCerramiento();
   guardar('Portón quitado');
   panelHerramientaPorton();
-  avisar('Portón quitado — quedan ' + (activos.length - 1));
+  avisar('Portón quitado — quedan ' + ficha.portones.length);
+}
+function panelHerramientaPorton(){
+  const lista = cerrCfg.activo ? portonesResueltos() : [];
+  const filas = lista.map((p, i) =>
+    '<div class="planoFila"><span class="planoNom">' + (p.id === selPorton ? '▶ ' : '') + 'Portón ' + (i + 1) + '</span>' +
+    '<span style="white-space:nowrap">' +
+      '<button class="planoBtn" style="width:auto; margin:0" title="Seleccionar para moverlo" onclick="selPorton=\'' + p.id + '\'; panelHerramientaPorton();">' + ic('ojo') + '</button> ' +
+      '<button class="planoBtn peligro" style="width:auto; margin:0" title="Quitar este portón" onclick="quitarPortonLibre(\'' + p.id + '\')">✕</button>' +
+    '</span></div>').join('');
+  panelSel('Portones de acceso',
+    '<div class="desc">' +
+      (selPorton ? '<b class="txtAcento">Portón seleccionado:</b> haz clic en otro punto del cerramiento para moverlo ahí.'
+        : 'Haz <b class="txtAcento">clic cerca de un portón</b> para seleccionarlo y moverlo por todo el cerramiento, o agrega uno nuevo.') +
+    '</div>' +
+    '<button onclick="agregarPortonLibre()">' + ic('mas') + 'Agregar portón</button>' +
+    (cerrCfg.activo ? (lista.length ? filas : '<div class="desc">Aún no hay portones.</div>') :
+      '<div class="desc" style="color:var(--rojo-texto)">Activa el cerramiento en la Ficha técnica primero.</div>'));
 }
 /* índice del lado del cerramiento más cercano a un punto del terreno —
    usado tanto por "Portones" como por "Aberturas" */
@@ -2631,6 +2693,61 @@ function ladoMasCercano(pRaw){
   }
   return mejorI;
 }
+/* ---- Perímetro como una sola línea continua (posición de arco "t", de 0 a
+   la longitud total, cíclica) — permite que un portón se ubique y se mueva
+   en CUALQUIER punto del cerramiento, cruzando esquinas sin quedar atado a
+   "el lado N", que es como funcionaban antes. ---- */
+function perimetroInfo(){
+  const esquinas = loteEsquinas();
+  const n = esquinas.length;
+  const segLens = [];
+  let total = 0;
+  for (let i = 0; i < n; i++){
+    const a = esquinas[i], b = esquinas[(i + 1) % n];
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    segLens.push(len);
+    total += len;
+  }
+  return { esquinas, n, segLens, total };
+}
+/* punto exacto (+ normal hacia afuera del lote) para una posición de arco t */
+function puntoEnPerimetro(t){
+  const { esquinas, n, segLens, total } = perimetroInfo();
+  const centro = loteCentro();
+  if (total <= 0 || n === 0) return { x: centro[0], z: centro[1] + 1, nx: 0, nz: 1, lado: 0, f: 0.5, len: 1 };
+  t = ((t % total) + total) % total;
+  let acc = 0;
+  for (let i = 0; i < n; i++){
+    const len = segLens[i];
+    if (t <= acc + len || i === n - 1){
+      const a = esquinas[i], b = esquinas[(i + 1) % n];
+      const f = len > 0 ? Math.max(0, Math.min(1, (t - acc) / len)) : 0.5;
+      const x = a[0] + (b[0] - a[0]) * f, z = a[1] + (b[1] - a[1]) * f;
+      let nx = -(b[1] - a[1]), nz = (b[0] - a[0]);
+      const nlen = Math.hypot(nx, nz) || 1; nx /= nlen; nz /= nlen;
+      if ((centro[0] - x) * nx + (centro[1] - z) * nz > 0){ nx = -nx; nz = -nz; }
+      return { x, z, nx, nz, lado: i, f, len };
+    }
+    acc += len;
+  }
+}
+/* posición de arco t más cercana a un punto del terreno (para ubicar/mover
+   un portón donde el usuario hace clic, sin importar en qué lado caiga) */
+function tMasCercanoPerimetro(pRaw){
+  const { esquinas, n, segLens } = perimetroInfo();
+  let mejorT = 0, mejorD = Infinity, acc = 0;
+  for (let i = 0; i < n; i++){
+    const a = esquinas[i], b = esquinas[(i + 1) % n];
+    const dx = b[0] - a[0], dz = b[1] - a[1], len2 = dx * dx + dz * dz;
+    let f = len2 > 0 ? ((pRaw.x - a[0]) * dx + (pRaw.z - a[1]) * dz) / len2 : 0;
+    f = Math.max(0, Math.min(1, f));
+    const x = a[0] + dx * f, z = a[1] + dz * f;
+    const d = Math.hypot(pRaw.x - x, pRaw.z - z);
+    if (d < mejorD){ mejorD = d; mejorT = acc + f * segLens[i]; }
+    acc += segLens[i];
+  }
+  return mejorT;
+}
 /* ============ ABRIR / CERRAR UN LADO DEL CERRAMIENTO (herramienta "Aberturas") ============
    Distinto de un portón: aquí simplemente no se construye muro en ese lado
    — no tiene puerta ni cuenta como entrada oficial de camiones/caminar —
@@ -2638,7 +2755,7 @@ function ladoMasCercano(pRaw){
 function aberturasActivas(){
   const esquinas = loteEsquinas();
   const n = esquinas.length;
-  const gates = portonesActivos();
+  const gates = ladosConPorton();
   if (!Array.isArray(ficha.aberturas)) return [];
   return ficha.aberturas.filter(i => Number.isInteger(i) && i >= 0 && i < n && !gates.includes(i));
 }
@@ -2650,7 +2767,7 @@ function clicAbertura(pRaw){
   }
   const mejorI = ladoMasCercano(pRaw);
   if (mejorI < 0) return;
-  const gates = portonesActivos();
+  const gates = ladosConPorton();
   if (gates.includes(mejorI)){
     avisar('Ese lado ya tiene un portón — quítalo primero con la herramienta "Portones"');
     return;
@@ -2952,6 +3069,7 @@ let viaAnchoNuevo = 6;
 let verMedidasVias = false;
 let trazoVia = null;            // { puntos:[{x,z}], ids:[] } mientras se dibuja
 let selVia = null;              // id del tramo seleccionado
+let selPorton = null;           // id del portón seleccionado (herramienta "Portones")
 const viasGrupo = new THREE.Group(); scene.add(viasGrupo);
 const viaMeshes = [];           // pisos raycasteables (userData.viaId)
 const VIA_SNAP_LIBRE = 2.5;     // m — fusión de extremos en un mismo nodo
@@ -5156,7 +5274,7 @@ function aplicarEstado(o){
   const defs = Array.isArray(o) ? o : (o && Array.isArray(o.elementos)) ? o.elementos : [];
   elementos.slice().forEach(g => { g.traverse(n => { if (n.geometry) n.geometry.dispose(); }); scene.remove(g); });
   elementos.length = 0;
-  seleccionado = null; selVia = null; selRuta = null; trazoVia = null; trazoRuta = null;
+  seleccionado = null; selVia = null; selRuta = null; selPorton = null; trazoVia = null; trazoRuta = null;
   defs.forEach(d => crearElemento(d));
   o = o && !Array.isArray(o) ? o : {};
   ficha = normalizarFicha(o.ficha);
