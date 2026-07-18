@@ -3105,7 +3105,10 @@ function redibujarVias(){
     piso.userData.viaId = v.id;
     viasGrupo.add(piso);
     viaMeshes.push(piso);
-    if (len > 1.5){
+    // la franja central pintada solo tiene sentido en pavimento (asfalto);
+    // tierra/afirmado y concreto no llevan demarcación vial (la selección ya
+    // se distingue por el color de piso, sin necesitar la línea también)
+    if (len > 1.5 && v.material === 'asfalto'){
       const linea = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.3, len - 1.2), 0.012, 0.2),
         new THREE.MeshBasicMaterial({ color: sel ? 0xffd23e : 0xd8d8d0 }));
       linea.position.set((v.x1 + v.x2) / 2, 0.108, (v.z1 + v.z2) / 2);
@@ -3118,20 +3121,30 @@ function redibujarVias(){
       viasGrupo.add(et);
     }
   });
-  // discos de empalme en cada nodo: rellenan el hueco que dejaban las curvas
-  // (color = el material del tramo más ancho que llega a ese nodo)
+  // discos de empalme en cada nodo: rellenan el hueco que dejaban las curvas.
+  // Si TODOS los tramos que llegan a ese nodo son del mismo material, el
+  // disco es de ese mismo color (empalme invisible). Si se juntan materiales
+  // distintos, un disco de un solo color se veía como un parche fuera de
+  // lugar — en su lugar se pinta una junta de transición neutra (gris de
+  // concreto de obra), que se lee como un corte de material intencional en
+  // vez de un error de color.
+  const JUNTA_MIXTA = 0x9aa0a6;
   const nodos = [];
   vias.forEach(v => {
-    const colorMat = (MATERIALES_VIA[v.material] || MATERIALES_VIA.asfalto).color;
     [[v.x1, v.z1], [v.x2, v.z2]].forEach(([x, z]) => {
       const n = nodos.find(nn => Math.hypot(nn.x - x, nn.z - z) <= 1.2);
-      if (n){ if (v.ancho / 2 >= n.r) { n.r = v.ancho / 2; n.color = colorMat; } }
-      else nodos.push({ x, z, r: v.ancho / 2, color: colorMat });
+      if (n){
+        if (v.material !== n.material) n.mixto = true;
+        if (v.ancho / 2 > n.r) n.r = v.ancho / 2;
+      } else {
+        nodos.push({ x, z, r: v.ancho / 2, material: v.material, mixto: false });
+      }
     });
   });
   nodos.forEach(n => {
+    const color = n.mixto ? JUNTA_MIXTA : (MATERIALES_VIA[n.material] || MATERIALES_VIA.asfalto).color;
     const disco = new THREE.Mesh(new THREE.CylinderGeometry(n.r, n.r, 0.07, 20),
-      new THREE.MeshLambertMaterial({ color: n.color }));
+      new THREE.MeshLambertMaterial({ color }));
     disco.position.set(n.x, 0.06, n.z);
     disco.receiveShadow = true;
     viasGrupo.add(disco);
@@ -3243,7 +3256,7 @@ function panelHerramientaVia(){
     '<div class="desc">Haz <b class="txtAcento">clic sobre el terreno</b> para marcar los puntos de la vía: cada clic agrega un tramo ' +
     '(los empalmes de las curvas se rellenan solos, sin vacíos). Para borrar POR PARTES: apaga esta herramienta y haz clic sobre un tramo.</div>' +
     '<label>Ancho de los tramos nuevos (m)' +
-      '<input type="number" value="' + viaAnchoNuevo + '" min="3" max="12" step="0.5" onchange="cambiarAnchoNuevo(this.value)"></label>' +
+      '<input type="number" value="' + viaAnchoNuevo + '" min="1" max="12" step="0.5" onchange="cambiarAnchoNuevo(this.value)"></label>' +
     '<label>Material de los tramos nuevos' +
       '<select onchange="cambiarMaterialNuevo(this.value)">' + opcionesMaterialVia(materialViaNuevo) + '</select></label>' +
     '<label class="chk"><input type="checkbox"' + (verMedidasVias ? ' checked' : '') + ' onchange="toggleMedidasVias(this.checked)"> Ver medidas sobre las vías</label>' +
@@ -3253,7 +3266,7 @@ function panelHerramientaVia(){
     '<div class="desc">Red actual: <b>' + st.tramos + '</b> tramo(s) · <b>' + st.total + ' m</b> en total.</div>' +
     (vias.length ? '<button class="btnEliminar" onclick="borrarTodasLasVias()">' + ic('basura') + 'Eliminar TODAS las vías</button>' : ''));
 }
-function cambiarAnchoNuevo(v){ viaAnchoNuevo = numLim(v, 6, 3, 12); }
+function cambiarAnchoNuevo(v){ viaAnchoNuevo = numLim(v, 6, 1, 12); }
 function cambiarMaterialNuevo(v){ materialViaNuevo = MATERIALES_VIA[v] ? v : 'asfalto'; }
 function toggleMedidasVias(v){ verMedidasVias = !!v; redibujarVias(); }
 function terminarTrazo(){
@@ -3280,7 +3293,7 @@ function seleccionarVia(id){
   panelSel('Vía — tramo seleccionado',
     '<table>' +
       '<tr><td>Largo del tramo</td><td>' + largo + ' m</td></tr>' +
-      '<tr><td>Ancho del tramo</td><td><input type="number" value="' + v.ancho + '" min="3" max="12" step="0.5" style="width:76px" onchange="cambiarAnchoVia(' + id + ', this.value)"> m</td></tr>' +
+      '<tr><td>Ancho del tramo</td><td><input type="number" value="' + v.ancho + '" min="1" max="12" step="0.5" style="width:76px" onchange="cambiarAnchoVia(' + id + ', this.value)"> m</td></tr>' +
       '<tr><td>Material</td><td><select onchange="cambiarMaterialVia(' + id + ', this.value)">' + opcionesMaterialVia(v.material) + '</select></td></tr>' +
       '<tr><td>Vía completa</td><td>' + comp.length + ' tramo(s) · ' + largoComp + ' m</td></tr>' +
     '</table>' +
@@ -3292,7 +3305,7 @@ function seleccionarVia(id){
 function cambiarAnchoVia(id, val){
   const v = vias.find(x => x.id === id);
   if (!v) return;
-  v.ancho = numLim(val, v.ancho, 3, 12);
+  v.ancho = numLim(val, v.ancho, 1, 12);
   redibujarVias(); guardar();
 }
 function cambiarMaterialVia(id, val){
@@ -5313,7 +5326,7 @@ function aplicarEstado(o){
   };
   vias = (Array.isArray(o.vias) ? o.vias : [])
     .filter(v => v && [v.x1, v.z1, v.x2, v.z2].every(n => typeof n === 'number' && isFinite(n)))
-    .map(v => ({ id: isFinite(Number(v.id)) ? Number(v.id) : idSec++, x1: v.x1, z1: v.z1, x2: v.x2, z2: v.z2, ancho: numLim(v.ancho, 6, 3, 12), material: MATERIALES_VIA[v.material] ? v.material : 'asfalto' }));
+    .map(v => ({ id: isFinite(Number(v.id)) ? Number(v.id) : idSec++, x1: v.x1, z1: v.z1, x2: v.x2, z2: v.z2, ancho: numLim(v.ancho, 6, 1, 12), material: MATERIALES_VIA[v.material] ? v.material : 'asfalto' }));
   rutas = (Array.isArray(o.rutas) ? o.rutas : [])
     .filter(r => r && Array.isArray(r.puntos))
     .map(r => ({
