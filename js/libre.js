@@ -167,8 +167,23 @@ function rueda(g, x, y, z, r, ancho){
    mostrar/ocultar por grupo) y el tamaño es un factor numérico — nombres
    y cotas por separado — válido tanto en 3D como en el Plano 2D, que
    reutiliza esta misma escena. */
-const CATEGORIAS_ETIQUETA_LIBRE = { zona:'Zonas y edificios', mueble:'Muebles', equipo:'Equipos y maquinaria', sitio:'Vías y accesos' };
-let categoriasEtiquetaVisibles = { zona:true, mueble:true, equipo:true, sitio:true };
+/* un filtro por cada tipo EXACTO (mismos tipos del creador — ver FABRICAS
+   más abajo), no unos pocos grupos grandes: máximo control de qué se ve. */
+const CATEGORIAS_ETIQUETA_LIBRE = {
+  espacio: 'Espacios',
+  edificio: 'Edificios',
+  muro: 'Muros',
+  mueble: 'Muebles',
+  malacate: 'Malacates',
+  gruaTorre: 'Torres grúa',
+  gruaPluma: 'Grúas pluma',
+  maquina: 'Maquinaria y transporte',
+  via: 'Vías',
+  porton: 'Portones',
+  ruta: 'Rutas de vehículos',
+  sitio: 'Terreno y accesos'
+};
+let categoriasEtiquetaVisibles = Object.keys(CATEGORIAS_ETIQUETA_LIBRE).reduce((o, k) => (o[k] = true, o), {});
 let factorEtiquetas = 1;
 let factorCotas = 1;
 function crearEtiqueta(texto, ancho, color, categoria){
@@ -186,7 +201,7 @@ function crearEtiqueta(texto, ancho, color, categoria){
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map:tex, depthTest:false, transparent:true }));
   const factor = (categoria === 'cota') ? factorCotas : factorEtiquetas;
   sp.scale.set(ancho * factor, (ancho/4) * factor, 1);
-  sp.userData.categoria = categoria || 'zona';
+  sp.userData.categoria = categoria || 'sitio';
   return sp;
 }
 /* filtra por categoría (además del maestro etiquetasVisibles) — se llama
@@ -1398,8 +1413,10 @@ function crearElemento(raw){
   g.userData.tipo = def.tipo;
   g.userData.info.nombre = def.nombre;
   if (def.colorPersonalizado) aplicarColorLibre(g, def.colorPersonalizado);
-  const catElem = (def.tipo === 'malacate' || def.tipo === 'gruaTorre' || def.tipo === 'gruaPluma' || def.tipo === 'maquina') ? 'equipo'
-    : (def.tipo === 'mueble') ? 'mueble' : 'zona';
+  // categoría = el tipo exacto del elemento (espacio/edificio/muro/mueble/
+  // malacate/gruaTorre/gruaPluma/maquina) — filtro fino en el panel de
+  // "Etiquetas y cotas", una casilla por tipo en vez de 3-4 grupos grandes
+  const catElem = def.tipo;
   const et = crearEtiqueta(textoEtiqueta(def), anchoEtiquetaLibre(), undefined, catElem);
   et.visible = etiquetasVisibles && categoriasEtiquetaVisibles[catElem] !== false;
   et.position.y = (def.tipo === 'gruaTorre' ? def.mastil : def.tipo === 'edificio' ? def.pisos*def.hPiso :
@@ -1464,6 +1481,9 @@ let arrastrando = null, rotando = false, paneando = false;
 let x0 = 0, y0 = 0, movido = 0;
 const punterosTactiles = new Map();
 let pinza = null;
+let arrastrandoPuntoLote = -1;   // índice del punto del perímetro libre que se está arrastrando (-1 = ninguno)
+let arrastrePuntoLoteOrig = null; // posición [x,z] del punto al empezar el arrastre (para no reconstruir si fue solo un clic)
+let ultimaActualizacionLote = 0;
 
 function rayo(e){
   puntero.x = (e.clientX / innerWidth) * 2 - 1;
@@ -1511,6 +1531,26 @@ renderer.domElement.addEventListener('pointerdown', e => {
   rayo(e);
   if (e.button === 2 || e.shiftKey){ paneando = true; return; }
   if (e.button !== 0) return;
+  // Terreno libre: si el clic cae sobre un punto YA guardado del perímetro,
+  // se arrastra para moverlo (en vez de borrarlo o iniciar un trazo nuevo) —
+  // así se puede corregir la forma sin rehacer el perímetro completo
+  if (herramienta === 'lote' && !trazoLote && loteEsLibre()){
+    const p = puntoSuelo();
+    if (p){
+      const pts = ficha.lotePoligono;
+      let mejorI = -1, mejorD = Infinity;
+      for (let i = 0; i < pts.length; i++){
+        const d = Math.hypot(p.x - pts[i][0], p.z - pts[i][1]);
+        if (d < mejorD){ mejorD = d; mejorI = i; }
+      }
+      if (mejorI >= 0 && mejorD < 2.5){
+        arrastrandoPuntoLote = mejorI;
+        arrastrePuntoLoteOrig = [pts[mejorI][0], pts[mejorI][1]];
+        movido = 999;
+        return;
+      }
+    }
+  }
   // con la herramienta Vía/Ruta/Regla activa, el clic izquierdo marca puntos en el terreno
   if (herramienta){
     movido = 999;
@@ -1558,6 +1598,20 @@ renderer.domElement.addEventListener('pointermove', e => {
   const dx = e.clientX - x0, dy = e.clientY - y0;
   movido += Math.abs(dx) + Math.abs(dy);
   x0 = e.clientX; y0 = e.clientY;
+  if (arrastrandoPuntoLote >= 0){
+    rayo(e);
+    const p = puntoSuelo();
+    if (p){
+      ficha.lotePoligono[arrastrandoPuntoLote] = [red2(p.x), red2(p.z)];
+      if (performance.now() - ultimaActualizacionLote > 90){
+        ultimaActualizacionLote = performance.now();
+        construirLote();
+        construirCerramiento();
+        mostrarPuntosEditablesLote();
+      }
+    }
+    return;
+  }
   if (herramienta && !arrastrando && !paneando && punterosTactiles.size < 2){
     rayo(e);
     const p = puntoSuelo();
@@ -1605,6 +1659,24 @@ function finPointer(e){
   if (e.pointerType === 'touch'){
     punterosTactiles.delete(e.pointerId);
     if (punterosTactiles.size < 2) pinza = null;
+  }
+  if (arrastrandoPuntoLote >= 0){
+    const i = arrastrandoPuntoLote, orig = arrastrePuntoLoteOrig;
+    arrastrandoPuntoLote = -1; arrastrePuntoLoteOrig = null;
+    // clic sin arrastre (el punto no cambió): no reconstruir ni guardar —
+    // así un toque sobre un vértice no dispara un rebuild + guardado inútil
+    const actual = ficha.lotePoligono[i];
+    if (orig && actual && orig[0] === actual[0] && orig[1] === actual[1]){
+      mostrarPuntosEditablesLote();
+      return;
+    }
+    construirLote();
+    construirCerramiento();
+    mostrarPuntosEditablesLote();
+    panelHerramientaLote();
+    guardar('Punto del terreno movido');
+    avisar('Punto del perímetro movido — ≈ ' + Math.round(loteAreaM2()).toLocaleString('es-CO') + ' m²');
+    return;
   }
   if (amueblando){
     const eraInterior = arrastrandoInterior;
@@ -1850,6 +1922,17 @@ function toggleBloqueoLibre(){
   mostrarTabLibre('mod');
   avisar(d.bloqueado ? '"' + d.nombre + '" bloqueado: ya no se puede arrastrar' : '"' + d.nombre + '" desbloqueado');
 }
+/* bloquear/desbloquear TODOS los elementos de una vez — aparte del candado
+   individual de cada uno (pestaña Modificar), útil cuando ya organizaste
+   toda la obra y quieres evitar arrastrar algo por accidente */
+function bloquearTodoLibre(bloquear){
+  if (!elementos.length){ avisar('No hay elementos en la obra'); return; }
+  elementos.forEach(g => { g.userData.def.bloqueado = bloquear; });
+  guardar(bloquear ? 'Toda la obra bloqueada' : 'Toda la obra desbloqueada');
+  if (seleccionado) seleccionar(seleccionado);
+  abrirZonasLibre();
+  avisar(bloquear ? 'Los ' + elementos.length + ' elementos quedaron bloqueados' : 'Los ' + elementos.length + ' elementos quedaron desbloqueados');
+}
 function colorActualHexLibre(g){
   let hex = null;
   g.traverse(n => { if (!hex && n.isMesh && !n.isSprite && n.material && n.material.color) hex = '#' + n.material.color.getHexString(); });
@@ -1920,7 +2003,7 @@ function cambiarMetaM3Libre(){
 function anchoEtiquetaLibre(){ return modo2D ? 18 : 12; }
 function regenerarEtiquetaLibre(g){
   const vieja = g.userData.etiqueta;
-  const categoria = vieja ? vieja.userData.categoria : 'zona';
+  const categoria = vieja ? vieja.userData.categoria : g.userData.def.tipo;
   const nueva = crearEtiqueta(textoEtiqueta(g.userData.def), anchoEtiquetaLibre(), undefined, categoria);
   if (vieja){
     nueva.position.copy(vieja.position);
@@ -2516,7 +2599,7 @@ function construirCerramiento(){
         cerrGrupo.add(porton);
         numPorton++;
         const et = crearEtiqueta(gatesResueltos.length > 1 ? 'PORTÓN ' + numPorton : 'PORTÓN DE ACCESO', 13,
-          seleccionado ? 'rgba(180,140,10,0.92)' : 'rgba(120,60,15,0.88)', 'sitio');
+          seleccionado ? 'rgba(180,140,10,0.92)' : 'rgba(120,60,15,0.88)', 'porton');
         et.position.set(v.x, H + 2, v.z);
         cerrGrupo.add(et);
         puertas.push([v.x + v.nx * 8, v.z + v.nz * 8]);
@@ -3116,7 +3199,7 @@ function redibujarVias(){
       viasGrupo.add(linea);
     }
     if (verMedidasVias){
-      const et = crearEtiqueta(Math.round(len * 10) / 10 + ' m · ancho ' + v.ancho + ' m', 13, 'rgba(45,50,58,0.85)', 'sitio');
+      const et = crearEtiqueta(Math.round(len * 10) / 10 + ' m · ancho ' + v.ancho + ' m', 13, 'rgba(45,50,58,0.85)', 'via');
       et.position.set((v.x1 + v.x2) / 2, 1.6, (v.z1 + v.z2) / 2);
       viasGrupo.add(et);
     }
@@ -3410,7 +3493,7 @@ function redibujarRutas(){
       marca.position.set(p[0] + ox, 0.13, p[1] + oz);
       rutasGrupo.add(marca);
       if (sel){
-        const et = crearEtiqueta(String(i + 1), 3.2, 'rgba(20,25,35,0.85)', 'sitio');
+        const et = crearEtiqueta(String(i + 1), 3.2, 'rgba(20,25,35,0.85)', 'ruta');
         et.position.set(p[0] + ox, 2.2, p[1] + oz);
         rutasGrupo.add(et);
       }
@@ -4156,18 +4239,10 @@ const DIST_CIERRE_LOTE = 2;   // metros: qué tan cerca del primer punto para ce
 function clicLote(pRaw){
   const p = { x: red2(pRaw.x), z: red2(pRaw.z) };
   if (!trazoLote){
-    // sin un trazo nuevo en curso: si el clic cae cerca de un vértice del
-    // perímetro YA guardado, ese clic BORRA ese punto en vez de empezar un
-    // dibujo nuevo (así se puede corregir solo una esquina sin rehacer todo)
-    if (loteEsLibre()){
-      const pts = ficha.lotePoligono;
-      for (let i = 0; i < pts.length; i++){
-        if (Math.hypot(p.x - pts[i][0], p.z - pts[i][1]) < 2){
-          quitarPuntoLoteLibre(i);
-          return;
-        }
-      }
-    }
+    // sin un trazo nuevo en curso, un clic sobre un vértice existente se
+    // maneja en el pointerdown (lo ARRASTRA); un clic sobre terreno vacío
+    // —que es lo único que llega aquí— empieza un perímetro nuevo. Borrar
+    // un punto suelto se hace con su botón ✕ en el panel (quitarPuntoLoteLibre).
     trazoLote = [];
   }
   if (trazoLote.length >= 3){
@@ -4240,6 +4315,26 @@ function quitarPuntoLoteLibre(i){
   panelHerramientaLote();
   avisar('Punto del perímetro eliminado — ' + Math.round(loteAreaM2()).toLocaleString('es-CO') + ' m²');
 }
+/* ajuste rápido del tamaño del perímetro libre, sin volver a dibujarlo:
+   escala TODO el polígono desde su centro para que el área cambie en pasos
+   de 100 m², de un clic */
+function escalarLoteLibre(deltaM2){
+  if (!loteEsLibre()) return;
+  const areaActual = loteAreaM2();
+  if (areaActual < 1){ avisar('El terreno es demasiado pequeño para reescalarlo'); return; }
+  const areaNueva = Math.max(20, areaActual + deltaM2);
+  const factor = Math.sqrt(areaNueva / areaActual);
+  const pts = ficha.lotePoligono;
+  const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+  const cz = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+  ficha.lotePoligono = pts.map(([x, z]) => [red2(cx + (x - cx) * factor), red2(cz + (z - cz) * factor)]);
+  construirLote();
+  construirCerramiento();
+  guardar('Terreno reescalado');
+  mostrarPuntosEditablesLote();
+  panelHerramientaLote();
+  avisar('Terreno ajustado — ≈ ' + Math.round(loteAreaM2()).toLocaleString('es-CO') + ' m²');
+}
 function borrarPerimetroLibre(){
   if (!loteEsLibre()){ avisar('No hay un perímetro libre dibujado'); return; }
   ficha.lotePoligono = [];
@@ -4261,8 +4356,12 @@ function panelHerramientaLote(){
       '<button class="planoBtn peligro" style="width:auto; margin:0" title="Eliminar SOLO este punto" onclick="quitarPuntoLoteLibre(' + i + ')">✕</button></div>').join('');
     panelSel('Terreno libre — editar el perímetro',
       '<div class="desc">Perímetro actual: <b class="txtFuerte">' + pts.length + ' puntos</b> · ≈ <b class="txtAcento">' + Math.round(loteAreaM2()).toLocaleString('es-CO') + ' m²</b>. ' +
-      'Borra un punto suelto con ✕ (los puntos en azul sobre el terreno también se borran con un clic), o haz ' +
+      '<b class="txtAcento">Arrastra</b> un punto azul del terreno para moverlo (sin rehacer el perímetro), borra uno suelto con ✕, o haz ' +
       '<b class="txtAcento">clic sobre un punto vacío del terreno</b> para empezar a dibujar un perímetro nuevo (reemplaza este).</div>' +
+      '<div style="display:flex; gap:6px; margin:8px 0">' +
+        '<button style="flex:1; margin:0" onclick="escalarLoteLibre(-100)">− 100 m²</button>' +
+        '<button style="flex:1; margin:0" onclick="escalarLoteLibre(100)">+ 100 m²</button>' +
+      '</div>' +
       filas +
       '<button class="btnEliminar" style="margin-top:10px" onclick="borrarPerimetroLibre()">' + ic('basura') + 'Borrar todo el perímetro (volver a rectángulo)</button>');
     return;
@@ -5008,6 +5107,12 @@ function abrirZonasLibre(){
   document.getElementById('libreBody').innerHTML =
     '<div class="desc">Todo lo creado en la obra con su área (m²) y la ocupación del lote — igual que "Zonas y aforo" del Proyecto Prueba. ' +
     'Los elementos marcados con ⚠ quedaron por fuera del lote.</div>' +
+    (elementos.length
+      ? '<div style="display:flex; gap:6px; margin:8px 0">' +
+          '<button style="flex:1; margin:0" onclick="bloquearTodoLibre(true)">' + ic('candado') + 'Bloquear todo</button>' +
+          '<button style="flex:1; margin:0" onclick="bloquearTodoLibre(false)">' + ic('candadoAbierto') + 'Desbloquear todo</button>' +
+        '</div>'
+      : '') +
     (filas.length
       ? filas.map(f =>
           '<div class="planoFila"><span class="planoNom"><b class="txtFuerte">' + esc(f.d.nombre) + '</b> ' +
