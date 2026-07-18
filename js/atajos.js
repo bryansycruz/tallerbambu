@@ -23,6 +23,7 @@ addEventListener('keydown', e => {
     if (modoRegla){ if (escRegla()) return; toggleRegla(); return; }
     if (modoFlujo){ document.getElementById('btnFlujo').click(); return; }
     if (modoVia){ document.getElementById('btnVia').click(); return; }
+    if (modoColocarPorteria){ terminarColocarPorteria(); avisoGuardado('Ubicación de porterías terminada'); return; }
     if (seleccionado){
       actualizarTinte(seleccionado);
       seleccionado = null;

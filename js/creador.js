@@ -616,6 +616,13 @@ function agregarPersonalizado(){
     const presetEl = document.getElementById('espPreset');
     def.presetId = (presetEl && PRESETS_ESPACIO[presetEl.value]) ? presetEl.value : null;
   }
+  // la Portería se ubica con un clic en el terreno (puede haber varias, en
+  // cualquier zona) en vez de aparecer en la fila automática del sur — para
+  // el resto de plantillas se conserva el flujo de siempre
+  if (def.presetId === 'porteria'){
+    iniciarColocarPorteria(def);
+    return;
+  }
   personalizados.push(def);
   const g = construirPersonalizado(def);
   ajustarEtiquetaNueva(g);
@@ -624,6 +631,35 @@ function agregarPersonalizado(){
   seleccionar(g);
   irA(g.position.x, 2, g.position.z, clase === 'edificio' ? 95 : clase === 'muro' ? 25 : 55, camCtrl.theta, 1.05);
   avisoGuardado(NOMBRE_CLASE[clase] + ' "' + nombre + '" creado — arrástralo para ubicarlo');
+}
+
+/* ---- Portería: colocación libre con clic (varias, en cualquier zona) ----
+   En vez de aparecer en la fila automática y tener que arrastrarla, al crear
+   una Portería se entra en un modo "clic para ubicar": cada clic en el
+   terreno coloca una portería ahí mismo, y el modo sigue activo para poder
+   marcar varias seguidas. Esc (o el mismo flujo de creación otra vez)
+   termina el modo — igual que Vías/Rutas/Regla. */
+let modoColocarPorteria = false;
+let defPorteriaPendiente = null;
+function iniciarColocarPorteria(def){
+  defPorteriaPendiente = def;
+  modoColocarPorteria = true;
+  document.getElementById('espOverlay').style.display = 'none';
+  avisoGuardado('Haz clic en el terreno para ubicar la portería — puedes marcar varias (Esc para terminar)');
+}
+function crearPorteriaEnPunto(p){
+  const def = Object.assign({}, defPorteriaPendiente, { pos: [p.x, p.z], id: nuevoId() });
+  def.nombre = nombreDisponible(defPorteriaPendiente.nombre);
+  personalizados.push(def);
+  const g = construirPersonalizado(def);
+  ajustarEtiquetaNueva(g);
+  guardarCompartido();
+  seleccionar(g);
+  avisoGuardado('"' + def.nombre + '" ubicada — sigue haciendo clic para agregar otra, o Esc para terminar');
+}
+function terminarColocarPorteria(){
+  modoColocarPorteria = false;
+  defPorteriaPendiente = null;
 }
 function eliminarPersonalizadoIdx(i){
   const p = personalizados[i];

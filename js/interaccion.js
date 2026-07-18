@@ -86,6 +86,11 @@ renderer.domElement.addEventListener('pointerdown', e => {
   if (e.button === 2 || e.shiftKey){ paneando = true; return; }
   if (e.button !== 0) return;
 
+  if (modoColocarPorteria){
+    const p = interseccionSuelo();
+    if (p) crearPorteriaEnPunto(p);
+    return;
+  }
   if (modoFlujo){
     const p = interseccionSuelo();
     if (p){ if (!rutaActual) iniciarRuta(); agregarPunto(p); }
@@ -196,7 +201,7 @@ renderer.domElement.addEventListener('pointerup', e => {
   }
   const eraArrastre = arrastrando;
   arrastrando = null; rotando = false; paneando = false;
-  if (movido < 6 && e.button === 0 && !modoFlujo && !modoVia && !modoRegla){
+  if (movido < 6 && e.button === 0 && !modoFlujo && !modoVia && !modoRegla && !modoColocarPorteria){
     rayoDesdeEvento(e);
     if (vistaPiso4){
       const hitsA = raycaster.intersectObjects(aptosClick);

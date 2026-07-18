@@ -81,6 +81,7 @@ function toggleRegla(){
   if (modoRegla){
     if (typeof modoFlujo !== 'undefined' && modoFlujo) document.getElementById('btnFlujo').click();
     if (typeof modoVia !== 'undefined' && modoVia) document.getElementById('btnVia').click();
+    if (typeof modoColocarPorteria !== 'undefined' && modoColocarPorteria) terminarColocarPorteria();
   } else {
     trazoRegla = null;
     redibujarMediciones();

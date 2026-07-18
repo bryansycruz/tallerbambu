@@ -2136,6 +2136,13 @@ function agregarElemento(){
   } else if (tipo === 'muro'){
     raw.w = valNum('libAncho'); raw.h = valNum('libAlto'); raw.espesor = valNum('libEspesor'); raw.color = valNum('libColor');
   }
+  // la Portería se ubica con un clic en el terreno (puede haber varias, en
+  // cualquier zona) en vez de aparecer en la fila automática — el resto de
+  // tipos conserva el flujo de siempre
+  if (raw.presetId === 'porteria'){
+    iniciarColocarPorteriaLibre(raw);
+    return;
+  }
   const g = crearElemento(raw);
   guardar('Creado: ' + g.userData.def.nombre);
   document.getElementById('libreOverlay').style.display = 'none';
@@ -3744,6 +3751,7 @@ function setHerramienta(h){
   if (herramienta === h) h = null;
   herramienta = h;
   trazoVia = null; trazoRuta = null; trazoRegla = null;
+  if (h !== 'porteria') defPorteriaPendienteLibre = null;
   if (h !== 'lote'){ trazoLote = null; vaciarGrupo(loteTrazoGrupo); }
   redibujarMediciones();
   quitarPreviewHerramienta();
@@ -3762,6 +3770,7 @@ function setHerramienta(h){
   else if (herramienta === 'lote'){ if (!trazoLote) mostrarPuntosEditablesLote(); panelHerramientaLote(); }
   else if (herramienta === 'porton') panelHerramientaPorton();
   else if (herramienta === 'abertura') panelHerramientaAbertura();
+  else if (herramienta === 'porteria') panelHerramientaPorteria();
   else mostrarPanelVacio();
 }
 function clicHerramienta(p){
@@ -3771,6 +3780,34 @@ function clicHerramienta(p){
   else if (herramienta === 'lote') clicLote(p);
   else if (herramienta === 'porton') clicPorton(p);
   else if (herramienta === 'abertura') clicAbertura(p);
+  else if (herramienta === 'porteria') clicPorteriaLibre(p);
+}
+/* ---- Portería: colocación libre con clic (varias, en cualquier zona) ----
+   En vez de aparecer en la fila automática y tener que arrastrarla, al crear
+   una Portería se entra en la herramienta "porteria": cada clic en el
+   terreno coloca una ahí mismo y la herramienta sigue activa para marcar
+   varias seguidas (Esc o "Terminar" la apaga, igual que Vías/Rutas). */
+let defPorteriaPendienteLibre = null;
+function iniciarColocarPorteriaLibre(raw){
+  defPorteriaPendienteLibre = raw;
+  document.getElementById('libreOverlay').style.display = 'none';
+  setHerramienta('porteria');
+  avisar('Haz clic en el terreno para ubicar la portería — puedes marcar varias');
+}
+function clicPorteriaLibre(p){
+  if (!defPorteriaPendienteLibre) return;
+  const raw = Object.assign({}, defPorteriaPendienteLibre, { x: p.x, z: p.z });
+  raw.nombre = nombreDisponible(defPorteriaPendienteLibre.nombre);
+  const g = crearElemento(raw);
+  guardar('Creado: ' + g.userData.def.nombre);
+  if (mostrarCotas) redibujarCotas2D();
+  avisar('"' + g.userData.def.nombre + '" ubicada — sigue haciendo clic para agregar otra');
+}
+function panelHerramientaPorteria(){
+  panelSel('Ubicar portería',
+    '<div class="desc">Haz <b class="txtAcento">clic sobre el terreno</b> para colocar una portería ahí mismo. ' +
+    'Repite el clic para agregar varias, en cualquier parte del lote.</div>' +
+    '<button onclick="setHerramienta(null)">' + ic('check') + 'Terminar</button>');
 }
 function deshacerPuntoHerramienta(){
   if (herramienta === 'via' && trazoVia){

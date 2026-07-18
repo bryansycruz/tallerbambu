@@ -174,6 +174,7 @@ const TXT_AVISO_RUTA = 'Dibujando ruta: haz clic sobre el terreno para marcar el
 const TXT_AVISO_VIA  = 'Dibujando vía: haz clic sobre el terreno para marcar el tramo y termina con "Finalizar vía"';
 btnFlujo.onclick = () => {
   if (typeof modoRegla !== 'undefined' && modoRegla) toggleRegla();
+  if (typeof modoColocarPorteria !== 'undefined' && modoColocarPorteria) terminarColocarPorteria();
   modoFlujo = !modoFlujo;
   if (modoFlujo && modoVia){ modoVia = false; btnVia.classList.remove('activo'); btnFinVia.style.display = 'none'; finalizarVia(); }
   btnFlujo.classList.toggle('activo', modoFlujo);
@@ -188,6 +189,7 @@ document.getElementById('btnBorrar').onclick = borrarRutas;
 
 btnVia.onclick = () => {
   if (typeof modoRegla !== 'undefined' && modoRegla) toggleRegla();
+  if (typeof modoColocarPorteria !== 'undefined' && modoColocarPorteria) terminarColocarPorteria();
   modoVia = !modoVia;
   if (modoVia && modoFlujo){ modoFlujo = false; btnFlujo.classList.remove('activo'); btnFin.style.display = 'none'; finalizarRuta(); }
   btnVia.classList.toggle('activo', modoVia);
