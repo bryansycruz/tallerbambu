@@ -2412,10 +2412,18 @@ function normalizarFicha(raw){
     lotePoligono: (Array.isArray(raw.lotePoligono) ? raw.lotePoligono : [])
       .filter(p => Array.isArray(p) && p.length === 2 && isFinite(p[0]) && isFinite(p[1]))
       .map(p => [red2(p[0]), red2(p[1])]).slice(0, 60),
-    // lados del cerramiento donde hay portones de acceso; [] = automático
-    // (un solo portón en el lado más al sur) — admite varios a la vez
+    // portones de acceso; [] = automático (uno en el lado más al sur).
+    // Formato NUEVO: {id, t} con t = posición de arco libre sobre TODO el
+    // perímetro (se puede mover a cualquier punto, cruzando esquinas).
+    // Se sigue aceptando el formato VIEJO (índice de lado, entero) para
+    // archivos guardados antes de este cambio — portonesResueltos() lo migra.
     portones: (Array.isArray(raw.portones) ? raw.portones : (Number.isInteger(raw.idxPorton) && raw.idxPorton >= 0 ? [raw.idxPorton] : []))
-      .filter(i => Number.isInteger(i) && i >= 0).slice(0, 12),
+      .map(p => {
+        if (p && typeof p === 'object' && isFinite(p.t)) return { id: String(p.id || ''), t: Number(p.t) };
+        if (Number.isInteger(p) && p >= 0) return p;
+        return null;
+      })
+      .filter(p => p !== null).slice(0, 12),
     // lados del cerramiento dejados a propósito SIN muro (una abertura,
     // distinta de un portón — no tiene puerta ni sirve de entrada oficial)
     aberturas: (Array.isArray(raw.aberturas) ? raw.aberturas : [])
